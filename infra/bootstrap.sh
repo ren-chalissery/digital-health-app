@@ -162,7 +162,7 @@ repository="$(output "${APP_STACK}" RepositoryUri)"
 sha="$(git -C "${ROOT}" rev-parse HEAD)"
 info "pushing ${repository}:${sha}"
 aws ecr get-login-password | docker login --username AWS --password-stdin "${repository%%/*}" >/dev/null
-docker build --platform linux/amd64 -q -t "${repository}:${sha}" -t "${repository}:latest" "${ROOT}/backend" >/dev/null
+docker build --platform linux/arm64 -q -t "${repository}:${sha}" -t "${repository}:latest" "${ROOT}/backend" >/dev/null
 docker push -q "${repository}:${sha}" >/dev/null
 docker push -q "${repository}:latest" >/dev/null
 

@@ -165,6 +165,10 @@ cfn-lint infra/*.yaml
 
 ## Cost
 
-Roughly 70 to 90 US dollars a month: Fargate 0.5 vCPU and 1 GB (~18), ALB (~18), RDS
+Roughly 65 to 85 US dollars a month: Fargate 0.5 vCPU and 1 GB on Graviton (~14), ALB (~18), RDS
 `db.t4g.micro` (~15), ElastiCache `cache.t4g.micro` (~12), S3 and CloudFront (~5). Cognito is free
 below 10,000 monthly active users.
+
+Every compute line is arm64. The task definition is Graviton, the pipeline builds on an
+`ubuntu-24.04-arm` runner, and `db.t4g` and `cache.t4g` are Graviton too — so nothing is emulated
+anywhere and the architecture in production is the one developers run locally.

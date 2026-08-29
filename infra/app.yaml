@@ -176,10 +176,10 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       RuntimePlatform:
-        # x86 so the pipeline can build on a stock GitHub runner without emulation. Graviton would
-        # be about 20 per cent cheaper and is worth revisiting once the image build moves to an
-        # arm64 runner.
-        CpuArchitecture: X86_64
+        # Graviton, for about 20 per cent less than x86. Nothing is emulated to get there: the
+        # pipeline builds on an arm64 runner and developers build natively on Apple Silicon, so the
+        # architecture running in production is the one the image was actually exercised on.
+        CpuArchitecture: ARM64
         OperatingSystemFamily: LINUX
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
       TaskRoleArn: !GetAtt TaskRole.Arn

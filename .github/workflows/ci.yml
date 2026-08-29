@@ -101,7 +101,9 @@ jobs:
 
   deploy:
     name: Deploy
-    runs-on: ubuntu-latest
+    # arm64, to match the Graviton task definition and build the image without emulation. Standard
+    # runner, same size and same free-minute allocation as the x86 one.
+    runs-on: ubuntu-24.04-arm
     needs: [backend, clients, web]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
@@ -137,7 +139,8 @@ jobs:
         run: |
           repository="$(aws cloudformation describe-stacks --stack-name "$APP_STACK" \
             --query "Stacks[0].Outputs[?OutputKey=='RepositoryUri'].OutputValue" --output text)"
-          docker build -t "$repository:${{ github.sha }}" -t "$repository:latest" .
+          docker build --platform linux/arm64 \
+            -t "$repository:${{ github.sha }}" -t "$repository:latest" .
           docker push "$repository:${{ github.sha }}"
           docker push "$repository:latest"
 
