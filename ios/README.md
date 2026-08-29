@@ -41,10 +41,16 @@ for p in Packages/*/; do (cd "$p" && swift test) || break; done
 
 # The app, including the UI smoke test
 xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
-  -destination 'platform=iOS Simulator,name=iPhone 17'
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -skipPackagePluginValidation -skipMacroValidation
 
 swiftlint --strict
 ```
+
+Those two `-skip` flags are not optional. Amplify depends on smithy-swift, which ships a build
+plugin, and Xcode refuses to run an unvalidated plugin from the command line — the build fails with
+`Plugin "SmithyCodeGeneratorPlugin" must be enabled before it can be used`. Opening the workspace in
+Xcode and trusting it once fixes the GUI, not `xcodebuild`.
 
 Tests are Swift Testing, not XCTest — the exception is `SimplicityUITests`, because XCUITest has no
 Swift Testing equivalent. Suites that resolve anything from the Factory container extend

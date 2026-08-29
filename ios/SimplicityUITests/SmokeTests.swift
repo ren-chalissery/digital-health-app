@@ -1,12 +1,17 @@
 import XCTest
 
-/// One path only. UI tests are slow and brittle; their job here is to catch a shell that will not
-/// launch, not to assert behaviour the package tests already cover.
+/// One path only. UI tests are slow and brittle; the job here is to catch a shell that will not
+/// launch or a chain that is not wired, not to assert behaviour the package tests already cover.
 final class SmokeTests: XCTestCase {
 
-    func testAppLaunches() {
+    func testSignedOutAppShowsSignIn() {
         let app = XCUIApplication()
+        app.launchArguments = ["--uitest-signed-out"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["app-root"].waitForExistence(timeout: 30))
+
+        XCTAssertTrue(
+            app.buttons["sign-in-submit"].waitForExistence(timeout: 60),
+            "The signed-out app should reach the sign-in screen"
+        )
     }
 }

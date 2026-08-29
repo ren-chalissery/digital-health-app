@@ -6,8 +6,12 @@ import Testing
 @Suite("UserDefault")
 struct UserDefaultTests {
 
+    /// A suite per test, so one test's write is invisible to the next.
     private func store() -> UserDefaults {
-        UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+        guard let suite = UserDefaults(suiteName: "test-\(UUID().uuidString)") else {
+            fatalError("Could not create an isolated defaults suite")
+        }
+        return suite
     }
 
     @Test("returns the default when nothing has been written")

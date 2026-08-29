@@ -10,9 +10,19 @@ opt_in_rules:
   - sorted_imports
 
 excluded:
+  # Never hand-edited, so linting it only produces noise nobody may act on.
   - Packages/SimplicityApi/Sources/SimplicityApi/Generated
+  # Checked-out dependency sources. Each package has its own .build, so the bare path is not
+  # enough — without the glob, SwiftLint reports a quarter of a million violations in Amplify.
   - .build
+  - Packages/*/.build
   - DerivedData
+
+# The spacing scale is x1 through x6. Longer names for a design token would be worse, not better.
+identifier_name:
+  min_length:
+    warning: 2
+    error: 2
 
 file_length:
   warning: 500

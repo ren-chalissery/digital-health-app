@@ -22,9 +22,13 @@ final class BearerInterceptor: OpenAPIInterceptor {
         }
     }
 
+    // swiftlint:disable function_parameter_count
+
     /// Never retry here. A 401 that a refreshed token would fix is already handled by asking for
     /// the token per request; a 401 that survives that means the session is genuinely over, and
     /// retrying would only delay signing the person out.
+    ///
+    /// The parameter count is the generated protocol's, not a choice.
     func retry<T>(
         urlRequest: URLRequest,
         urlSession: URLSessionProtocol,
@@ -36,4 +40,6 @@ final class BearerInterceptor: OpenAPIInterceptor {
     ) {
         completion(.dontRetry)
     }
+
+    // swiftlint:enable function_parameter_count
 }

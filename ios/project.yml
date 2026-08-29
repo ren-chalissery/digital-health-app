@@ -25,6 +25,12 @@ packages:
     path: Packages/SimplicityFoundation
   SimplicityApi:
     path: Packages/SimplicityApi
+  SimplicityDesign:
+    path: Packages/SimplicityDesign
+  SimplicityServices:
+    path: Packages/SimplicityServices
+  SimplicityAuth:
+    path: Packages/SimplicityAuth
 
 targets:
   Simplicity_iOS:
@@ -50,6 +56,9 @@ targets:
     dependencies:
       - package: SimplicityFoundation
       - package: SimplicityApi
+      - package: SimplicityDesign
+      - package: SimplicityServices
+      - package: SimplicityAuth
 
   SimplicityUITests:
     type: bundle.ui-testing
