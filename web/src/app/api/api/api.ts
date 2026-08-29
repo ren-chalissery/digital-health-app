@@ -1,0 +1,13 @@
+export * from './current-user.service';
+import { CurrentUserApi } from './current-user.service';
+export * from './current-user.serviceInterface';
+export * from './invitations.service';
+import { InvitationsApi } from './invitations.service';
+export * from './invitations.serviceInterface';
+export * from './organisations.service';
+import { OrganisationsApi } from './organisations.service';
+export * from './organisations.serviceInterface';
+export * from './teams.service';
+import { TeamsApi } from './teams.service';
+export * from './teams.serviceInterface';
+export const APIS = [CurrentUserApi, InvitationsApi, OrganisationsApi, TeamsApi];

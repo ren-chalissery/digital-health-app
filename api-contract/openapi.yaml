@@ -1,0 +1,818 @@
+openapi: 3.1.0
+info:
+  description: Backend for the Simplicity digital training package. Every endpoint
+    except the invitation preview requires a Cognito access token.
+  title: Simplicity training API
+  version: "1"
+servers:
+- url: /
+security:
+- bearerAuth: []
+tags:
+- description: The signed-in clinician's own profile and memberships
+  name: Current user
+paths:
+  /api/v1/invitations/{token}:
+    get:
+      description: "Public. Returns valid=false for anything unknown, expired, or\
+        \ already used, so the endpoint cannot be used to probe for live tokens."
+      operationId: preview
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvitationPreviewResponse"
+          description: OK
+      summary: Preview an invitation before signing up
+      tags:
+      - Invitations
+  /api/v1/invitations/{token}/accept:
+    post:
+      operationId: accept
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Accept an invitation as the signed-in user
+      tags:
+      - Invitations
+  /api/v1/me:
+    get:
+      description: Provisions the user on first call. Clients use profileCompleted
+        and the organisations list to decide whether to show onboarding.
+      operationId: me
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+      summary: Describe the signed-in user
+      tags:
+      - Current user
+  /api/v1/me/profile:
+    put:
+      description: "Sets profileCompleted, which is what lets the client leave the\
+        \ wizard."
+      operationId: updateProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+      summary: Complete or update the professional profile
+      tags:
+      - Current user
+  /api/v1/organisations:
+    post:
+      description: The caller becomes its first administrator. Used by the self-signup
+        flow.
+      operationId: create_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrganisationRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrganisationResponse"
+          description: Created
+      summary: Create an organisation
+      tags:
+      - Organisations
+  /api/v1/orgs/{orgId}:
+    get:
+      operationId: get_1
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrganisationResponse"
+          description: OK
+      tags:
+      - Organisations
+  /api/v1/orgs/{orgId}/invitations:
+    get:
+      operationId: list_1
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvitationResponse"
+          description: OK
+      tags:
+      - Invitations
+    post:
+      description: "Re-inviting an address withdraws the outstanding invitation and\
+        \ issues a fresh link, so only one token is ever live for a given address."
+      operationId: create_1
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvitationResponse"
+          description: Created
+      summary: Invite somebody to the organisation
+      tags:
+      - Invitations
+  /api/v1/orgs/{orgId}/invitations/{invitationId}:
+    delete:
+      operationId: revoke
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: invitationId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - Invitations
+  /api/v1/orgs/{orgId}/members:
+    get:
+      operationId: listMembers_1
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrgMemberResponse"
+          description: OK
+      tags:
+      - Organisations
+  /api/v1/orgs/{orgId}/members/{userId}:
+    delete:
+      operationId: removeMember
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: "Remove a member, ending their team memberships in this organisation"
+      tags:
+      - Organisations
+    patch:
+      operationId: changeRole
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeOrgRoleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrgMemberResponse"
+          description: OK
+      summary: Change a member's organisation role
+      tags:
+      - Organisations
+  /api/v1/orgs/{orgId}/teams:
+    get:
+      operationId: list
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamResponse"
+          description: OK
+      tags:
+      - Teams
+    post:
+      description: Restricted to organisation administrators; team administrators
+        cannot.
+      operationId: create
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+          description: Created
+      summary: Create a team
+      tags:
+      - Teams
+  /api/v1/orgs/{orgId}/teams/{teamId}:
+    delete:
+      description: Organisation administrators only. A team administrator can manage
+        their team's membership but cannot remove the team itself.
+      operationId: delete
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a team
+      tags:
+      - Teams
+    get:
+      operationId: get
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+          description: OK
+      tags:
+      - Teams
+    patch:
+      operationId: update
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+          description: OK
+      tags:
+      - Teams
+  /api/v1/orgs/{orgId}/teams/{teamId}/members:
+    get:
+      operationId: listMembers
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMemberDetailResponse"
+          description: OK
+      tags:
+      - Teams
+    post:
+      operationId: addMember
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTeamMemberRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TeamMemberDetailResponse"
+          description: Created
+      tags:
+      - Teams
+  /api/v1/orgs/{orgId}/teams/{teamId}/members/{userId}:
+    delete:
+      operationId: removeMember_1
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - Teams
+components:
+  schemas:
+    AddTeamMemberRequest:
+      type: object
+      properties:
+        teamRole:
+          type: string
+          enum:
+          - TEAM_ADMIN
+          - TEAM_MEMBER
+        userId:
+          type: string
+          format: uuid
+      required:
+      - teamRole
+      - userId
+    ChangeOrgRoleRequest:
+      type: object
+      properties:
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+      required:
+      - orgRole
+    CreateInvitationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          minLength: 0
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+        teamId:
+          type: string
+          format: uuid
+        teamRole:
+          type: string
+          enum:
+          - TEAM_ADMIN
+          - TEAM_MEMBER
+      required:
+      - email
+      - orgRole
+    CreateOrganisationRequest:
+      type: object
+      properties:
+        country:
+          type: string
+          maxLength: 80
+          minLength: 0
+        name:
+          type: string
+          maxLength: 200
+          minLength: 0
+        organisationType:
+          type: string
+          enum:
+          - HOSPITAL
+          - CLINIC
+          - UNIVERSITY
+          - COMPANY
+          - OTHER
+      required:
+      - name
+      - organisationType
+    CreateTeamRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        name:
+          type: string
+          maxLength: 150
+          minLength: 0
+      required:
+      - name
+    CurrentUserResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+        id:
+          type: string
+          format: uuid
+        organisations:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrganisationMembershipResponse"
+        phone:
+          type: string
+        platformRole:
+          type: string
+          enum:
+          - SUPER_ADMIN
+          - STANDARD
+        professionalRole:
+          type: string
+        profileCompleted:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - DEACTIVATED
+    InvitationPreviewResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+        organisationName:
+          type: string
+        teamName:
+          type: string
+        valid:
+          type: boolean
+    InvitationResponse:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        email:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+        status:
+          type: string
+          enum:
+          - PENDING
+          - ACCEPTED
+          - REVOKED
+          - EXPIRED
+        teamId:
+          type: string
+          format: uuid
+        teamName:
+          type: string
+        teamRole:
+          type: string
+          enum:
+          - TEAM_ADMIN
+          - TEAM_MEMBER
+    OrgMemberResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        membershipStatus:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+        professionalRole:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        userStatus:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - DEACTIVATED
+    OrganisationMembershipResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        orgId:
+          type: string
+          format: uuid
+        orgRole:
+          type: string
+          enum:
+          - ORG_ADMIN
+          - ORG_MEMBER
+        organisationType:
+          type: string
+          enum:
+          - HOSPITAL
+          - CLINIC
+          - UNIVERSITY
+          - COMPANY
+          - OTHER
+        slug:
+          type: string
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMembershipResponse"
+    OrganisationResponse:
+      type: object
+      properties:
+        country:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        organisationType:
+          type: string
+          enum:
+          - HOSPITAL
+          - CLINIC
+          - UNIVERSITY
+          - COMPANY
+          - OTHER
+        slug:
+          type: string
+    TeamMemberDetailResponse:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        professionalRole:
+          type: string
+        teamRole:
+          type: string
+          enum:
+          - TEAM_ADMIN
+          - TEAM_MEMBER
+        userId:
+          type: string
+          format: uuid
+    TeamMembershipResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+        teamRole:
+          type: string
+          enum:
+          - TEAM_ADMIN
+          - TEAM_MEMBER
+    TeamResponse:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+        id:
+          type: string
+          format: uuid
+        memberCount:
+          type: integer
+          format: int32
+        name:
+          type: string
+        orgId:
+          type: string
+          format: uuid
+    UpdateProfileRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          maxLength: 200
+          minLength: 0
+        phone:
+          type: string
+          maxLength: 40
+          minLength: 0
+          pattern: "^$|^[+0-9][0-9 ()\\-]{4,}$"
+        professionalRole:
+          type: string
+          maxLength: 120
+          minLength: 0
+      required:
+      - fullName
+      - professionalRole
+    UpdateTeamRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        name:
+          type: string
+          maxLength: 150
+          minLength: 0
+      required:
+      - name
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      description: Cognito access token
+      scheme: bearer
+      type: http

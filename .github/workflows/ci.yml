@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests and API drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Testcontainers starts Postgres and Valkey itself; the runner's Docker daemon is enough.
+      - name: Test
+        working-directory: backend
+        run: ./gradlew test
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: backend/build/reports/tests/test
+
+  clients:
+    name: Generated clients are current
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: api-contract/package-lock.json
+
+      - name: Regenerate the Angular client
+        working-directory: api-contract
+        run: |
+          npm ci
+          npm run generate:web
+
+      # The committed client has to match what the committed document produces. Without this, an
+      # endpoint could be added to openapi.yaml and never reach the app.
+      - name: Fail if the committed client differs
+        run: |
+          if ! git diff --quiet -- web/src/app/api; then
+            echo "The generated Angular client is out of date. Run 'npm run generate:web' in api-contract and commit the result."
+            git diff --stat -- web/src/app/api
+            exit 1
+          fi
+
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+      - name: Test
+        working-directory: web
+        run: npm test

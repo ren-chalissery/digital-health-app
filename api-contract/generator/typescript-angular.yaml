@@ -1,0 +1,25 @@
+generatorName: typescript-angular
+inputSpec: openapi.yaml
+outputDir: ../web/src/app/api
+
+additionalProperties:
+  ngVersion: 22.1.0
+  npmName: '@simplicity/api-client'
+  providedInRoot: true
+  # The base URL differs per environment, so it is injected rather than baked into the client.
+  serviceSuffix: Api
+  fileNaming: kebab-case
+  supportsES6: true
+  withInterfaces: true
+  useSingleRequestParameter: false
+  enumPropertyNaming: original
+  stringEnums: true
+  taggedUnions: false
+
+globalProperty:
+  # The runtime pieces the generator emits alongside the services would otherwise be regenerated
+  # into the app as documentation and tests we neither read nor run.
+  apiDocs: false
+  modelDocs: false
+  apiTests: false
+  modelTests: false

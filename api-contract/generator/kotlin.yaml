@@ -1,0 +1,16 @@
+# Phase 5. Committed now for the same reason as swift.yaml; ../android holds no Gradle project yet.
+generatorName: kotlin
+inputSpec: openapi.yaml
+outputDir: ../android/api-client
+
+additionalProperties:
+  library: jvm-retrofit2
+  useCoroutines: true
+  serializationLibrary: kotlinx_serialization
+  packageName: io.simplicity.training.api
+
+globalProperty:
+  apiDocs: false
+  modelDocs: false
+  apiTests: false
+  modelTests: false

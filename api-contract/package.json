@@ -1,0 +1,16 @@
+{
+  "name": "api-contract",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generates the web, iOS, and Android API clients from openapi.yaml",
+  "scripts": {
+    "generate": "npm run generate:web",
+    "generate:web": "openapi-generator-cli generate -c generator/typescript-angular.yaml",
+    "postgenerate:web": "cd ../web/src/app/api && rm -f ng-package.json package.json tsconfig.json git_push.sh README.md .gitignore",
+    "generate:ios": "openapi-generator-cli generate -c generator/swift.yaml",
+    "generate:android": "openapi-generator-cli generate -c generator/kotlin.yaml"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.25.0"
+  }
+}

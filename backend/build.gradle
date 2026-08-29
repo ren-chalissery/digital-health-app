@@ -68,14 +68,18 @@ tasks.named('test') {
 	}
 }
 
-// Writes the OpenAPI document to api-contract/openapi.yaml. CI runs this and fails if the
-// committed copy has drifted, so the three generated clients can never silently fall behind
-// the controllers.
-tasks.register('generateOpenApiSpec', JavaExec) {
+// Rewrites api-contract/openapi.yaml from the controllers. The drift check itself is an ordinary
+// test (OpenApiSpecTest), so it runs on every build rather than only in a pipeline step; this task
+// is what you run once the change to the API was deliberate.
+tasks.register('generateOpenApiSpec', Test) {
 	group = 'documentation'
-	description = 'Boots the application context and writes api-contract/openapi.yaml'
+	description = 'Regenerates api-contract/openapi.yaml from the controllers'
+	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
-	mainClass = 'io.simplicity.training.openapi.OpenApiSpecWriter'
-	args = [file("${rootDir}/../api-contract/openapi.yaml").absolutePath]
-	dependsOn tasks.named('testClasses')
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching 'io.simplicity.training.openapi.OpenApiSpecTest'
+	}
+	systemProperty 'openapi.write', 'true'
+	outputs.upToDateWhen { false }
 }

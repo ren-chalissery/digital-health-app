@@ -30,7 +30,7 @@ public class SecurityConfig {
 
   private static final String[] PUBLIC_PATHS = {
     "/actuator/health", "/actuator/health/**", "/actuator/info",
-    "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"
+    "/v3/api-docs", "/v3/api-docs.yaml", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"
   };
 
   @Bean
