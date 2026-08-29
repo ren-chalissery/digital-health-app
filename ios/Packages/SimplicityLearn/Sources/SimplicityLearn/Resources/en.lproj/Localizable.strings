@@ -1,0 +1,53 @@
+/* Localised copy for SimplicityLearn.
+   
+   A .strings file rather than the newer .xcstrings: .xcstrings is a source format that
+   Xcode compiles into a .loctable, and `swift package` only copies it, so every lookup
+   returned its own key under `swift test`. .strings is read at runtime, so the copy
+   behaves the same in the test suite as it does in the app — which lets the wording be
+   tested, and the wording here has been chosen carefully. */
+
+"dashboard_completed_count" = "%lld complete";
+
+/* %@ is the clinician's first name. */
+"dashboard_greeting" = "Kia ora, %@";
+
+"dashboard_greeting_anonymous" = "Kia ora";
+
+"dashboard_lede_all_done" = "You have finished everything assigned to you.";
+
+"dashboard_lede_loading" = "Loading your training…";
+
+"dashboard_lede_none_assigned" = "Nothing has been assigned to your teams yet.";
+
+"dashboard_lede_outstanding_many" = "You have %lld modules outstanding.";
+
+/* Only ever used with a count of one; the plural form is a separate key. */
+"dashboard_lede_outstanding_one" = "You have %lld module outstanding.";
+
+"dashboard_next_title" = "Pick up where you left off";
+
+"dashboard_title" = "Dashboard";
+
+"learn_empty_body" = "When an administrator assigns training to your team, it will appear here.";
+
+"learn_empty_title" = "Nothing assigned yet";
+
+"learn_load_failed" = "We could not load your training. Check your connection and try again.";
+
+"learn_no_matches" = "No modules match that search.";
+
+"learn_search" = "Search your training";
+
+/* %1$lld is sections completed, %2$lld is the total. */
+"learn_section_progress" = "%1$lld of %2$lld sections";
+
+"learn_title" = "Learn";
+
+"status_completed" = "Complete";
+
+"status_in_progress" = "In progress";
+
+/* Deliberately plain. The clinician did finish it; it is back because the content changed substantively, not because anything they did was wrong. */
+"status_needs_redoing" = "Updated since you finished";
+
+"status_not_started" = "Not started";
