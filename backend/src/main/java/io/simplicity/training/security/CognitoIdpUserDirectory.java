@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
@@ -17,7 +16,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.GetUserResp
  * caller's own access token and so needs no administrative credentials.
  */
 @Component
-@ConditionalOnMissingBean(CognitoUserDirectory.class)
 @RequiredArgsConstructor
 @Slf4j
 public class CognitoIdpUserDirectory implements CognitoUserDirectory {

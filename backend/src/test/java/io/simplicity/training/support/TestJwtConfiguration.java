@@ -54,7 +54,13 @@ public class TestJwtConfiguration {
     return NimbusJwtDecoder.withPublicKey(RSA_KEY.toRSAPublicKey()).build();
   }
 
+  /**
+   * Takes precedence over the real directory rather than replacing it conditionally, so the
+   * production wiring is still exercised on every context load. A conditional here once let a
+   * missing bean reach a container image, because the fake quietly filled the gap in tests.
+   */
   @Bean
+  @Primary
   FakeCognitoUserDirectory fakeCognitoUserDirectory() {
     return new FakeCognitoUserDirectory();
   }

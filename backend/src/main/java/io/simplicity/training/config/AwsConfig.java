@@ -1,7 +1,6 @@
 package io.simplicity.training.config;
 
 import java.net.URI;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +20,6 @@ import software.amazon.awssdk.services.sesv2.SesV2Client;
 public class AwsConfig {
 
   @Bean
-  @ConditionalOnMissingBean
   public CognitoIdentityProviderClient cognitoClient(AppProperties properties) {
     return configure(CognitoIdentityProviderClient.builder(), properties).build();
   }
@@ -29,7 +27,6 @@ public class AwsConfig {
   /** Only created when mail is enabled, so local runs never try to send anything by accident. */
   @Bean
   @ConditionalOnProperty(name = "app.mail.enabled", havingValue = "true")
-  @ConditionalOnMissingBean
   public SesV2Client sesClient(AppProperties properties) {
     return configure(SesV2Client.builder(), properties).build();
   }
