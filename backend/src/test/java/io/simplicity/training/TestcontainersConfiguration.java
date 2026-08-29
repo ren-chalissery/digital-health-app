@@ -17,7 +17,9 @@ public class TestcontainersConfiguration {
   @Bean
   @ServiceConnection
   PostgreSQLContainer postgresContainer() {
-    return new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"));
+    // Same major version as RDS in the deployed environment, so a migration that passes here
+    // cannot fail there on a version difference.
+    return new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"));
   }
 
   @Bean
