@@ -1,5 +1,6 @@
 package io.simplicity.training.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.simplicity.training.model.enums.OrgRole;
 import io.simplicity.training.model.enums.PlatformRole;
 import io.simplicity.training.model.enums.TeamRole;
@@ -25,10 +26,15 @@ public record AppPrincipal(
     Map<UUID, TeamRole> teamRoles)
     implements Serializable {
 
+  // Derived, so excluded from the cached representation: Jackson would otherwise write them as
+  // extra properties that the canonical constructor has no parameters for, and every read back
+  // would fail.
+  @JsonIgnore
   public boolean isSuperAdmin() {
     return platformRole == PlatformRole.SUPER_ADMIN;
   }
 
+  @JsonIgnore
   public boolean isActive() {
     return status == UserStatus.ACTIVE;
   }
