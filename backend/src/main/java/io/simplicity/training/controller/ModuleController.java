@@ -5,6 +5,7 @@ import io.simplicity.training.model.request.ModuleRequests.CreateModuleRequest;
 import io.simplicity.training.model.request.ModuleRequests.PublishRequest;
 import io.simplicity.training.model.request.ModuleRequests.ReplaceSectionsRequest;
 import io.simplicity.training.model.request.ModuleRequests.UpdateModuleRequest;
+import io.simplicity.training.model.request.QuizRequests.ReplaceQuizRequest;
 import io.simplicity.training.model.response.ModuleResponses.AuthoredModuleResponse;
 import io.simplicity.training.model.response.ModuleResponses.ModuleSummaryResponse;
 import io.simplicity.training.security.CurrentPrincipal;
@@ -101,6 +102,20 @@ public class ModuleController {
       @PathVariable UUID moduleId,
       @Valid @RequestBody ReplaceSectionsRequest request) {
     return authoring.replaceSections(orgId, moduleId, request);
+  }
+
+  @PutMapping("/{moduleId}/draft/quiz")
+  @Operation(
+      operationId = "replaceModuleQuiz",
+      summary = "Replace the draft's quiz questions",
+      description =
+          "Each question needs at least two options and exactly one correct one; publishing "
+              + "refuses anything else, since a question with no answer can never be passed.")
+  public AuthoredModuleResponse replaceQuiz(
+      @PathVariable UUID orgId,
+      @PathVariable UUID moduleId,
+      @Valid @RequestBody ReplaceQuizRequest request) {
+    return authoring.replaceQuiz(orgId, moduleId, request.questions());
   }
 
   @PostMapping("/{moduleId}/draft/publish")

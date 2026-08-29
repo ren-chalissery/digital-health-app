@@ -42,6 +42,7 @@ public class ModuleAuthoringService {
   private final ModuleSectionRepository sections;
   private final TeamModuleAssignmentRepository assignments;
   private final TeamRepository teams;
+  private final QuizService quizzes;
   private final AuditService audit;
 
   @Transactional
@@ -183,6 +184,15 @@ public class ModuleAuthoringService {
     return describe(module);
   }
 
+  /** Replaces the draft's questions, as sections are replaced: whole, from one screen. */
+  @Transactional
+  public AuthoredModuleResponse replaceQuiz(
+      UUID orgId, UUID moduleId, List<io.simplicity.training.model.request.QuizRequests.QuestionInput> questions) {
+    TrainingModule module = require(orgId, moduleId);
+    quizzes.replaceQuiz(requireDraft(moduleId).getId(), questions);
+    return describe(module);
+  }
+
   @Transactional
   public AuthoredModuleResponse publish(
       AppPrincipal actor, UUID orgId, UUID moduleId, PublishRequest request) {
@@ -192,6 +202,9 @@ public class ModuleAuthoringService {
     if (sections.countByVersionId(draft.getId()) == 0) {
       throw new ConflictException("A module needs at least one section before it can be published");
     }
+    // A question with no correct answer would leave the module permanently uncompletable for
+    // everybody it is assigned to. Catch it while the author is still here to fix it.
+    quizzes.validateForPublishing(draft.getId());
 
     draft.setStatus(ModuleStatus.PUBLISHED);
     draft.setSupersedesCompletions(request.supersedesCompletions());
@@ -274,7 +287,8 @@ public class ModuleAuthoringService {
         version.getStatus().name(),
         version.isSupersedesCompletions(),
         version.getPublishedAt(),
-        body);
+        body,
+        quizzes.describeForAuthor(version.getId()));
   }
 
   private String trimmed(String value) {

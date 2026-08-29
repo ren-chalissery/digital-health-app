@@ -19,7 +19,13 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 // @ts-ignore
 import { AssignedModuleResponse } from '../model/assigned-module-response';
 // @ts-ignore
+import { AttemptResultResponse } from '../model/attempt-result-response';
+// @ts-ignore
 import { LearnerModuleResponse } from '../model/learner-module-response';
+// @ts-ignore
+import { QuizResponse } from '../model/quiz-response';
+// @ts-ignore
+import { SubmitAttemptRequest } from '../model/submit-attempt-request';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -92,6 +98,70 @@ export class LearningApi extends BaseService implements LearningApiInterface {
         let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/learning/sections/${this.configuration.encodeParam({name: "sectionId", value: sectionId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/complete`;
         const { basePath, withCredentials } = this.configuration;
         return this.httpClient.request<LearnerModuleResponse>('put', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * The quiz for an assigned module
+     * Questions and options only. Which option is correct is never sent here.
+     * @endpoint get /api/v1/orgs/{orgId}/learning/{moduleId}/quiz
+     * @param orgId 
+     * @param moduleId 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getQuiz(orgId: string, moduleId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<QuizResponse>;
+    public getQuiz(orgId: string, moduleId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<QuizResponse>>;
+    public getQuiz(orgId: string, moduleId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<QuizResponse>>;
+    public getQuiz(orgId: string, moduleId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling getQuiz.');
+        }
+        if (moduleId === null || moduleId === undefined) {
+            throw new Error('Required parameter moduleId was null or undefined when calling getQuiz.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/learning/${this.configuration.encodeParam({name: "moduleId", value: moduleId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/quiz`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<QuizResponse>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -216,6 +286,84 @@ export class LearningApi extends BaseService implements LearningApiInterface {
         return this.httpClient.request<LearnerModuleResponse>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Answer the quiz
+     * Marked on the server. Returns which questions were right, the correct answer, and the author\&#39;s explanation. Passing completes the module if every section is read.
+     * @endpoint post /api/v1/orgs/{orgId}/learning/{moduleId}/quiz/attempts
+     * @param orgId 
+     * @param moduleId 
+     * @param submitAttemptRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public submitQuizAttempt(orgId: string, moduleId: string, submitAttemptRequest: SubmitAttemptRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AttemptResultResponse>;
+    public submitQuizAttempt(orgId: string, moduleId: string, submitAttemptRequest: SubmitAttemptRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AttemptResultResponse>>;
+    public submitQuizAttempt(orgId: string, moduleId: string, submitAttemptRequest: SubmitAttemptRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AttemptResultResponse>>;
+    public submitQuizAttempt(orgId: string, moduleId: string, submitAttemptRequest: SubmitAttemptRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling submitQuizAttempt.');
+        }
+        if (moduleId === null || moduleId === undefined) {
+            throw new Error('Required parameter moduleId was null or undefined when calling submitQuizAttempt.');
+        }
+        if (submitAttemptRequest === null || submitAttemptRequest === undefined) {
+            throw new Error('Required parameter submitAttemptRequest was null or undefined when calling submitQuizAttempt.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/learning/${this.configuration.encodeParam({name: "moduleId", value: moduleId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/quiz/attempts`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AttemptResultResponse>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: submitAttemptRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

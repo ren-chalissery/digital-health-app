@@ -1,18 +1,26 @@
 package io.simplicity.training.controller;
 
+import io.simplicity.training.model.request.QuizRequests.SubmitAttemptRequest;
 import io.simplicity.training.model.response.ModuleResponses.AssignedModuleResponse;
 import io.simplicity.training.model.response.ModuleResponses.LearnerModuleResponse;
+import io.simplicity.training.model.response.QuizResponses.AttemptResultResponse;
+import io.simplicity.training.model.response.QuizResponses.QuizResponse;
+import io.simplicity.training.security.AppPrincipal;
 import io.simplicity.training.security.CurrentPrincipal;
 import io.simplicity.training.service.LearningService;
+import io.simplicity.training.service.QuizService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LearningController {
 
   private final LearningService learning;
+  private final QuizService quizzes;
 
   @GetMapping
   @Operation(
@@ -43,6 +52,37 @@ public class LearningController {
   @Operation(operationId = "readModule", summary = "The published version of one assigned module")
   public LearnerModuleResponse read(@PathVariable UUID orgId, @PathVariable UUID moduleId) {
     return learning.read(CurrentPrincipal.require(), orgId, moduleId);
+  }
+
+  @GetMapping("/{moduleId}/quiz")
+  @Operation(
+      operationId = "getQuiz",
+      summary = "The quiz for an assigned module",
+      description = "Questions and options only. Which option is correct is never sent here.")
+  public QuizResponse quiz(@PathVariable UUID orgId, @PathVariable UUID moduleId) {
+    AppPrincipal principal = CurrentPrincipal.require();
+    UUID versionId = learning.publishedVersionFor(principal, orgId, moduleId);
+    return quizzes.describeForLearner(principal.userId(), versionId);
+  }
+
+  @PostMapping("/{moduleId}/quiz/attempts")
+  @Operation(
+      operationId = "submitQuizAttempt",
+      summary = "Answer the quiz",
+      description =
+          "Marked on the server. Returns which questions were right, the correct answer, and the "
+              + "author's explanation. Passing completes the module if every section is read.")
+  public AttemptResultResponse submitAttempt(
+      @PathVariable UUID orgId,
+      @PathVariable UUID moduleId,
+      @Valid @RequestBody SubmitAttemptRequest request) {
+    AppPrincipal principal = CurrentPrincipal.require();
+    UUID versionId = learning.publishedVersionFor(principal, orgId, moduleId);
+    AttemptResultResponse result = quizzes.submit(principal.userId(), versionId, request);
+    if (result.passed()) {
+      learning.recordCompletionIfFinished(principal.userId(), versionId);
+    }
+    return result;
   }
 
   @PutMapping("/sections/{sectionId}/complete")

@@ -7,11 +7,13 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { AuthoredQuestionResponse } from './authored-question-response';
 import { SectionResponse } from './section-response';
 
 
 export interface VersionResponse { 
     publishedAt?: string;
+    questions?: Array<AuthoredQuestionResponse>;
     sections?: Array<SectionResponse>;
     status?: string;
     supersedesCompletions?: boolean;

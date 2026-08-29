@@ -16,6 +16,7 @@ import { AuthoredModuleResponse } from '../model/models';
 import { CreateModuleRequest } from '../model/models';
 import { ModuleSummaryResponse } from '../model/models';
 import { PublishRequest } from '../model/models';
+import { ReplaceQuizRequest } from '../model/models';
 import { ReplaceSectionsRequest } from '../model/models';
 import { UpdateModuleRequest } from '../model/models';
 
@@ -91,6 +92,16 @@ export interface ModulesApiInterface {
      * @param publishRequest 
      */
     publishModule(orgId: string, moduleId: string, publishRequest: PublishRequest, extraHttpRequestParams?: any): Observable<AuthoredModuleResponse>;
+
+    /**
+     * Replace the draft\&#39;s quiz questions
+     * Each question needs at least two options and exactly one correct one; publishing refuses anything else, since a question with no answer can never be passed.
+     * @endpoint put /api/v1/orgs/{orgId}/modules/{moduleId}/draft/quiz
+     * @param orgId 
+     * @param moduleId 
+     * @param replaceQuizRequest 
+     */
+    replaceModuleQuiz(orgId: string, moduleId: string, replaceQuizRequest: ReplaceQuizRequest, extraHttpRequestParams?: any): Observable<AuthoredModuleResponse>;
 
     /**
      * Replace the draft\&#39;s sections

@@ -20,7 +20,8 @@ public final class ModuleResponses {
       String status,
       boolean supersedesCompletions,
       Instant publishedAt,
-      List<SectionResponse> sections) {}
+      List<SectionResponse> sections,
+      List<io.simplicity.training.model.response.QuizResponses.AuthoredQuestionResponse> questions) {}
 
   /**
    * A module as its author sees it: both the published version learners currently have and the
@@ -52,9 +53,16 @@ public final class ModuleResponses {
       UUID versionId,
       int sectionCount,
       int completedSectionCount,
+      boolean hasQuiz,
+      boolean quizPassed,
       LearningStatus status) {}
 
-  /** A module opened in Learn: the published version, its sections, and what is already done. */
+  /**
+   * A module opened in Learn: the published version, its sections, and what is already done.
+   *
+   * <p>{@code hasQuiz} and {@code quizPassed} are what let the reader explain why a module with
+   * every section read is still outstanding.
+   */
   public record LearnerModuleResponse(
       UUID moduleId,
       String title,
@@ -62,5 +70,7 @@ public final class ModuleResponses {
       UUID versionId,
       LearningStatus status,
       List<SectionResponse> sections,
-      List<UUID> completedSectionIds) {}
+      List<UUID> completedSectionIds,
+      boolean hasQuiz,
+      boolean quizPassed) {}
 }

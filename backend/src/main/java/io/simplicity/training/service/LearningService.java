@@ -48,6 +48,7 @@ public class LearningService {
   private final TeamRepository teams;
   private final UserSectionProgressRepository sectionProgress;
   private final UserModuleCompletionRepository completions;
+  private final QuizService quiz;
 
   @Transactional(readOnly = true)
   public List<AssignedModuleResponse> assigned(AppPrincipal principal, UUID orgId) {
@@ -76,6 +77,8 @@ public class LearningService {
               current.getId(),
               body.size(),
               done,
+              quiz.hasQuestions(current.getId()),
+              quiz.hasPassed(principal.userId(), current.getId()),
               statusOf(principal.userId(), moduleId, current, body.size(), done)));
     }
     return result;
@@ -104,7 +107,9 @@ public class LearningService {
         body.stream()
             .map(s -> new SectionResponse(s.getId(), s.getPosition(), s.getTitle(), s.getBody()))
             .toList(),
-        done);
+        done,
+        quiz.hasQuestions(current.getId()),
+        quiz.hasPassed(principal.userId(), current.getId()));
   }
 
   /**
@@ -130,11 +135,22 @@ public class LearningService {
     sectionProgress.save(UserSectionProgress.of(principal.userId(), sectionId));
     sectionProgress.flush();
 
-    List<ModuleSection> body = sections.findByVersionIdOrderByPositionAsc(version.getId());
-    if (completedSectionIds(principal.userId(), body).size() == body.size()) {
-      completions.save(UserModuleCompletion.of(principal.userId(), version.getId()));
-    }
+    recordCompletionIfFinished(principal.userId(), version.getId());
     return read(principal, orgId, version.getModuleId());
+  }
+
+  /**
+   * Every section read, and the quiz passed if there is one. Called from both the section and the
+   * quiz paths, because either can be the last thing a clinician does.
+   */
+  public void recordCompletionIfFinished(UUID userId, UUID versionId) {
+    List<ModuleSection> body = sections.findByVersionIdOrderByPositionAsc(versionId);
+    boolean readEverything = completedSectionIds(userId, body).size() == body.size();
+    boolean quizSettled = !quiz.hasQuestions(versionId) || quiz.hasPassed(userId, versionId);
+
+    if (readEverything && quizSettled) {
+      completions.save(UserModuleCompletion.of(userId, versionId));
+    }
   }
 
   // -----------------------------------------------------------------------------------------
@@ -161,10 +177,25 @@ public class LearningService {
           ? LearningStatus.NEEDS_REDOING
           : LearningStatus.COMPLETED;
     }
-    if (completedCount > 0 && completedCount < sectionCount) {
-      return LearningStatus.IN_PROGRESS;
-    }
-    return LearningStatus.NOT_STARTED;
+    // Anything begun is in progress, including every section read with the quiz still to pass.
+    // Comparing against the section count instead would report that as not started.
+    return completedCount > 0 ? LearningStatus.IN_PROGRESS : LearningStatus.NOT_STARTED;
+  }
+
+  /**
+   * The version a clinician is entitled to work against, having checked the module is assigned to
+   * one of their teams. The quiz endpoints go through here so that the assignment rule lives in one
+   * place rather than being restated wherever a version is needed.
+   */
+  @Transactional(readOnly = true)
+  public UUID publishedVersionFor(AppPrincipal principal, UUID orgId, UUID moduleId) {
+    requireAssigned(principal, orgId, moduleId);
+    modules
+        .findByIdAndOrgIdAndArchivedAtIsNull(moduleId, orgId)
+        .orElseThrow(() -> NotFoundException.of("Module", moduleId));
+    return publishedVersion(moduleId)
+        .orElseThrow(() -> NotFoundException.of("Published version of module", moduleId))
+        .getId();
   }
 
   private List<UUID> completedSectionIds(UUID userId, List<ModuleSection> body) {

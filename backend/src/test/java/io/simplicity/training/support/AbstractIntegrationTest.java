@@ -8,6 +8,9 @@ import io.simplicity.training.repository.ModuleRepository;
 import io.simplicity.training.repository.ModuleSectionRepository;
 import io.simplicity.training.repository.ModuleVersionRepository;
 import io.simplicity.training.repository.OrgMembershipRepository;
+import io.simplicity.training.repository.QuizAttemptRepository;
+import io.simplicity.training.repository.QuizOptionRepository;
+import io.simplicity.training.repository.QuizQuestionRepository;
 import io.simplicity.training.repository.OrganisationRepository;
 import io.simplicity.training.repository.TeamMemberRepository;
 import io.simplicity.training.repository.TeamModuleAssignmentRepository;
@@ -48,6 +51,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected TeamModuleAssignmentRepository moduleAssignments;
   @Autowired protected UserSectionProgressRepository sectionProgress;
   @Autowired protected UserModuleCompletionRepository moduleCompletions;
+  @Autowired protected QuizQuestionRepository quizQuestions;
+  @Autowired protected QuizOptionRepository quizOptions;
+  @Autowired protected QuizAttemptRepository quizAttempts;
 
   /**
    * The containers are shared across the whole suite, so each test starts from a clean slate
@@ -57,6 +63,9 @@ public abstract class AbstractIntegrationTest {
   void resetState() {
     // Deepest dependants first: progress and completions reference sections and versions, which
     // reference the module, which references the organisation.
+    quizAttempts.deleteAllInBatch();
+    quizOptions.deleteAllInBatch();
+    quizQuestions.deleteAllInBatch();
     moduleCompletions.deleteAllInBatch();
     sectionProgress.deleteAllInBatch();
     moduleAssignments.deleteAllInBatch();

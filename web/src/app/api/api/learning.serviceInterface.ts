@@ -12,7 +12,10 @@ import { HttpHeaders }                                       from '@angular/comm
 import { Observable }                                        from 'rxjs';
 
 import { AssignedModuleResponse } from '../model/models';
+import { AttemptResultResponse } from '../model/models';
 import { LearnerModuleResponse } from '../model/models';
+import { QuizResponse } from '../model/models';
+import { SubmitAttemptRequest } from '../model/models';
 
 
 import { Configuration }                                     from '../configuration';
@@ -33,6 +36,15 @@ export interface LearningApiInterface {
     completeSection(orgId: string, sectionId: string, extraHttpRequestParams?: any): Observable<LearnerModuleResponse>;
 
     /**
+     * The quiz for an assigned module
+     * Questions and options only. Which option is correct is never sent here.
+     * @endpoint get /api/v1/orgs/{orgId}/learning/{moduleId}/quiz
+     * @param orgId 
+     * @param moduleId 
+     */
+    getQuiz(orgId: string, moduleId: string, extraHttpRequestParams?: any): Observable<QuizResponse>;
+
+    /**
      * Modules assigned to the caller\&#39;s teams, with their progress
      * 
      * @endpoint get /api/v1/orgs/{orgId}/learning
@@ -48,5 +60,15 @@ export interface LearningApiInterface {
      * @param moduleId 
      */
     readModule(orgId: string, moduleId: string, extraHttpRequestParams?: any): Observable<LearnerModuleResponse>;
+
+    /**
+     * Answer the quiz
+     * Marked on the server. Returns which questions were right, the correct answer, and the author\&#39;s explanation. Passing completes the module if every section is read.
+     * @endpoint post /api/v1/orgs/{orgId}/learning/{moduleId}/quiz/attempts
+     * @param orgId 
+     * @param moduleId 
+     * @param submitAttemptRequest 
+     */
+    submitQuizAttempt(orgId: string, moduleId: string, submitAttemptRequest: SubmitAttemptRequest, extraHttpRequestParams?: any): Observable<AttemptResultResponse>;
 
 }

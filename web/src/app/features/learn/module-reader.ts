@@ -3,7 +3,10 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LearningApi } from '../../api/api/learning.service';
+import { AttemptResultResponse } from '../../api/model/attempt-result-response';
 import { LearnerModuleResponse } from '../../api/model/learner-module-response';
+import { MarkedQuestion } from '../../api/model/marked-question';
+import { QuizResponse } from '../../api/model/quiz-response';
 import { SectionResponse } from '../../api/model/section-response';
 import { renderMarkdown } from '../../core/markdown';
 import { problemMessage } from '../../core/problem';
@@ -59,6 +62,70 @@ import { STATUS_LABELS } from './status-labels';
             </section>
           }
         </div>
+
+        @if (m.hasQuiz) {
+          <div class="card">
+            <div class="card__title">
+              <h2>Check your understanding</h2>
+              @if (m.quizPassed) {
+                <span class="badge badge--success">Passed</span>
+              }
+            </div>
+
+            @if (!allSectionsRead()) {
+              <p class="field__hint">
+                Work through every section first, then the questions unlock.
+              </p>
+            } @else if (quiz(); as q) {
+              <p class="field__hint">
+                Every question has to be right. You can try as often as you like, and a wrong
+                answer will explain itself.
+              </p>
+
+              @for (question of q.questions ?? []; track question.questionId) {
+                <fieldset class="question">
+                  <legend>{{ question.prompt }}</legend>
+                  @for (option of question.options ?? []; track option.optionId) {
+                    <label class="row">
+                      <input
+                        type="radio"
+                        [name]="'q-' + question.questionId"
+                        [checked]="chosen()[question.questionId!] === option.optionId"
+                        (change)="choose(question.questionId!, option.optionId!)"
+                      />
+                      <span>{{ option.label }}</span>
+                    </label>
+                  }
+
+                  @if (feedbackFor(question.questionId!); as marked) {
+                    <p
+                      class="notice"
+                      [class.notice--error]="!marked.wasCorrect"
+                      [class.notice--success]="marked.wasCorrect"
+                    >
+                      {{ marked.wasCorrect ? 'Correct.' : 'Not quite.' }}
+                      @if (marked.explanation) {
+                        {{ marked.explanation }}
+                      }
+                    </p>
+                  }
+                </fieldset>
+              }
+
+              <div class="row">
+                <button class="button" type="button" [disabled]="saving() || !allAnswered(q)" (click)="submitQuiz()">
+                  {{ saving() ? 'Checking…' : result() ? 'Try again' : 'Check my answers' }}
+                </button>
+                @if (result(); as r) {
+                  <span class="field__hint">
+                    {{ r.correctCount }} of {{ r.questionCount }} correct on attempt
+                    {{ r.attemptNumber }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -75,8 +142,16 @@ export class ModuleReader implements OnInit {
   protected readonly module = signal<LearnerModuleResponse | null>(null);
 
   protected readonly label = computed(() => STATUS_LABELS[this.module()?.status ?? 'NOT_STARTED']);
+  protected readonly quiz = signal<QuizResponse | null>(null);
+  protected readonly result = signal<AttemptResultResponse | null>(null);
+  protected readonly chosen = signal<Record<string, string>>({});
 
   private readonly completed = computed(() => new Set(this.module()?.completedSectionIds ?? []));
+
+  protected readonly allSectionsRead = computed(() => {
+    const sections = this.module()?.sections ?? [];
+    return sections.length > 0 && sections.every((section) => this.isComplete(section));
+  });
 
   async ngOnInit(): Promise<void> {
     const moduleId = this.route.snapshot.paramMap.get('moduleId');
@@ -87,6 +162,9 @@ export class ModuleReader implements OnInit {
     }
     try {
       this.module.set(await firstValueFrom(this.api.readModule(orgId, moduleId)));
+      if (this.module()?.hasQuiz) {
+        this.quiz.set(await firstValueFrom(this.api.getQuiz(orgId, moduleId)));
+      }
       this.scrollToFirstUnread();
     } catch (error) {
       this.error.set(problemMessage(error, 'Could not open this module.'));
@@ -121,6 +199,52 @@ export class ModuleReader implements OnInit {
       this.module.set(await firstValueFrom(this.api.completeSection(orgId, section.sectionId)));
     } catch (error) {
       this.error.set(problemMessage(error, 'Could not record your progress.'));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected choose(questionId: string, optionId: string): void {
+    this.chosen.update((current) => ({ ...current, [questionId]: optionId }));
+  }
+
+  protected allAnswered(quiz: QuizResponse): boolean {
+    const answers = this.chosen();
+    return (quiz.questions ?? []).every((question) => answers[question.questionId ?? '']);
+  }
+
+  protected feedbackFor(questionId: string): MarkedQuestion | undefined {
+    return (this.result()?.questions ?? []).find((marked) => marked.questionId === questionId);
+  }
+
+  protected async submitQuiz(): Promise<void> {
+    const orgId = this.session.activeOrganisation()?.orgId;
+    const moduleId = this.module()?.moduleId;
+    const quiz = this.quiz();
+    if (!orgId || !moduleId || !quiz || this.saving()) {
+      return;
+    }
+
+    // A second press after a result means "try again", so the previous marking is cleared rather
+    // than left beside answers it no longer describes.
+    if (this.result()) {
+      this.result.set(null);
+      this.chosen.set({});
+      return;
+    }
+
+    this.saving.set(true);
+    this.error.set(null);
+    try {
+      const answers = Object.entries(this.chosen()).map(([questionId, optionId]) => ({
+        questionId,
+        optionId,
+      }));
+      this.result.set(await firstValueFrom(this.api.submitQuizAttempt(orgId, moduleId, { answers })));
+      // Passing may have completed the module, which only the module view knows about.
+      this.module.set(await firstValueFrom(this.api.readModule(orgId, moduleId)));
+    } catch (error) {
+      this.error.set(problemMessage(error, 'Could not check your answers.'));
     } finally {
       this.saving.set(false);
     }

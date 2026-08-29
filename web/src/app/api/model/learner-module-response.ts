@@ -12,7 +12,9 @@ import { SectionResponse } from './section-response';
 
 export interface LearnerModuleResponse { 
     completedSectionIds?: Array<string>;
+    hasQuiz?: boolean;
     moduleId?: string;
+    quizPassed?: boolean;
     sections?: Array<SectionResponse>;
     status?: LearnerModuleResponse.StatusEnum;
     summary?: string;

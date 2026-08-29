@@ -27,6 +27,8 @@ import { ModuleSummaryResponse } from '../model/module-summary-response';
 // @ts-ignore
 import { PublishRequest } from '../model/publish-request';
 // @ts-ignore
+import { ReplaceQuizRequest } from '../model/replace-quiz-request';
+// @ts-ignore
 import { ReplaceSectionsRequest } from '../model/replace-sections-request';
 // @ts-ignore
 import { UpdateModuleRequest } from '../model/update-module-request';
@@ -518,6 +520,84 @@ export class ModulesApi extends BaseService implements ModulesApiInterface {
             {
                 context: localVarHttpContext,
                 body: publishRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Replace the draft\&#39;s quiz questions
+     * Each question needs at least two options and exactly one correct one; publishing refuses anything else, since a question with no answer can never be passed.
+     * @endpoint put /api/v1/orgs/{orgId}/modules/{moduleId}/draft/quiz
+     * @param orgId 
+     * @param moduleId 
+     * @param replaceQuizRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public replaceModuleQuiz(orgId: string, moduleId: string, replaceQuizRequest: ReplaceQuizRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AuthoredModuleResponse>;
+    public replaceModuleQuiz(orgId: string, moduleId: string, replaceQuizRequest: ReplaceQuizRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AuthoredModuleResponse>>;
+    public replaceModuleQuiz(orgId: string, moduleId: string, replaceQuizRequest: ReplaceQuizRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AuthoredModuleResponse>>;
+    public replaceModuleQuiz(orgId: string, moduleId: string, replaceQuizRequest: ReplaceQuizRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling replaceModuleQuiz.');
+        }
+        if (moduleId === null || moduleId === undefined) {
+            throw new Error('Required parameter moduleId was null or undefined when calling replaceModuleQuiz.');
+        }
+        if (replaceQuizRequest === null || replaceQuizRequest === undefined) {
+            throw new Error('Required parameter replaceQuizRequest was null or undefined when calling replaceModuleQuiz.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/modules/${this.configuration.encodeParam({name: "moduleId", value: moduleId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/draft/quiz`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AuthoredModuleResponse>('put', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: replaceQuizRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

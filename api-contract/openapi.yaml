@@ -313,6 +313,69 @@ paths:
       summary: The published version of one assigned module
       tags:
       - Learning
+  /api/v1/orgs/{orgId}/learning/{moduleId}/quiz:
+    get:
+      description: Questions and options only. Which option is correct is never sent
+        here.
+      operationId: getQuiz
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResponse"
+          description: OK
+      summary: The quiz for an assigned module
+      tags:
+      - Learning
+  /api/v1/orgs/{orgId}/learning/{moduleId}/quiz/attempts:
+    post:
+      description: "Marked on the server. Returns which questions were right, the\
+        \ correct answer, and the author's explanation. Passing completes the module\
+        \ if every section is read."
+      operationId: submitQuizAttempt
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAttemptRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttemptResultResponse"
+          description: OK
+      summary: Answer the quiz
+      tags:
+      - Learning
   /api/v1/orgs/{orgId}/members:
     get:
       operationId: listOrganisationMembers
@@ -597,6 +660,41 @@ paths:
                 $ref: "#/components/schemas/AuthoredModuleResponse"
           description: OK
       summary: Publish the draft
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}/draft/quiz:
+    put:
+      description: "Each question needs at least two options and exactly one correct\
+        \ one; publishing refuses anything else, since a question with no answer can\
+        \ never be passed."
+      operationId: replaceModuleQuiz
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceQuizRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Replace the draft's quiz questions
       tags:
       - Modules
   /api/v1/orgs/{orgId}/modules/{moduleId}/draft/sections:
@@ -897,6 +995,18 @@ components:
       required:
       - teamRole
       - userId
+    AnswerInput:
+      type: object
+      properties:
+        optionId:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+      required:
+      - optionId
+      - questionId
     AssignTeamsRequest:
       type: object
       properties:
@@ -913,9 +1023,13 @@ components:
         completedSectionCount:
           type: integer
           format: int32
+        hasQuiz:
+          type: boolean
         moduleId:
           type: string
           format: uuid
+        quizPassed:
+          type: boolean
         sectionCount:
           type: integer
           format: int32
@@ -933,6 +1047,24 @@ components:
         versionId:
           type: string
           format: uuid
+    AttemptResultResponse:
+      type: object
+      properties:
+        attemptNumber:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        passed:
+          type: boolean
+        questionCount:
+          type: integer
+          format: int32
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarkedQuestion"
     AuthoredModuleResponse:
       type: object
       properties:
@@ -955,6 +1087,36 @@ components:
           type: string
         title:
           type: string
+    AuthoredOptionResponse:
+      type: object
+      properties:
+        correct:
+          type: boolean
+        label:
+          type: string
+        optionId:
+          type: string
+          format: uuid
+        position:
+          type: integer
+          format: int32
+    AuthoredQuestionResponse:
+      type: object
+      properties:
+        explanation:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthoredOptionResponse"
+        position:
+          type: integer
+          format: int32
+        prompt:
+          type: string
+        questionId:
+          type: string
+          format: uuid
     ChangeOrgRoleRequest:
       type: object
       properties:
@@ -1131,9 +1293,13 @@ components:
           items:
             type: string
             format: uuid
+        hasQuiz:
+          type: boolean
         moduleId:
           type: string
           format: uuid
+        quizPassed:
+          type: boolean
         sections:
           type: array
           items:
@@ -1152,6 +1318,24 @@ components:
         versionId:
           type: string
           format: uuid
+    MarkedQuestion:
+      type: object
+      properties:
+        chosenOptionId:
+          type: string
+          format: uuid
+        correctOptionId:
+          type: string
+          format: uuid
+        explanation:
+          type: string
+        prompt:
+          type: string
+        questionId:
+          type: string
+          format: uuid
+        wasCorrect:
+          type: boolean
     ModuleSummaryResponse:
       type: object
       properties:
@@ -1170,6 +1354,17 @@ components:
           type: string
         title:
           type: string
+    OptionInput:
+      type: object
+      properties:
+        correct:
+          type: boolean
+        label:
+          type: string
+          maxLength: 500
+          minLength: 0
+      required:
+      - label
     OrgMemberResponse:
       type: object
       properties:
@@ -1256,6 +1451,78 @@ components:
       properties:
         supersedesCompletions:
           type: boolean
+    QuestionInput:
+      type: object
+      properties:
+        explanation:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionInput"
+          maxItems: 10
+          minItems: 2
+        prompt:
+          type: string
+          maxLength: 1000
+          minLength: 0
+      required:
+      - options
+      - prompt
+    QuizOptionResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        optionId:
+          type: string
+          format: uuid
+        position:
+          type: integer
+          format: int32
+    QuizQuestionResponse:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizOptionResponse"
+        position:
+          type: integer
+          format: int32
+        prompt:
+          type: string
+        questionId:
+          type: string
+          format: uuid
+    QuizResponse:
+      type: object
+      properties:
+        attemptCount:
+          type: integer
+          format: int32
+        passed:
+          type: boolean
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestionResponse"
+        versionId:
+          type: string
+          format: uuid
+    ReplaceQuizRequest:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionInput"
+          maxItems: 100
+          minItems: 0
+      required:
+      - questions
     ReplaceSectionsRequest:
       type: object
       properties:
@@ -1301,6 +1568,17 @@ components:
           format: uuid
       required:
       - organisationId
+    SubmitAttemptRequest:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerInput"
+          maxItems: 100
+          minItems: 0
+      required:
+      - answers
     TeamMemberDetailResponse:
       type: object
       properties:
@@ -1404,6 +1682,10 @@ components:
         publishedAt:
           type: string
           format: date-time
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthoredQuestionResponse"
         sections:
           type: array
           items:

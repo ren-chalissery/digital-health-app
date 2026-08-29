@@ -5,6 +5,7 @@ import { ModulesApi } from '../../api/api/modules.service';
 import { TeamsApi } from '../../api/api/teams.service';
 import { AuthoredModuleResponse } from '../../api/model/authored-module-response';
 import { ModuleSummaryResponse } from '../../api/model/module-summary-response';
+import { QuestionInput } from '../../api/model/question-input';
 import { SectionInput } from '../../api/model/section-input';
 import { TeamResponse } from '../../api/model/team-response';
 import { problemMessage } from '../../core/problem';
@@ -146,6 +147,70 @@ import { SessionService } from '../../core/session.service';
             <button class="button--link" type="button" (click)="addSection()">Add a section</button>
           </div>
 
+          <h3>Questions</h3>
+          <p class="field__hint">
+            Optional. Where there are questions, a clinician must get every one right before the
+            module counts as complete. They may retry as often as they like, so the explanation is
+            what does the teaching.
+          </p>
+
+          @for (question of questions(); track $index; let qi = $index) {
+            <div class="section-editor">
+              <div class="field">
+                <label [for]="'q-prompt-' + qi">Question {{ qi + 1 }}</label>
+                <input [id]="'q-prompt-' + qi" [(ngModel)]="question.prompt" [name]="'q-prompt-' + qi" />
+              </div>
+
+              @for (option of question.options; track $index; let oi = $index) {
+                <div class="row">
+                  <input
+                    type="radio"
+                    [name]="'q-correct-' + qi"
+                    [checked]="option.correct"
+                    (change)="markCorrect(qi, oi)"
+                  />
+                  <input
+                    class="grow"
+                    [(ngModel)]="option.label"
+                    [name]="'q-option-' + qi + '-' + oi"
+                    placeholder="Answer"
+                  />
+                  <button class="button--link" type="button" (click)="removeOption(qi, oi)">
+                    Remove
+                  </button>
+                </div>
+              }
+              <div class="row">
+                <button class="button--link" type="button" (click)="addOption(qi)">
+                  Add an answer
+                </button>
+              </div>
+
+              <div class="field">
+                <label [for]="'q-explanation-' + qi">
+                  Explanation <span class="field__hint">shown after they answer</span>
+                </label>
+                <input
+                  [id]="'q-explanation-' + qi"
+                  [(ngModel)]="question.explanation"
+                  [name]="'q-explanation-' + qi"
+                />
+              </div>
+
+              <div class="row">
+                <button class="button--link" type="button" (click)="removeQuestion(qi)">
+                  Delete question
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="row">
+            <button class="button--link" type="button" (click)="addQuestion()">
+              Add a question
+            </button>
+          </div>
+
           <div class="row">
             <button class="button" type="button" [disabled]="busy()" (click)="saveDraft()">
               {{ busy() ? 'Saving…' : 'Save draft' }}
@@ -204,6 +269,7 @@ export class ModuleSettings implements OnInit {
   protected readonly teams = signal<TeamResponse[]>([]);
   protected readonly editing = signal<AuthoredModuleResponse | null>(null);
   protected readonly sections = signal<SectionInput[]>([]);
+  protected readonly questions = signal<QuestionInput[]>([]);
   protected readonly assignedTeamIds = signal<string[]>([]);
 
   protected title = '';
@@ -254,9 +320,12 @@ export class ModuleSettings implements OnInit {
     this.saved.set(false);
     await this.run(async () => {
       await firstValueFrom(this.api.updateModule(this.orgId, moduleId, { title: this.title, summary: this.summary }));
+      await firstValueFrom(
+        this.api.replaceModuleSections(this.orgId, moduleId, { sections: this.sections() }),
+      );
       this.show(
         await firstValueFrom(
-          this.api.replaceModuleSections(this.orgId, moduleId, { sections: this.sections() }),
+          this.api.replaceModuleQuiz(this.orgId, moduleId, { questions: this.questions() }),
         ),
       );
       await this.load();
@@ -274,6 +343,9 @@ export class ModuleSettings implements OnInit {
       // last saved.
       await firstValueFrom(
         this.api.replaceModuleSections(this.orgId, moduleId, { sections: this.sections() }),
+      );
+      await firstValueFrom(
+        this.api.replaceModuleQuiz(this.orgId, moduleId, { questions: this.questions() }),
       );
       this.show(
         await firstValueFrom(
@@ -298,6 +370,59 @@ export class ModuleSettings implements OnInit {
       );
       await this.load();
     }, 'Could not save the assignment.');
+  }
+
+  protected addQuestion(): void {
+    this.questions.update((current) => [
+      ...current,
+      {
+        prompt: 'New question',
+        explanation: '',
+        // Two options, because a question with fewer cannot be published.
+        options: [
+          { label: '', correct: true },
+          { label: '', correct: false },
+        ],
+      },
+    ]);
+  }
+
+  protected removeQuestion(index: number): void {
+    this.questions.update((current) => current.filter((_, i) => i !== index));
+  }
+
+  protected addOption(questionIndex: number): void {
+    this.questions.update((current) =>
+      current.map((question, i) =>
+        i === questionIndex
+          ? { ...question, options: [...question.options, { label: '', correct: false }] }
+          : question,
+      ),
+    );
+  }
+
+  protected removeOption(questionIndex: number, optionIndex: number): void {
+    this.questions.update((current) =>
+      current.map((question, i) =>
+        i === questionIndex
+          ? { ...question, options: question.options.filter((_, o) => o !== optionIndex) }
+          : question,
+      ),
+    );
+  }
+
+  /** Exactly one correct answer per question, which is what publishing will insist on. */
+  protected markCorrect(questionIndex: number, optionIndex: number): void {
+    this.questions.update((current) =>
+      current.map((question, i) =>
+        i === questionIndex
+          ? {
+              ...question,
+              options: question.options.map((option, o) => ({ ...option, correct: o === optionIndex })),
+            }
+          : question,
+      ),
+    );
   }
 
   protected addSection(): void {
@@ -336,6 +461,16 @@ export class ModuleSettings implements OnInit {
       (module.draft?.sections ?? []).map((section) => ({
         title: section.title ?? '',
         body: section.body ?? '',
+      })),
+    );
+    this.questions.set(
+      (module.draft?.questions ?? []).map((question) => ({
+        prompt: question.prompt ?? '',
+        explanation: question.explanation ?? '',
+        options: (question.options ?? []).map((option) => ({
+          label: option.label ?? '',
+          correct: option.correct ?? false,
+        })),
       })),
     );
   }

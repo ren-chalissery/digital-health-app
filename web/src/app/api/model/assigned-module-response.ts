@@ -11,7 +11,9 @@
 
 export interface AssignedModuleResponse { 
     completedSectionCount?: number;
+    hasQuiz?: boolean;
     moduleId?: string;
+    quizPassed?: boolean;
     sectionCount?: number;
     status?: AssignedModuleResponse.StatusEnum;
     summary?: string;
