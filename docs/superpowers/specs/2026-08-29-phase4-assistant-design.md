@@ -56,9 +56,14 @@ a draft is not content, and an archive is meant to be unreachable.
 
 ### 2.4 Bedrock, in region
 
-`anthropic.claude-haiku-4-5` for generation and `amazon.titan-embed-text-v2` for embeddings, both
-available in `ap-southeast-2`. Data stays in region and under the existing AWS agreement, and the
-task role authenticates instead of another API key in Secrets Manager.
+`amazon.titan-embed-text-v2` for embeddings, invoked directly in `ap-southeast-2`, and Claude Haiku
+4.5 for generation through the `au.` inference profile. Bedrock refuses Claude on demand without a
+profile, and the choice of profile is a data residency decision rather than a formality: `global.`
+and `apac.` route wherever there is capacity, while `au.` routes only to `ap-southeast-2` and
+`ap-southeast-4`. Training content therefore stays in Australia, though not in a single region.
+
+Everything stays under the existing AWS agreement, and the task role authenticates instead of
+another API key in Secrets Manager.
 
 Haiku rather than Sonnet: the model is summarising supplied passages, not reasoning from scratch,
 which is the job small models do well and cheaply.

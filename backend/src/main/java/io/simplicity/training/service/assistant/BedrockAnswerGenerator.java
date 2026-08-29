@@ -21,7 +21,12 @@ import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 @RequiredArgsConstructor
 public class BedrockAnswerGenerator implements AnswerGenerator {
 
-  static final String MODEL = "anthropic.claude-haiku-4-5-20251001-v1:0";
+  /**
+   * An inference profile, not a bare model id: Bedrock refuses Claude on demand without one. The
+   * {@code au.} profile routes only to ap-southeast-2 and ap-southeast-4, so training content stays
+   * in Australia — the global and apac profiles would send it further afield.
+   */
+  static final String MODEL = "au.anthropic.claude-haiku-4-5-20251001-v1:0";
 
   /**
    * The passages are the only permitted source. This is a request rather than a guarantee — the
