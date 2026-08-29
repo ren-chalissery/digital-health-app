@@ -11,6 +11,10 @@ security:
 tags:
 - description: The signed-in clinician's own profile and memberships
   name: Current user
+- description: Authoring training modules
+  name: Modules
+- description: Modules assigned to the signed-in clinician
+  name: Learning
 paths:
   /api/v1/invitations/{token}:
     get:
@@ -234,6 +238,81 @@ paths:
       summary: Withdraw an outstanding invitation
       tags:
       - Invitations
+  /api/v1/orgs/{orgId}/learning:
+    get:
+      operationId: listAssignedModules
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssignedModuleResponse"
+          description: OK
+      summary: "Modules assigned to the caller's teams, with their progress"
+      tags:
+      - Learning
+  /api/v1/orgs/{orgId}/learning/sections/{sectionId}/complete:
+    put:
+      description: Completing the last section completes the module in the same transaction.
+      operationId: completeSection
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: sectionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearnerModuleResponse"
+          description: OK
+      summary: Mark a section as read
+      tags:
+      - Learning
+  /api/v1/orgs/{orgId}/learning/{moduleId}:
+    get:
+      operationId: readModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearnerModuleResponse"
+          description: OK
+      summary: The published version of one assigned module
+      tags:
+      - Learning
   /api/v1/orgs/{orgId}/members:
     get:
       operationId: listOrganisationMembers
@@ -328,6 +407,264 @@ paths:
       summary: Change a member's organisation role
       tags:
       - Organisations
+  /api/v1/orgs/{orgId}/modules:
+    get:
+      operationId: listModules
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModuleSummaryResponse"
+          description: OK
+      summary: List this organisation's modules
+      tags:
+      - Modules
+    post:
+      description: "Comes with an empty first draft, since a module with no version\
+        \ cannot be edited."
+      operationId: createModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModuleRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: Created
+      summary: Create a module
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}:
+    delete:
+      description: Hidden from learners and authors alike. Completions and history
+        are kept.
+      operationId: archiveModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Archive a module
+      tags:
+      - Modules
+    get:
+      operationId: getModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: "One module, with both the published version and the draft"
+      tags:
+      - Modules
+    patch:
+      operationId: updateModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModuleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Rename a module or change its summary
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}/draft:
+    post:
+      description: "Copies what learners currently have, so an edit starts from the\
+        \ live content."
+      operationId: openModuleDraft
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Open a draft
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}/draft/publish:
+    post:
+      description: "Set supersedesCompletions when the change is substantive, which\
+        \ sends anyone who completed an earlier version back through it. A corrected\
+        \ typo should not."
+      operationId: publishModule
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Publish the draft
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}/draft/sections:
+    put:
+      description: "Sent whole: editing, reordering, and deleting all happen on one\
+        \ screen."
+      operationId: replaceModuleSections
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceSectionsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Replace the draft's sections
+      tags:
+      - Modules
+  /api/v1/orgs/{orgId}/modules/{moduleId}/teams:
+    put:
+      operationId: assignModuleToTeams
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignTeamsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthoredModuleResponse"
+          description: OK
+      summary: Set which teams this module is assigned to
+      tags:
+      - Modules
   /api/v1/orgs/{orgId}/teams:
     get:
       operationId: listTeams
@@ -560,6 +897,64 @@ components:
       required:
       - teamRole
       - userId
+    AssignTeamsRequest:
+      type: object
+      properties:
+        teamIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - teamIds
+    AssignedModuleResponse:
+      type: object
+      properties:
+        completedSectionCount:
+          type: integer
+          format: int32
+        moduleId:
+          type: string
+          format: uuid
+        sectionCount:
+          type: integer
+          format: int32
+        status:
+          type: string
+          enum:
+          - NOT_STARTED
+          - IN_PROGRESS
+          - COMPLETED
+          - NEEDS_REDOING
+        summary:
+          type: string
+        title:
+          type: string
+        versionId:
+          type: string
+          format: uuid
+    AuthoredModuleResponse:
+      type: object
+      properties:
+        assignedTeamIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        draft:
+          $ref: "#/components/schemas/VersionResponse"
+        moduleId:
+          type: string
+          format: uuid
+        published:
+          $ref: "#/components/schemas/VersionResponse"
+        summary:
+          type: string
+        title:
+          type: string
     ChangeOrgRoleRequest:
       type: object
       properties:
@@ -594,6 +989,19 @@ components:
       required:
       - email
       - orgRole
+    CreateModuleRequest:
+      type: object
+      properties:
+        summary:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        title:
+          type: string
+          maxLength: 200
+          minLength: 0
+      required:
+      - title
     CreateOrganisationRequest:
       type: object
       properties:
@@ -715,6 +1123,53 @@ components:
           enum:
           - TEAM_ADMIN
           - TEAM_MEMBER
+    LearnerModuleResponse:
+      type: object
+      properties:
+        completedSectionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        moduleId:
+          type: string
+          format: uuid
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionResponse"
+        status:
+          type: string
+          enum:
+          - NOT_STARTED
+          - IN_PROGRESS
+          - COMPLETED
+          - NEEDS_REDOING
+        summary:
+          type: string
+        title:
+          type: string
+        versionId:
+          type: string
+          format: uuid
+    ModuleSummaryResponse:
+      type: object
+      properties:
+        assignedTeamCount:
+          type: integer
+          format: int32
+        hasDraft:
+          type: boolean
+        moduleId:
+          type: string
+          format: uuid
+        publishedVersion:
+          type: integer
+          format: int32
+        summary:
+          type: string
+        title:
+          type: string
     OrgMemberResponse:
       type: object
       properties:
@@ -796,6 +1251,48 @@ components:
           - OTHER
         slug:
           type: string
+    PublishRequest:
+      type: object
+      properties:
+        supersedesCompletions:
+          type: boolean
+    ReplaceSectionsRequest:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionInput"
+          maxItems: 200
+          minItems: 0
+      required:
+      - sections
+    SectionInput:
+      type: object
+      properties:
+        body:
+          type: string
+          maxLength: 50000
+          minLength: 0
+        title:
+          type: string
+          maxLength: 200
+          minLength: 0
+      required:
+      - title
+    SectionResponse:
+      type: object
+      properties:
+        body:
+          type: string
+        position:
+          type: integer
+          format: int32
+        sectionId:
+          type: string
+          format: uuid
+        title:
+          type: string
     SetActiveOrganisationRequest:
       type: object
       properties:
@@ -856,6 +1353,19 @@ components:
         orgId:
           type: string
           format: uuid
+    UpdateModuleRequest:
+      type: object
+      properties:
+        summary:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        title:
+          type: string
+          maxLength: 200
+          minLength: 0
+      required:
+      - title
     UpdateProfileRequest:
       type: object
       properties:
@@ -888,6 +1398,26 @@ components:
           minLength: 0
       required:
       - name
+    VersionResponse:
+      type: object
+      properties:
+        publishedAt:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionResponse"
+        status:
+          type: string
+        supersedesCompletions:
+          type: boolean
+        versionId:
+          type: string
+          format: uuid
+        versionNumber:
+          type: integer
+          format: int32
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT

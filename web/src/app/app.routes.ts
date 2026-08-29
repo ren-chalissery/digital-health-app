@@ -60,6 +60,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/learn/learn').then((m) => m.Learn),
       },
       {
+        path: 'learn/:moduleId',
+        loadComponent: () =>
+          import('./features/learn/module-reader').then((m) => m.ModuleReader),
+      },
+      {
         path: 'reflect',
         loadComponent: () => import('./features/reflect/reflect').then((m) => m.Reflect),
       },
@@ -90,6 +95,12 @@ export const routes: Routes = [
             canActivate: [orgAdminGuard],
             loadComponent: () =>
               import('./features/settings/invitation-settings').then((m) => m.InvitationSettings),
+          },
+          {
+            path: 'modules',
+            canActivate: [orgAdminGuard],
+            loadComponent: () =>
+              import('./features/settings/module-settings').then((m) => m.ModuleSettings),
           },
         ],
       },

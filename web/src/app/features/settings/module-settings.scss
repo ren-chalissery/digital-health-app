@@ -1,0 +1,14 @@
+.section-editor {
+  border: 1px solid var(--border, #e2e6eb);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  resize: vertical;
+}

@@ -20,6 +20,7 @@ import { SessionService } from '../../core/session.service';
             <a routerLink="members" routerLinkActive="settings__link--active">People</a>
             <a routerLink="teams" routerLinkActive="settings__link--active">Teams</a>
             <a routerLink="invitations" routerLinkActive="settings__link--active">Invitations</a>
+            <a routerLink="modules" routerLinkActive="settings__link--active">Modules</a>
           }
         </nav>
 

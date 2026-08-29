@@ -1,0 +1,73 @@
+.card--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+}
+
+.progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-sunken, #e9edf2);
+  overflow: hidden;
+}
+
+.progress__bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.section {
+  border-top: 1px solid var(--border, #e2e6eb);
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
+
+  &:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+  }
+}
+
+// Author-written content. Kept modest so a stray heading cannot dominate the page.
+.prose {
+  line-height: 1.65;
+
+  h2,
+  h3,
+  h4 {
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  p,
+  ul,
+  ol {
+    margin: 0 0 0.75rem;
+  }
+
+  code {
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    background: var(--surface-sunken, #e9edf2);
+    font-size: 0.9em;
+  }
+
+  pre {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: var(--surface-sunken, #e9edf2);
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background: none;
+    }
+  }
+}

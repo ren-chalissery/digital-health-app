@@ -4,10 +4,16 @@ import io.simplicity.training.TestcontainersConfiguration;
 import io.simplicity.training.repository.AppUserRepository;
 import io.simplicity.training.repository.AuditEventRepository;
 import io.simplicity.training.repository.InvitationRepository;
+import io.simplicity.training.repository.ModuleRepository;
+import io.simplicity.training.repository.ModuleSectionRepository;
+import io.simplicity.training.repository.ModuleVersionRepository;
 import io.simplicity.training.repository.OrgMembershipRepository;
 import io.simplicity.training.repository.OrganisationRepository;
 import io.simplicity.training.repository.TeamMemberRepository;
+import io.simplicity.training.repository.TeamModuleAssignmentRepository;
 import io.simplicity.training.repository.TeamRepository;
+import io.simplicity.training.repository.UserModuleCompletionRepository;
+import io.simplicity.training.repository.UserSectionProgressRepository;
 import io.simplicity.training.support.TestJwtConfiguration.FakeCognitoUserDirectory;
 import io.simplicity.training.support.TestJwtConfiguration.TestTokenFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +42,12 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected TeamMemberRepository teamMembers;
   @Autowired protected InvitationRepository invitations;
   @Autowired protected AuditEventRepository auditEvents;
+  @Autowired protected ModuleRepository modules;
+  @Autowired protected ModuleVersionRepository moduleVersions;
+  @Autowired protected ModuleSectionRepository moduleSections;
+  @Autowired protected TeamModuleAssignmentRepository moduleAssignments;
+  @Autowired protected UserSectionProgressRepository sectionProgress;
+  @Autowired protected UserModuleCompletionRepository moduleCompletions;
 
   /**
    * The containers are shared across the whole suite, so each test starts from a clean slate
@@ -43,6 +55,14 @@ public abstract class AbstractIntegrationTest {
    */
   @BeforeEach
   void resetState() {
+    // Deepest dependants first: progress and completions reference sections and versions, which
+    // reference the module, which references the organisation.
+    moduleCompletions.deleteAllInBatch();
+    sectionProgress.deleteAllInBatch();
+    moduleAssignments.deleteAllInBatch();
+    moduleSections.deleteAllInBatch();
+    moduleVersions.deleteAllInBatch();
+    modules.deleteAllInBatch();
     auditEvents.deleteAllInBatch();
     invitations.deleteAllInBatch();
     teamMembers.deleteAllInBatch();
