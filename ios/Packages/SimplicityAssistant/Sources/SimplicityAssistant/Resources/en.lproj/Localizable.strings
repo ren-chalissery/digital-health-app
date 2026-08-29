@@ -1,0 +1,27 @@
+/* Localised copy for SimplicityAssistant.
+
+   Framing is the feature here, not decoration. Phase 4 was prescriptive: never the word
+   "assistant", never anything implying advice, and a refusal that points at supervision
+   rather than apologising — an apology implies the answer exists somewhere in the product. */
+
+"ask_title" = "Ask about the training";
+
+"ask_prompt" = "What would you like to know?";
+
+"ask_submit" = "Ask";
+
+"ask_asking" = "Looking…";
+
+"ask_failed" = "We could not ask just now. Check your connection and try again.";
+
+/* Says plainly that the training does not cover it, and where to go instead. No apology. */
+"ask_unanswered" = "The training does not cover this. For anything clinical, supervision is the right place to take it.";
+
+"ask_sources" = "Where this came from";
+
+/* %1$@ module title, %2$@ section title. */
+"ask_citation" = "%1$@ — %2$@";
+
+"ask_close" = "Done";
+
+"ask_disclaimer" = "Answers come only from your organisation's published training.";
