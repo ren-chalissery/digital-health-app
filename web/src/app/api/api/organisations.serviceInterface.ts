@@ -33,7 +33,7 @@ export interface OrganisationsApiInterface {
      * @param userId 
      * @param changeOrgRoleRequest 
      */
-    changeRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, extraHttpRequestParams?: any): Observable<OrgMemberResponse>;
+    changeOrganisationRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, extraHttpRequestParams?: any): Observable<OrgMemberResponse>;
 
     /**
      * Create an organisation
@@ -41,23 +41,23 @@ export interface OrganisationsApiInterface {
      * @endpoint post /api/v1/organisations
      * @param createOrganisationRequest 
      */
-    create2(createOrganisationRequest: CreateOrganisationRequest, extraHttpRequestParams?: any): Observable<OrganisationResponse>;
+    createOrganisation(createOrganisationRequest: CreateOrganisationRequest, extraHttpRequestParams?: any): Observable<OrganisationResponse>;
 
     /**
-     * 
+     * Fetch one organisation
      * 
      * @endpoint get /api/v1/orgs/{orgId}
      * @param orgId 
      */
-    get1(orgId: string, extraHttpRequestParams?: any): Observable<OrganisationResponse>;
+    getOrganisation(orgId: string, extraHttpRequestParams?: any): Observable<OrganisationResponse>;
 
     /**
-     * 
+     * List everybody in an organisation
      * 
      * @endpoint get /api/v1/orgs/{orgId}/members
      * @param orgId 
      */
-    listMembers1(orgId: string, extraHttpRequestParams?: any): Observable<Array<OrgMemberResponse>>;
+    listOrganisationMembers(orgId: string, extraHttpRequestParams?: any): Observable<Array<OrgMemberResponse>>;
 
     /**
      * Remove a member, ending their team memberships in this organisation
@@ -66,6 +66,6 @@ export interface OrganisationsApiInterface {
      * @param orgId 
      * @param userId 
      */
-    removeMember(orgId: string, userId: string, extraHttpRequestParams?: any): Observable<{}>;
+    removeOrganisationMember(orgId: string, userId: string, extraHttpRequestParams?: any): Observable<{}>;
 
 }

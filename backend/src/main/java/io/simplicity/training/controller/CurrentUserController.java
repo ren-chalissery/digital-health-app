@@ -27,6 +27,7 @@ public class CurrentUserController {
 
   @GetMapping
   @Operation(
+      operationId = "getCurrentUser",
       summary = "Describe the signed-in user",
       description =
           "Provisions the user on first call. Clients use profileCompleted and the organisations "
@@ -37,6 +38,7 @@ public class CurrentUserController {
 
   @PutMapping("/profile")
   @Operation(
+      operationId = "updateProfile",
       summary = "Complete or update the professional profile",
       description = "Sets profileCompleted, which is what lets the client leave the wizard.")
   public CurrentUserResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {

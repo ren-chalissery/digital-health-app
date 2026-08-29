@@ -10,12 +10,14 @@
 
 
 export interface ChangeOrgRoleRequest { 
-    orgRole: ChangeOrgRoleRequestOrgRoleEnum;
+    orgRole: ChangeOrgRoleRequest.OrgRoleEnum;
 }
-export enum ChangeOrgRoleRequestOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-
+export namespace ChangeOrgRoleRequest {
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+}
 
 

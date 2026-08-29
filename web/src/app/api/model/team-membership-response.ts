@@ -12,12 +12,14 @@
 export interface TeamMembershipResponse { 
     name?: string;
     teamId?: string;
-    teamRole?: TeamMembershipResponseTeamRoleEnum;
+    teamRole?: TeamMembershipResponse.TeamRoleEnum;
 }
-export enum TeamMembershipResponseTeamRoleEnum {
-    TEAM_ADMIN = 'TEAM_ADMIN',
-    TEAM_MEMBER = 'TEAM_MEMBER'
-};
-
+export namespace TeamMembershipResponse {
+    export const TeamRoleEnum = {
+        TEAM_ADMIN: 'TEAM_ADMIN',
+        TEAM_MEMBER: 'TEAM_MEMBER',
+    } as const;
+    export type TeamRoleEnum = typeof TeamRoleEnum[keyof typeof TeamRoleEnum];
+}
 
 

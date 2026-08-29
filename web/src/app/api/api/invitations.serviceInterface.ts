@@ -30,7 +30,7 @@ export interface InvitationsApiInterface {
      * @endpoint post /api/v1/invitations/{token}/accept
      * @param token 
      */
-    accept(token: string, extraHttpRequestParams?: any): Observable<{}>;
+    acceptInvitation(token: string, extraHttpRequestParams?: any): Observable<{}>;
 
     /**
      * Invite somebody to the organisation
@@ -39,15 +39,15 @@ export interface InvitationsApiInterface {
      * @param orgId 
      * @param createInvitationRequest 
      */
-    create1(orgId: string, createInvitationRequest: CreateInvitationRequest, extraHttpRequestParams?: any): Observable<InvitationResponse>;
+    createInvitation(orgId: string, createInvitationRequest: CreateInvitationRequest, extraHttpRequestParams?: any): Observable<InvitationResponse>;
 
     /**
-     * 
+     * List an organisation\&#39;s invitations
      * 
      * @endpoint get /api/v1/orgs/{orgId}/invitations
      * @param orgId 
      */
-    list1(orgId: string, extraHttpRequestParams?: any): Observable<Array<InvitationResponse>>;
+    listInvitations(orgId: string, extraHttpRequestParams?: any): Observable<Array<InvitationResponse>>;
 
     /**
      * Preview an invitation before signing up
@@ -55,15 +55,15 @@ export interface InvitationsApiInterface {
      * @endpoint get /api/v1/invitations/{token}
      * @param token 
      */
-    preview(token: string, extraHttpRequestParams?: any): Observable<InvitationPreviewResponse>;
+    previewInvitation(token: string, extraHttpRequestParams?: any): Observable<InvitationPreviewResponse>;
 
     /**
-     * 
+     * Withdraw an outstanding invitation
      * 
      * @endpoint delete /api/v1/orgs/{orgId}/invitations/{invitationId}
      * @param orgId 
      * @param invitationId 
      */
-    revoke(orgId: string, invitationId: string, extraHttpRequestParams?: any): Observable<{}>;
+    revokeInvitation(orgId: string, invitationId: string, extraHttpRequestParams?: any): Observable<{}>;
 
 }

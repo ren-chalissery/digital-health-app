@@ -1,0 +1,46 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #eef3f6 0%, #f6f7f9 60%);
+}
+
+.auth {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 10vh var(--space-4) var(--space-7);
+}
+
+.auth__brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--colour-accent);
+  margin-bottom: var(--space-5);
+}
+
+.auth__card {
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+}
+
+.auth__lede {
+  color: var(--colour-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.auth__actions {
+  margin-top: var(--space-2);
+}
+
+.auth__actions .button {
+  width: 100%;
+}
+
+.auth__footer {
+  margin-top: var(--space-5);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--colour-text-muted);
+}

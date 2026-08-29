@@ -14,16 +14,18 @@ export interface OrganisationResponse {
     createdAt?: string;
     id?: string;
     name?: string;
-    organisationType?: OrganisationResponseOrganisationTypeEnum;
+    organisationType?: OrganisationResponse.OrganisationTypeEnum;
     slug?: string;
 }
-export enum OrganisationResponseOrganisationTypeEnum {
-    HOSPITAL = 'HOSPITAL',
-    CLINIC = 'CLINIC',
-    UNIVERSITY = 'UNIVERSITY',
-    COMPANY = 'COMPANY',
-    OTHER = 'OTHER'
-};
-
+export namespace OrganisationResponse {
+    export const OrganisationTypeEnum = {
+        HOSPITAL: 'HOSPITAL',
+        CLINIC: 'CLINIC',
+        UNIVERSITY: 'UNIVERSITY',
+        COMPANY: 'COMPANY',
+        OTHER: 'OTHER',
+    } as const;
+    export type OrganisationTypeEnum = typeof OrganisationTypeEnum[keyof typeof OrganisationTypeEnum];
+}
 
 

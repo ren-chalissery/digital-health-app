@@ -1,0 +1,59 @@
+.masthead {
+  background: var(--colour-surface);
+  border-bottom: 1px solid var(--colour-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.masthead__inner,
+.tabs__inner {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.masthead__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 60px;
+}
+
+.masthead__brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--colour-accent);
+  text-decoration: none;
+}
+
+.masthead__org {
+  font-size: 0.875rem;
+  color: var(--colour-text-muted);
+}
+
+.tabs__inner {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.tabs__tab {
+  display: block;
+  padding: var(--space-3) 0;
+  color: var(--colour-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  /* Reserving the underline on every tab stops the row shifting when one becomes active. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabs__tab:hover {
+  color: var(--colour-text);
+}
+
+.tabs__tab--active {
+  color: var(--colour-accent);
+  border-bottom-color: var(--colour-accent);
+}

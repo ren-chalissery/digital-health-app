@@ -16,20 +16,23 @@ export interface CurrentUserResponse {
     id?: string;
     organisations?: Array<OrganisationMembershipResponse>;
     phone?: string;
-    platformRole?: CurrentUserResponsePlatformRoleEnum;
+    platformRole?: CurrentUserResponse.PlatformRoleEnum;
     professionalRole?: string;
     profileCompleted?: boolean;
-    status?: CurrentUserResponseStatusEnum;
+    status?: CurrentUserResponse.StatusEnum;
 }
-export enum CurrentUserResponsePlatformRoleEnum {
-    SUPER_ADMIN = 'SUPER_ADMIN',
-    STANDARD = 'STANDARD'
-};
-export enum CurrentUserResponseStatusEnum {
-    ACTIVE = 'ACTIVE',
-    INVITED = 'INVITED',
-    DEACTIVATED = 'DEACTIVATED'
-};
-
+export namespace CurrentUserResponse {
+    export const PlatformRoleEnum = {
+        SUPER_ADMIN: 'SUPER_ADMIN',
+        STANDARD: 'STANDARD',
+    } as const;
+    export type PlatformRoleEnum = typeof PlatformRoleEnum[keyof typeof PlatformRoleEnum];
+    export const StatusEnum = {
+        ACTIVE: 'ACTIVE',
+        INVITED: 'INVITED',
+        DEACTIVATED: 'DEACTIVATED',
+    } as const;
+    export type StatusEnum = typeof StatusEnum[keyof typeof StatusEnum];
+}
 
 

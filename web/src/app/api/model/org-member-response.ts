@@ -13,25 +13,29 @@ export interface OrgMemberResponse {
     email?: string;
     fullName?: string;
     joinedAt?: string;
-    membershipStatus?: OrgMemberResponseMembershipStatusEnum;
-    orgRole?: OrgMemberResponseOrgRoleEnum;
+    membershipStatus?: OrgMemberResponse.MembershipStatusEnum;
+    orgRole?: OrgMemberResponse.OrgRoleEnum;
     professionalRole?: string;
     userId?: string;
-    userStatus?: OrgMemberResponseUserStatusEnum;
+    userStatus?: OrgMemberResponse.UserStatusEnum;
 }
-export enum OrgMemberResponseMembershipStatusEnum {
-    ACTIVE = 'ACTIVE',
-    SUSPENDED = 'SUSPENDED'
-};
-export enum OrgMemberResponseOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-export enum OrgMemberResponseUserStatusEnum {
-    ACTIVE = 'ACTIVE',
-    INVITED = 'INVITED',
-    DEACTIVATED = 'DEACTIVATED'
-};
-
+export namespace OrgMemberResponse {
+    export const MembershipStatusEnum = {
+        ACTIVE: 'ACTIVE',
+        SUSPENDED: 'SUSPENDED',
+    } as const;
+    export type MembershipStatusEnum = typeof MembershipStatusEnum[keyof typeof MembershipStatusEnum];
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+    export const UserStatusEnum = {
+        ACTIVE: 'ACTIVE',
+        INVITED: 'INVITED',
+        DEACTIVATED: 'DEACTIVATED',
+    } as const;
+    export type UserStatusEnum = typeof UserStatusEnum[keyof typeof UserStatusEnum];
+}
 
 

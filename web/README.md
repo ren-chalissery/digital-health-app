@@ -1,59 +1,61 @@
-# Web
+# Web client
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.6.
+Angular application for the Simplicity training package.
 
-## Development server
-
-To start a local development server, run:
+## Running it
 
 ```bash
-ng serve
+nvm use          # Node 24, pinned in ../.nvmrc
+npm install
+npm start        # http://localhost:4200
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The backend has to be running on `http://localhost:8080` and a Cognito user pool has to exist —
+`Amplify.configure` needs a real pool, so there is no offline mode for the auth screens.
 
-## Code scaffolding
+## Configuration
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+`public/config.json` is read at start-up, before Angular boots:
+
+```json
+{
+  "apiBaseUrl": "http://localhost:8080",
+  "cognito": { "userPoolId": "...", "userPoolClientId": "..." }
+}
+```
+
+It is deliberately not compiled in, so the same bundle can be promoted between environments and
+the deployment writes the file. The committed copy has empty Cognito ids; fill them in locally
+from the auth stack's outputs. A missing or incomplete file stops the application with a message
+rather than producing a blank page.
+
+## How the pieces fit together
+
+- **`src/app/api/`** is generated from `api-contract/openapi.yaml`. Do not edit it; see
+  [../api-contract/README.md](../api-contract/README.md).
+- **`core/auth/auth.service.ts`** is the only file that talks to Cognito. Tokens are held in
+  `sessionStorage`, so closing the tab ends the session.
+- **`core/auth/auth.interceptor.ts`** attaches the access token to every request except the public
+  invitation preview, and signs the user out on a 401.
+- **`core/session.service.ts`** caches `GET /api/v1/me`. Onboarding state comes from the server, so
+  the web, iOS, and Android clients cannot disagree about when setup is finished.
+- **`core/auth/guards.ts`** routes on that state: no profile means the wizard, no organisation
+  means the organisation step, and administrator pages are not offered to ordinary members. The
+  server enforces all of it regardless; the guards are about not showing a page that would only
+  produce a 403.
+
+## Routes
+
+| Route | Who |
+| --- | --- |
+| `/sign-in`, `/sign-up`, `/confirm-email`, `/forgot-password` | Anyone |
+| `/invitations/:token` | Anyone — the recipient usually has no account yet |
+| `/welcome/profile`, `/welcome/organisation` | Signed in, still setting up |
+| `/dashboard`, `/learn`, `/reflect`, `/settings` | Set up |
+| `/settings/members`, `/settings/teams`, `/settings/invitations` | Organisation administrators |
+
+## Tests
 
 ```bash
-ng generate component component-name
+npm test
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

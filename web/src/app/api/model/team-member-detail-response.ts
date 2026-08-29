@@ -14,13 +14,15 @@ export interface TeamMemberDetailResponse {
     fullName?: string;
     joinedAt?: string;
     professionalRole?: string;
-    teamRole?: TeamMemberDetailResponseTeamRoleEnum;
+    teamRole?: TeamMemberDetailResponse.TeamRoleEnum;
     userId?: string;
 }
-export enum TeamMemberDetailResponseTeamRoleEnum {
-    TEAM_ADMIN = 'TEAM_ADMIN',
-    TEAM_MEMBER = 'TEAM_MEMBER'
-};
-
+export namespace TeamMemberDetailResponse {
+    export const TeamRoleEnum = {
+        TEAM_ADMIN: 'TEAM_ADMIN',
+        TEAM_MEMBER: 'TEAM_MEMBER',
+    } as const;
+    export type TeamRoleEnum = typeof TeamRoleEnum[keyof typeof TeamRoleEnum];
+}
 
 

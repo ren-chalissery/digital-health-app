@@ -28,7 +28,7 @@ export interface CurrentUserApiInterface {
      * Provisions the user on first call. Clients use profileCompleted and the organisations list to decide whether to show onboarding.
      * @endpoint get /api/v1/me
      */
-    me(extraHttpRequestParams?: any): Observable<CurrentUserResponse>;
+    getCurrentUser(extraHttpRequestParams?: any): Observable<CurrentUserResponse>;
 
     /**
      * Complete or update the professional profile

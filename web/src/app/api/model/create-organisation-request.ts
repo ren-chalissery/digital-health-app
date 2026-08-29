@@ -12,15 +12,17 @@
 export interface CreateOrganisationRequest { 
     country?: string;
     name: string;
-    organisationType: CreateOrganisationRequestOrganisationTypeEnum;
+    organisationType: CreateOrganisationRequest.OrganisationTypeEnum;
 }
-export enum CreateOrganisationRequestOrganisationTypeEnum {
-    HOSPITAL = 'HOSPITAL',
-    CLINIC = 'CLINIC',
-    UNIVERSITY = 'UNIVERSITY',
-    COMPANY = 'COMPANY',
-    OTHER = 'OTHER'
-};
-
+export namespace CreateOrganisationRequest {
+    export const OrganisationTypeEnum = {
+        HOSPITAL: 'HOSPITAL',
+        CLINIC: 'CLINIC',
+        UNIVERSITY: 'UNIVERSITY',
+        COMPANY: 'COMPANY',
+        OTHER: 'OTHER',
+    } as const;
+    export type OrganisationTypeEnum = typeof OrganisationTypeEnum[keyof typeof OrganisationTypeEnum];
+}
 
 

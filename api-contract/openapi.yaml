@@ -16,7 +16,7 @@ paths:
     get:
       description: "Public. Returns valid=false for anything unknown, expired, or\
         \ already used, so the endpoint cannot be used to probe for live tokens."
-      operationId: preview
+      operationId: previewInvitation
       parameters:
       - in: path
         name: token
@@ -35,7 +35,7 @@ paths:
       - Invitations
   /api/v1/invitations/{token}/accept:
     post:
-      operationId: accept
+      operationId: acceptInvitation
       parameters:
       - in: path
         name: token
@@ -52,7 +52,7 @@ paths:
     get:
       description: Provisions the user on first call. Clients use profileCompleted
         and the organisations list to decide whether to show onboarding.
-      operationId: me
+      operationId: getCurrentUser
       responses:
         "200":
           content:
@@ -88,7 +88,7 @@ paths:
     post:
       description: The caller becomes its first administrator. Used by the self-signup
         flow.
-      operationId: create_2
+      operationId: createOrganisation
       requestBody:
         content:
           application/json:
@@ -107,7 +107,7 @@ paths:
       - Organisations
   /api/v1/orgs/{orgId}:
     get:
-      operationId: get_1
+      operationId: getOrganisation
       parameters:
       - in: path
         name: orgId
@@ -122,11 +122,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/OrganisationResponse"
           description: OK
+      summary: Fetch one organisation
       tags:
       - Organisations
   /api/v1/orgs/{orgId}/invitations:
     get:
-      operationId: list_1
+      operationId: listInvitations
       parameters:
       - in: path
         name: orgId
@@ -143,12 +144,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/InvitationResponse"
           description: OK
+      summary: List an organisation's invitations
       tags:
       - Invitations
     post:
       description: "Re-inviting an address withdraws the outstanding invitation and\
         \ issues a fresh link, so only one token is ever live for a given address."
-      operationId: create_1
+      operationId: createInvitation
       parameters:
       - in: path
         name: orgId
@@ -174,7 +176,7 @@ paths:
       - Invitations
   /api/v1/orgs/{orgId}/invitations/{invitationId}:
     delete:
-      operationId: revoke
+      operationId: revokeInvitation
       parameters:
       - in: path
         name: orgId
@@ -191,11 +193,12 @@ paths:
       responses:
         "204":
           description: No Content
+      summary: Withdraw an outstanding invitation
       tags:
       - Invitations
   /api/v1/orgs/{orgId}/members:
     get:
-      operationId: listMembers_1
+      operationId: listOrganisationMembers
       parameters:
       - in: path
         name: orgId
@@ -212,11 +215,12 @@ paths:
                 items:
                   $ref: "#/components/schemas/OrgMemberResponse"
           description: OK
+      summary: List everybody in an organisation
       tags:
       - Organisations
   /api/v1/orgs/{orgId}/members/{userId}:
     delete:
-      operationId: removeMember
+      operationId: removeOrganisationMember
       parameters:
       - in: path
         name: orgId
@@ -237,7 +241,7 @@ paths:
       tags:
       - Organisations
     patch:
-      operationId: changeRole
+      operationId: changeOrganisationRole
       parameters:
       - in: path
         name: orgId
@@ -269,7 +273,7 @@ paths:
       - Organisations
   /api/v1/orgs/{orgId}/teams:
     get:
-      operationId: list
+      operationId: listTeams
       parameters:
       - in: path
         name: orgId
@@ -286,12 +290,13 @@ paths:
                 items:
                   $ref: "#/components/schemas/TeamResponse"
           description: OK
+      summary: List the teams in an organisation
       tags:
       - Teams
     post:
       description: Restricted to organisation administrators; team administrators
         cannot.
-      operationId: create
+      operationId: createTeam
       parameters:
       - in: path
         name: orgId
@@ -319,7 +324,7 @@ paths:
     delete:
       description: Organisation administrators only. A team administrator can manage
         their team's membership but cannot remove the team itself.
-      operationId: delete
+      operationId: deleteTeam
       parameters:
       - in: path
         name: orgId
@@ -340,7 +345,7 @@ paths:
       tags:
       - Teams
     get:
-      operationId: get
+      operationId: getTeam
       parameters:
       - in: path
         name: orgId
@@ -361,10 +366,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/TeamResponse"
           description: OK
+      summary: Fetch one team
       tags:
       - Teams
     patch:
-      operationId: update
+      operationId: updateTeam
       parameters:
       - in: path
         name: orgId
@@ -391,11 +397,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/TeamResponse"
           description: OK
+      summary: Rename or redescribe a team
       tags:
       - Teams
   /api/v1/orgs/{orgId}/teams/{teamId}/members:
     get:
-      operationId: listMembers
+      operationId: listTeamMembers
       parameters:
       - in: path
         name: orgId
@@ -418,10 +425,11 @@ paths:
                 items:
                   $ref: "#/components/schemas/TeamMemberDetailResponse"
           description: OK
+      summary: List the people in a team
       tags:
       - Teams
     post:
-      operationId: addMember
+      operationId: addTeamMember
       parameters:
       - in: path
         name: orgId
@@ -448,11 +456,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/TeamMemberDetailResponse"
           description: Created
+      summary: Add an organisation member to a team
       tags:
       - Teams
   /api/v1/orgs/{orgId}/teams/{teamId}/members/{userId}:
     delete:
-      operationId: removeMember_1
+      operationId: removeTeamMember
       parameters:
       - in: path
         name: orgId
@@ -475,6 +484,7 @@ paths:
       responses:
         "204":
           description: No Content
+      summary: Remove somebody from a team
       tags:
       - Teams
 components:

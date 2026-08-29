@@ -11,18 +11,21 @@
 
 export interface CreateInvitationRequest { 
     email: string;
-    orgRole: CreateInvitationRequestOrgRoleEnum;
+    orgRole: CreateInvitationRequest.OrgRoleEnum;
     teamId?: string;
-    teamRole?: CreateInvitationRequestTeamRoleEnum;
+    teamRole?: CreateInvitationRequest.TeamRoleEnum;
 }
-export enum CreateInvitationRequestOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-export enum CreateInvitationRequestTeamRoleEnum {
-    TEAM_ADMIN = 'TEAM_ADMIN',
-    TEAM_MEMBER = 'TEAM_MEMBER'
-};
-
+export namespace CreateInvitationRequest {
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+    export const TeamRoleEnum = {
+        TEAM_ADMIN: 'TEAM_ADMIN',
+        TEAM_MEMBER: 'TEAM_MEMBER',
+    } as const;
+    export type TeamRoleEnum = typeof TeamRoleEnum[keyof typeof TeamRoleEnum];
+}
 
 

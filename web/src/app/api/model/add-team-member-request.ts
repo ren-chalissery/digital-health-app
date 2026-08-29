@@ -10,13 +10,15 @@
 
 
 export interface AddTeamMemberRequest { 
-    teamRole: AddTeamMemberRequestTeamRoleEnum;
+    teamRole: AddTeamMemberRequest.TeamRoleEnum;
     userId: string;
 }
-export enum AddTeamMemberRequestTeamRoleEnum {
-    TEAM_ADMIN = 'TEAM_ADMIN',
-    TEAM_MEMBER = 'TEAM_MEMBER'
-};
-
+export namespace AddTeamMemberRequest {
+    export const TeamRoleEnum = {
+        TEAM_ADMIN: 'TEAM_ADMIN',
+        TEAM_MEMBER: 'TEAM_MEMBER',
+    } as const;
+    export type TeamRoleEnum = typeof TeamRoleEnum[keyof typeof TeamRoleEnum];
+}
 
 

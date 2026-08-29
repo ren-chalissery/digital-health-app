@@ -39,6 +39,7 @@ public class OrganisationController {
   @PostMapping("/api/v1/organisations")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
+      operationId = "createOrganisation",
       summary = "Create an organisation",
       description = "The caller becomes its first administrator. Used by the self-signup flow.")
   public OrganisationResponse create(@Valid @RequestBody CreateOrganisationRequest request) {
@@ -47,19 +48,23 @@ public class OrganisationController {
 
   @GetMapping("/api/v1/orgs/{orgId}")
   @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @Operation(operationId = "getOrganisation", summary = "Fetch one organisation")
   public OrganisationResponse get(@PathVariable UUID orgId) {
     return organisationService.get(orgId);
   }
 
   @GetMapping("/api/v1/orgs/{orgId}/members")
   @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @Operation(operationId = "listOrganisationMembers", summary = "List everybody in an organisation")
   public List<OrgMemberResponse> listMembers(@PathVariable UUID orgId) {
     return organisationService.listMembers(orgId);
   }
 
   @PatchMapping("/api/v1/orgs/{orgId}/members/{userId}")
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
-  @Operation(summary = "Change a member's organisation role")
+  @Operation(
+      operationId = "changeOrganisationRole",
+      summary = "Change a member's organisation role")
   public OrgMemberResponse changeRole(
       @PathVariable UUID orgId,
       @PathVariable UUID userId,
@@ -71,7 +76,9 @@ public class OrganisationController {
   @DeleteMapping("/api/v1/orgs/{orgId}/members/{userId}")
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @Operation(summary = "Remove a member, ending their team memberships in this organisation")
+  @Operation(
+      operationId = "removeOrganisationMember",
+      summary = "Remove a member, ending their team memberships in this organisation")
   public void removeMember(@PathVariable UUID orgId, @PathVariable UUID userId) {
     organisationService.removeMember(CurrentPrincipal.require(), orgId, userId);
   }

@@ -30,6 +30,7 @@ public class InvitationController {
 
   @GetMapping("/api/v1/orgs/{orgId}/invitations")
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
+  @Operation(operationId = "listInvitations", summary = "List an organisation's invitations")
   public List<InvitationResponse> list(@PathVariable UUID orgId) {
     return invitationService.list(orgId);
   }
@@ -38,6 +39,7 @@ public class InvitationController {
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
+      operationId = "createInvitation",
       summary = "Invite somebody to the organisation",
       description =
           "Re-inviting an address withdraws the outstanding invitation and issues a fresh link, "
@@ -50,12 +52,14 @@ public class InvitationController {
   @DeleteMapping("/api/v1/orgs/{orgId}/invitations/{invitationId}")
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(operationId = "revokeInvitation", summary = "Withdraw an outstanding invitation")
   public void revoke(@PathVariable UUID orgId, @PathVariable UUID invitationId) {
     invitationService.revoke(CurrentPrincipal.require(), orgId, invitationId);
   }
 
   @GetMapping("/api/v1/invitations/{token}")
   @Operation(
+      operationId = "previewInvitation",
       summary = "Preview an invitation before signing up",
       description =
           "Public. Returns valid=false for anything unknown, expired, or already used, so the "
@@ -66,7 +70,7 @@ public class InvitationController {
 
   @PostMapping("/api/v1/invitations/{token}/accept")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @Operation(summary = "Accept an invitation as the signed-in user")
+  @Operation(operationId = "acceptInvitation", summary = "Accept an invitation as the signed-in user")
   public void accept(@PathVariable String token) {
     invitationService.accept(CurrentPrincipal.require(), token);
   }

@@ -14,26 +14,30 @@ export interface InvitationResponse {
     email?: string;
     expiresAt?: string;
     id?: string;
-    orgRole?: InvitationResponseOrgRoleEnum;
-    status?: InvitationResponseStatusEnum;
+    orgRole?: InvitationResponse.OrgRoleEnum;
+    status?: InvitationResponse.StatusEnum;
     teamId?: string;
     teamName?: string;
-    teamRole?: InvitationResponseTeamRoleEnum;
+    teamRole?: InvitationResponse.TeamRoleEnum;
 }
-export enum InvitationResponseOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-export enum InvitationResponseStatusEnum {
-    PENDING = 'PENDING',
-    ACCEPTED = 'ACCEPTED',
-    REVOKED = 'REVOKED',
-    EXPIRED = 'EXPIRED'
-};
-export enum InvitationResponseTeamRoleEnum {
-    TEAM_ADMIN = 'TEAM_ADMIN',
-    TEAM_MEMBER = 'TEAM_MEMBER'
-};
-
+export namespace InvitationResponse {
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+    export const StatusEnum = {
+        PENDING: 'PENDING',
+        ACCEPTED: 'ACCEPTED',
+        REVOKED: 'REVOKED',
+        EXPIRED: 'EXPIRED',
+    } as const;
+    export type StatusEnum = typeof StatusEnum[keyof typeof StatusEnum];
+    export const TeamRoleEnum = {
+        TEAM_ADMIN: 'TEAM_ADMIN',
+        TEAM_MEMBER: 'TEAM_MEMBER',
+    } as const;
+    export type TeamRoleEnum = typeof TeamRoleEnum[keyof typeof TeamRoleEnum];
+}
 
 

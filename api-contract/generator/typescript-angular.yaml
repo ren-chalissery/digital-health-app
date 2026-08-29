@@ -13,7 +13,9 @@ additionalProperties:
   withInterfaces: true
   useSingleRequestParameter: false
   enumPropertyNaming: original
-  stringEnums: true
+  # Const objects plus a union type, rather than TypeScript enums: a union accepts the literal
+  # 'ORG_ADMIN' everywhere, which keeps templates and tests free of generated import noise.
+  stringEnums: false
   taggedUnions: false
 
 globalProperty:

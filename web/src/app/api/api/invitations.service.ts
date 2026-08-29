@@ -50,12 +50,12 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public accept(token: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
-    public accept(token: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
-    public accept(token: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
-    public accept(token: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public acceptInvitation(token: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public acceptInvitation(token: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public acceptInvitation(token: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public acceptInvitation(token: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (token === null || token === undefined) {
-            throw new Error('Required parameter token was null or undefined when calling accept.');
+            throw new Error('Required parameter token was null or undefined when calling acceptInvitation.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -110,15 +110,15 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public create1(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<InvitationResponse>;
-    public create1(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<InvitationResponse>>;
-    public create1(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<InvitationResponse>>;
-    public create1(orgId: string, createInvitationRequest: CreateInvitationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public createInvitation(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<InvitationResponse>;
+    public createInvitation(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<InvitationResponse>>;
+    public createInvitation(orgId: string, createInvitationRequest: CreateInvitationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<InvitationResponse>>;
+    public createInvitation(orgId: string, createInvitationRequest: CreateInvitationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling create1.');
+            throw new Error('Required parameter orgId was null or undefined when calling createInvitation.');
         }
         if (createInvitationRequest === null || createInvitationRequest === undefined) {
-            throw new Error('Required parameter createInvitationRequest was null or undefined when calling create1.');
+            throw new Error('Required parameter createInvitationRequest was null or undefined when calling createInvitation.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -175,18 +175,19 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
     }
 
     /**
+     * List an organisation\&#39;s invitations
      * @endpoint get /api/v1/orgs/{orgId}/invitations
      * @param orgId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public list1(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<InvitationResponse>>;
-    public list1(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<InvitationResponse>>>;
-    public list1(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<InvitationResponse>>>;
-    public list1(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public listInvitations(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<InvitationResponse>>;
+    public listInvitations(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<InvitationResponse>>>;
+    public listInvitations(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<InvitationResponse>>>;
+    public listInvitations(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling list1.');
+            throw new Error('Required parameter orgId was null or undefined when calling listInvitations.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -241,12 +242,12 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public preview(token: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<InvitationPreviewResponse>;
-    public preview(token: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<InvitationPreviewResponse>>;
-    public preview(token: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<InvitationPreviewResponse>>;
-    public preview(token: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public previewInvitation(token: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<InvitationPreviewResponse>;
+    public previewInvitation(token: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<InvitationPreviewResponse>>;
+    public previewInvitation(token: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<InvitationPreviewResponse>>;
+    public previewInvitation(token: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (token === null || token === undefined) {
-            throw new Error('Required parameter token was null or undefined when calling preview.');
+            throw new Error('Required parameter token was null or undefined when calling previewInvitation.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -293,6 +294,7 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
     }
 
     /**
+     * Withdraw an outstanding invitation
      * @endpoint delete /api/v1/orgs/{orgId}/invitations/{invitationId}
      * @param orgId 
      * @param invitationId 
@@ -300,15 +302,15 @@ export class InvitationsApi extends BaseService implements InvitationsApiInterfa
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public revoke(orgId: string, invitationId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
-    public revoke(orgId: string, invitationId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
-    public revoke(orgId: string, invitationId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
-    public revoke(orgId: string, invitationId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public revokeInvitation(orgId: string, invitationId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public revokeInvitation(orgId: string, invitationId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public revokeInvitation(orgId: string, invitationId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public revokeInvitation(orgId: string, invitationId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling revoke.');
+            throw new Error('Required parameter orgId was null or undefined when calling revokeInvitation.');
         }
         if (invitationId === null || invitationId === undefined) {
-            throw new Error('Required parameter invitationId was null or undefined when calling revoke.');
+            throw new Error('Required parameter invitationId was null or undefined when calling revokeInvitation.');
         }
 
         let localVarHeaders = this.defaultHeaders;

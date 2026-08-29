@@ -11,15 +11,17 @@
 
 export interface InvitationPreviewResponse { 
     email?: string;
-    orgRole?: InvitationPreviewResponseOrgRoleEnum;
+    orgRole?: InvitationPreviewResponse.OrgRoleEnum;
     organisationName?: string;
     teamName?: string;
     valid?: boolean;
 }
-export enum InvitationPreviewResponseOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-
+export namespace InvitationPreviewResponse {
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+}
 
 

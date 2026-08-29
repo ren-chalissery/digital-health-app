@@ -13,22 +13,25 @@ import { TeamMembershipResponse } from './team-membership-response';
 export interface OrganisationMembershipResponse { 
     name?: string;
     orgId?: string;
-    orgRole?: OrganisationMembershipResponseOrgRoleEnum;
-    organisationType?: OrganisationMembershipResponseOrganisationTypeEnum;
+    orgRole?: OrganisationMembershipResponse.OrgRoleEnum;
+    organisationType?: OrganisationMembershipResponse.OrganisationTypeEnum;
     slug?: string;
     teams?: Array<TeamMembershipResponse>;
 }
-export enum OrganisationMembershipResponseOrgRoleEnum {
-    ORG_ADMIN = 'ORG_ADMIN',
-    ORG_MEMBER = 'ORG_MEMBER'
-};
-export enum OrganisationMembershipResponseOrganisationTypeEnum {
-    HOSPITAL = 'HOSPITAL',
-    CLINIC = 'CLINIC',
-    UNIVERSITY = 'UNIVERSITY',
-    COMPANY = 'COMPANY',
-    OTHER = 'OTHER'
-};
-
+export namespace OrganisationMembershipResponse {
+    export const OrgRoleEnum = {
+        ORG_ADMIN: 'ORG_ADMIN',
+        ORG_MEMBER: 'ORG_MEMBER',
+    } as const;
+    export type OrgRoleEnum = typeof OrgRoleEnum[keyof typeof OrgRoleEnum];
+    export const OrganisationTypeEnum = {
+        HOSPITAL: 'HOSPITAL',
+        CLINIC: 'CLINIC',
+        UNIVERSITY: 'UNIVERSITY',
+        COMPANY: 'COMPANY',
+        OTHER: 'OTHER',
+    } as const;
+    export type OrganisationTypeEnum = typeof OrganisationTypeEnum[keyof typeof OrganisationTypeEnum];
+}
 
 

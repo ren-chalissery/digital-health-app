@@ -54,18 +54,18 @@ export class OrganisationsApi extends BaseService implements OrganisationsApiInt
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public changeRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrgMemberResponse>;
-    public changeRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrgMemberResponse>>;
-    public changeRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrgMemberResponse>>;
-    public changeRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public changeOrganisationRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrgMemberResponse>;
+    public changeOrganisationRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrgMemberResponse>>;
+    public changeOrganisationRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrgMemberResponse>>;
+    public changeOrganisationRole(orgId: string, userId: string, changeOrgRoleRequest: ChangeOrgRoleRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling changeRole.');
+            throw new Error('Required parameter orgId was null or undefined when calling changeOrganisationRole.');
         }
         if (userId === null || userId === undefined) {
-            throw new Error('Required parameter userId was null or undefined when calling changeRole.');
+            throw new Error('Required parameter userId was null or undefined when calling changeOrganisationRole.');
         }
         if (changeOrgRoleRequest === null || changeOrgRoleRequest === undefined) {
-            throw new Error('Required parameter changeOrgRoleRequest was null or undefined when calling changeRole.');
+            throw new Error('Required parameter changeOrgRoleRequest was null or undefined when calling changeOrganisationRole.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -130,12 +130,12 @@ export class OrganisationsApi extends BaseService implements OrganisationsApiInt
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public create2(createOrganisationRequest: CreateOrganisationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrganisationResponse>;
-    public create2(createOrganisationRequest: CreateOrganisationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrganisationResponse>>;
-    public create2(createOrganisationRequest: CreateOrganisationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrganisationResponse>>;
-    public create2(createOrganisationRequest: CreateOrganisationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public createOrganisation(createOrganisationRequest: CreateOrganisationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrganisationResponse>;
+    public createOrganisation(createOrganisationRequest: CreateOrganisationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrganisationResponse>>;
+    public createOrganisation(createOrganisationRequest: CreateOrganisationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrganisationResponse>>;
+    public createOrganisation(createOrganisationRequest: CreateOrganisationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (createOrganisationRequest === null || createOrganisationRequest === undefined) {
-            throw new Error('Required parameter createOrganisationRequest was null or undefined when calling create2.');
+            throw new Error('Required parameter createOrganisationRequest was null or undefined when calling createOrganisation.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -192,18 +192,19 @@ export class OrganisationsApi extends BaseService implements OrganisationsApiInt
     }
 
     /**
+     * Fetch one organisation
      * @endpoint get /api/v1/orgs/{orgId}
      * @param orgId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public get1(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrganisationResponse>;
-    public get1(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrganisationResponse>>;
-    public get1(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrganisationResponse>>;
-    public get1(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public getOrganisation(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<OrganisationResponse>;
+    public getOrganisation(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<OrganisationResponse>>;
+    public getOrganisation(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<OrganisationResponse>>;
+    public getOrganisation(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling get1.');
+            throw new Error('Required parameter orgId was null or undefined when calling getOrganisation.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -250,18 +251,19 @@ export class OrganisationsApi extends BaseService implements OrganisationsApiInt
     }
 
     /**
+     * List everybody in an organisation
      * @endpoint get /api/v1/orgs/{orgId}/members
      * @param orgId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public listMembers1(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<OrgMemberResponse>>;
-    public listMembers1(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<OrgMemberResponse>>>;
-    public listMembers1(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<OrgMemberResponse>>>;
-    public listMembers1(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public listOrganisationMembers(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<OrgMemberResponse>>;
+    public listOrganisationMembers(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<OrgMemberResponse>>>;
+    public listOrganisationMembers(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<OrgMemberResponse>>>;
+    public listOrganisationMembers(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling listMembers1.');
+            throw new Error('Required parameter orgId was null or undefined when calling listOrganisationMembers.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -316,15 +318,15 @@ export class OrganisationsApi extends BaseService implements OrganisationsApiInt
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public removeMember(orgId: string, userId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
-    public removeMember(orgId: string, userId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
-    public removeMember(orgId: string, userId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
-    public removeMember(orgId: string, userId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public removeOrganisationMember(orgId: string, userId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public removeOrganisationMember(orgId: string, userId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public removeOrganisationMember(orgId: string, userId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public removeOrganisationMember(orgId: string, userId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
-            throw new Error('Required parameter orgId was null or undefined when calling removeMember.');
+            throw new Error('Required parameter orgId was null or undefined when calling removeOrganisationMember.');
         }
         if (userId === null || userId === undefined) {
-            throw new Error('Required parameter userId was null or undefined when calling removeMember.');
+            throw new Error('Required parameter userId was null or undefined when calling removeOrganisationMember.');
         }
 
         let localVarHeaders = this.defaultHeaders;

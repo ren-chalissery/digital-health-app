@@ -35,6 +35,7 @@ public class TeamController {
 
   @GetMapping
   @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @Operation(operationId = "listTeams", summary = "List the teams in an organisation")
   public List<TeamResponse> list(@PathVariable UUID orgId) {
     return teamService.list(orgId);
   }
@@ -43,6 +44,7 @@ public class TeamController {
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
+      operationId = "createTeam",
       summary = "Create a team",
       description = "Restricted to organisation administrators; team administrators cannot.")
   public TeamResponse create(@PathVariable UUID orgId, @Valid @RequestBody CreateTeamRequest request) {
@@ -51,12 +53,14 @@ public class TeamController {
 
   @GetMapping("/{teamId}")
   @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @Operation(operationId = "getTeam", summary = "Fetch one team")
   public TeamResponse get(@PathVariable UUID orgId, @PathVariable UUID teamId) {
     return teamService.get(orgId, teamId);
   }
 
   @PatchMapping("/{teamId}")
   @PreAuthorize("@authz.canManageTeam(#orgId, #teamId)")
+  @Operation(operationId = "updateTeam", summary = "Rename or redescribe a team")
   public TeamResponse update(
       @PathVariable UUID orgId,
       @PathVariable UUID teamId,
@@ -68,6 +72,7 @@ public class TeamController {
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
+      operationId = "deleteTeam",
       summary = "Delete a team",
       description =
           "Organisation administrators only. A team administrator can manage their team's "
@@ -78,6 +83,7 @@ public class TeamController {
 
   @GetMapping("/{teamId}/members")
   @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @Operation(operationId = "listTeamMembers", summary = "List the people in a team")
   public List<TeamMemberDetailResponse> listMembers(
       @PathVariable UUID orgId, @PathVariable UUID teamId) {
     return teamService.listMembers(orgId, teamId);
@@ -86,6 +92,7 @@ public class TeamController {
   @PostMapping("/{teamId}/members")
   @PreAuthorize("@authz.canManageTeam(#orgId, #teamId)")
   @ResponseStatus(HttpStatus.CREATED)
+  @Operation(operationId = "addTeamMember", summary = "Add an organisation member to a team")
   public TeamMemberDetailResponse addMember(
       @PathVariable UUID orgId,
       @PathVariable UUID teamId,
@@ -97,6 +104,7 @@ public class TeamController {
   @DeleteMapping("/{teamId}/members/{userId}")
   @PreAuthorize("@authz.canManageTeam(#orgId, #teamId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(operationId = "removeTeamMember", summary = "Remove somebody from a team")
   public void removeMember(
       @PathVariable UUID orgId, @PathVariable UUID teamId, @PathVariable UUID userId) {
     teamService.removeMember(CurrentPrincipal.require(), orgId, teamId, userId);

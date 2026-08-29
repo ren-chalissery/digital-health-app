@@ -1,1 +1,346 @@
-/* You can add global styles to this file, and also import other style files */
+/* Design tokens and the handful of shared classes every screen uses. Components carry only what
+   is genuinely their own, which keeps the four tabs looking like one application. */
+
+:root {
+  --colour-bg: #f6f7f9;
+  --colour-surface: #ffffff;
+  --colour-surface-sunken: #f0f2f5;
+  --colour-border: #dfe3e8;
+  --colour-border-strong: #c3cad3;
+
+  --colour-text: #14202e;
+  --colour-text-muted: #5c6b7f;
+  --colour-text-inverse: #ffffff;
+
+  --colour-accent: #1d6f8b;
+  --colour-accent-hover: #175a71;
+  --colour-accent-soft: #e6f1f5;
+
+  --colour-danger: #a9261f;
+  --colour-danger-soft: #fbeceb;
+  --colour-success: #1c6b45;
+  --colour-success-soft: #e7f3ec;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --shadow-sm: 0 1px 2px rgba(20, 32, 46, 0.06);
+  --shadow-md: 0 4px 16px rgba(20, 32, 46, 0.08);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--colour-bg);
+  color: var(--colour-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-3);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+h2 {
+  font-size: 1.25rem;
+}
+h3 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--colour-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--colour-accent);
+  outline-offset: 2px;
+}
+
+.fatal {
+  max-width: 32rem;
+  margin: 20vh auto;
+  padding: var(--space-5);
+  font-family: var(--font-sans);
+  text-align: center;
+}
+
+/* Layout ------------------------------------------------------------------ */
+
+.page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-7);
+}
+
+.page__header {
+  margin-bottom: var(--space-5);
+}
+
+.page__lede {
+  color: var(--colour-text-muted);
+  max-width: 44rem;
+  margin: 0;
+}
+
+.card {
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+.card + .card {
+  margin-top: var(--space-4);
+}
+
+.card__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Forms ------------------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field > label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field__hint {
+  font-size: 0.8125rem;
+  color: var(--colour-text-muted);
+}
+
+.field__error {
+  font-size: 0.8125rem;
+  color: var(--colour-danger);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--colour-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--colour-surface);
+  width: 100%;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--colour-surface-sunken);
+  color: var(--colour-text-muted);
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--colour-danger);
+}
+
+/* Buttons ----------------------------------------------------------------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--colour-accent);
+  color: var(--colour-text-inverse);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--colour-accent-hover);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button--secondary {
+  background: var(--colour-surface);
+  color: var(--colour-text);
+  border-color: var(--colour-border-strong);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--colour-surface-sunken);
+}
+
+.button--danger {
+  background: transparent;
+  color: var(--colour-danger);
+  border-color: transparent;
+}
+
+.button--danger:hover:not(:disabled) {
+  background: var(--colour-danger-soft);
+}
+
+.button--link {
+  background: none;
+  border: none;
+  color: var(--colour-accent);
+  padding: 0;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Feedback ---------------------------------------------------------------- */
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+}
+
+.notice--error {
+  background: var(--colour-danger-soft);
+  color: var(--colour-danger);
+}
+
+.notice--success {
+  background: var(--colour-success-soft);
+  color: var(--colour-success);
+}
+
+.notice--info {
+  background: var(--colour-accent-soft);
+  color: var(--colour-accent-hover);
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--colour-text-muted);
+  border: 1px dashed var(--colour-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--colour-surface-sunken);
+  color: var(--colour-text-muted);
+}
+
+.badge--accent {
+  background: var(--colour-accent-soft);
+  color: var(--colour-accent-hover);
+}
+
+.badge--success {
+  background: var(--colour-success-soft);
+  color: var(--colour-success);
+}
+
+.badge--muted {
+  background: var(--colour-surface-sunken);
+}
+
+/* Tables ------------------------------------------------------------------ */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colour-text-muted);
+  padding: 0 var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--colour-border);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table td.numeric,
+.table th.numeric {
+  text-align: right;
+}

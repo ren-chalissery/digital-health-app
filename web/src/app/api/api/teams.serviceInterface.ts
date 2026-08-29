@@ -27,23 +27,14 @@ export interface TeamsApiInterface {
     configuration: Configuration;
 
     /**
-     * Delete a team
-     * Organisation administrators only. A team administrator can manage their team\&#39;s membership but cannot remove the team itself.
-     * @endpoint delete /api/v1/orgs/{orgId}/teams/{teamId}
-     * @param orgId 
-     * @param teamId 
-     */
-    _delete(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<{}>;
-
-    /**
-     * 
+     * Add an organisation member to a team
      * 
      * @endpoint post /api/v1/orgs/{orgId}/teams/{teamId}/members
      * @param orgId 
      * @param teamId 
      * @param addTeamMemberRequest 
      */
-    addMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, extraHttpRequestParams?: any): Observable<TeamMemberDetailResponse>;
+    addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, extraHttpRequestParams?: any): Observable<TeamMemberDetailResponse>;
 
     /**
      * Create a team
@@ -52,52 +43,61 @@ export interface TeamsApiInterface {
      * @param orgId 
      * @param createTeamRequest 
      */
-    create(orgId: string, createTeamRequest: CreateTeamRequest, extraHttpRequestParams?: any): Observable<TeamResponse>;
+    createTeam(orgId: string, createTeamRequest: CreateTeamRequest, extraHttpRequestParams?: any): Observable<TeamResponse>;
 
     /**
-     * 
+     * Delete a team
+     * Organisation administrators only. A team administrator can manage their team\&#39;s membership but cannot remove the team itself.
+     * @endpoint delete /api/v1/orgs/{orgId}/teams/{teamId}
+     * @param orgId 
+     * @param teamId 
+     */
+    deleteTeam(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<{}>;
+
+    /**
+     * Fetch one team
      * 
      * @endpoint get /api/v1/orgs/{orgId}/teams/{teamId}
      * @param orgId 
      * @param teamId 
      */
-    get(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<TeamResponse>;
+    getTeam(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<TeamResponse>;
 
     /**
-     * 
-     * 
-     * @endpoint get /api/v1/orgs/{orgId}/teams
-     * @param orgId 
-     */
-    list(orgId: string, extraHttpRequestParams?: any): Observable<Array<TeamResponse>>;
-
-    /**
-     * 
+     * List the people in a team
      * 
      * @endpoint get /api/v1/orgs/{orgId}/teams/{teamId}/members
      * @param orgId 
      * @param teamId 
      */
-    listMembers(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<Array<TeamMemberDetailResponse>>;
+    listTeamMembers(orgId: string, teamId: string, extraHttpRequestParams?: any): Observable<Array<TeamMemberDetailResponse>>;
 
     /**
+     * List the teams in an organisation
      * 
+     * @endpoint get /api/v1/orgs/{orgId}/teams
+     * @param orgId 
+     */
+    listTeams(orgId: string, extraHttpRequestParams?: any): Observable<Array<TeamResponse>>;
+
+    /**
+     * Remove somebody from a team
      * 
      * @endpoint delete /api/v1/orgs/{orgId}/teams/{teamId}/members/{userId}
      * @param orgId 
      * @param teamId 
      * @param userId 
      */
-    removeMember1(orgId: string, teamId: string, userId: string, extraHttpRequestParams?: any): Observable<{}>;
+    removeTeamMember(orgId: string, teamId: string, userId: string, extraHttpRequestParams?: any): Observable<{}>;
 
     /**
-     * 
+     * Rename or redescribe a team
      * 
      * @endpoint patch /api/v1/orgs/{orgId}/teams/{teamId}
      * @param orgId 
      * @param teamId 
      * @param updateTeamRequest 
      */
-    update(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, extraHttpRequestParams?: any): Observable<TeamResponse>;
+    updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, extraHttpRequestParams?: any): Observable<TeamResponse>;
 
 }
