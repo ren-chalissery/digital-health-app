@@ -1,14 +1,22 @@
-# Phase 5. Committed now so the iOS client is generated from the same document as the web one
-# rather than hand-written later, but nothing runs this yet and ../ios holds no Xcode project.
+# Generated from the same openapi.yaml as the Angular client, so the backend's OpenApiSpecTest
+# drift check protects both. Never hand-edit the output.
+#
+# swiftPackagePath puts the output in a Generated/ subdirectory rather than straight into
+# Sources/SimplicityApi, which keeps it distinguishable from the hand-written transport layer
+# beside it and lets SwiftLint exclude it by path. SPM picks up both, since a target's default
+# path is the whole of Sources/SimplicityApi.
+#
+# Package.swift, README.md and .openapi-generator-ignore are hand-written; the ignore file is what
+# stops a regeneration overwriting them.
 generatorName: swift6
 inputSpec: openapi.yaml
-outputDir: ../ios/MoxionApiClient
+outputDir: ../ios/Packages/SimplicityApi
 
 additionalProperties:
   projectName: SimplicityApi
   responseAs: AsyncAwait
   useSPMFileStructure: true
-  swiftPackagePath: .
+  swiftPackagePath: Sources/SimplicityApi/Generated
 
 globalProperty:
   apiDocs: false

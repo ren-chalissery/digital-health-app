@@ -1,0 +1,22 @@
+# Hand-written and must survive `npm run generate:ios`.
+#
+# Everything under Sources/SimplicityApi/Generated is the generator's; everything else here is
+# ours. Keep that line clean — a file the generator owns should never be edited, and a file we
+# own should never be regenerated.
+
+Package.swift
+README.md
+Sources/SimplicityApi/ApiAdapter.swift
+Sources/SimplicityApi/ApiConfiguration.swift
+Sources/SimplicityApi/BearerInterceptor.swift
+Sources/SimplicityApi/_Package/**
+Tests/**
+
+# Packaging for distribution channels this project does not use.
+Cartfile
+*.podspec
+git_push.sh
+project.yml
+.swiftformat
+.gitignore
+docs/**

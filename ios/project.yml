@@ -23,6 +23,8 @@ settings:
 packages:
   SimplicityFoundation:
     path: Packages/SimplicityFoundation
+  SimplicityApi:
+    path: Packages/SimplicityApi
 
 targets:
   Simplicity_iOS:
@@ -47,6 +49,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.simplicity.training
     dependencies:
       - package: SimplicityFoundation
+      - package: SimplicityApi
 
   SimplicityUITests:
     type: bundle.ui-testing
