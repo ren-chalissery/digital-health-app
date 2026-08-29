@@ -1,7 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CurrentUserApi } from '../../api/api/current-user.service';
+import { OrganisationsApi } from '../../api/api/organisations.service';
 import { problemMessage } from '../../core/problem';
 import { SessionService } from '../../core/session.service';
 import { PROFESSIONAL_ROLES } from '../onboarding/professional-roles';
@@ -73,6 +75,33 @@ import { PROFESSIONAL_ROLES } from '../onboarding/professional-roles';
         } @else {
           <p class="field__hint">You are not in any team yet.</p>
         }
+
+        @if (leaveError()) {
+          <p class="notice notice--error" role="alert">{{ leaveError() }}</p>
+        }
+
+        <div class="row">
+          @if (confirmingLeave()) {
+            <p class="field__hint">
+              @if (isLastAdmin()) {
+                You are the last administrator, so leaving will archive
+                {{ org.name }}. Its history is kept, but nobody will be able to reach it.
+              } @else {
+                You will lose access to {{ org.name }} and its teams.
+              }
+            </p>
+            <button class="button button--danger" type="button" [disabled]="busy()" (click)="leave()">
+              {{ busy() ? 'Leaving…' : 'Yes, leave' }}
+            </button>
+            <button class="button--link" type="button" (click)="confirmingLeave.set(false)">
+              Cancel
+            </button>
+          } @else {
+            <button class="button--link" type="button" (click)="confirmingLeave.set(true)">
+              Leave this organisation
+            </button>
+          }
+        </div>
       } @else {
         <p class="field__hint">You do not belong to an organisation.</p>
       }
@@ -81,13 +110,17 @@ import { PROFESSIONAL_ROLES } from '../onboarding/professional-roles';
 })
 export class ProfileSettings {
   private readonly api = inject(CurrentUserApi);
+  private readonly organisations = inject(OrganisationsApi);
   private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
 
   protected readonly roles = PROFESSIONAL_ROLES;
   protected readonly organisation = this.session.activeOrganisation;
   protected readonly busy = signal(false);
   protected readonly saved = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly confirmingLeave = signal(false);
+  protected readonly leaveError = signal<string | null>(null);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     fullName: [this.session.user()?.fullName ?? '', [Validators.required, Validators.maxLength(200)]],
@@ -97,6 +130,35 @@ export class ProfileSettings {
 
   protected email(): string {
     return this.session.user()?.email ?? '';
+  }
+
+  /**
+   * Only an approximation: the client cannot count administrators without listing members, which
+   * an ordinary member may not do. It decides the wording of a warning, never whether the action
+   * is allowed — the server settles that.
+   */
+  protected isLastAdmin(): boolean {
+    return this.organisation()?.orgRole === 'ORG_ADMIN';
+  }
+
+  protected async leave(): Promise<void> {
+    const orgId = this.organisation()?.orgId;
+    if (!orgId || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.leaveError.set(null);
+    try {
+      await firstValueFrom(this.organisations.leaveOrganisation(orgId));
+      const user = await this.session.refresh();
+      await this.router.navigateByUrl(
+        (user.organisations ?? []).length > 0 ? '/dashboard' : '/welcome/organisation',
+      );
+    } catch (error) {
+      this.leaveError.set(problemMessage(error, 'Could not leave the organisation.'));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected async submit(): Promise<void> {

@@ -7,11 +7,13 @@ import io.simplicity.training.model.enums.MembershipStatus;
 import io.simplicity.training.model.enums.OrgRole;
 import io.simplicity.training.model.enums.TeamRole;
 import io.simplicity.training.repository.OrgMembershipRepository;
+import io.simplicity.training.repository.OrganisationRepository;
 import io.simplicity.training.repository.TeamMemberRepository;
 import io.simplicity.training.service.UserProvisioningService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class PrincipalService implements PrincipalLookup {
 
   private final UserProvisioningService provisioning;
   private final OrgMembershipRepository orgMemberships;
+  private final OrganisationRepository organisations;
   private final TeamMemberRepository teamMembers;
 
   @Override
@@ -42,11 +45,17 @@ public class PrincipalService implements PrincipalLookup {
 
   @Transactional(readOnly = true)
   public AppPrincipal forUser(AppUser user) {
+    Set<UUID> archived = organisations.findArchivedIds();
+
     Map<UUID, OrgRole> orgRoles = new LinkedHashMap<>();
     for (OrgMembership membership : orgMemberships.findByUserId(user.getId())) {
-      // A suspended membership confers nothing, so it is left out of the principal entirely
-      // rather than carried along for every authorisation check to remember to exclude.
-      if (membership.getStatus() == MembershipStatus.ACTIVE) {
+      // A suspended membership confers nothing, and neither does membership of an archived
+      // organisation. Both are left out of the principal entirely rather than carried along for
+      // every authorisation check to remember to exclude: filtering here is what makes the
+      // existing @PreAuthorize expressions refuse an archived organisation without being touched,
+      // and what stops its data being reachable by anyone who still knows the id.
+      if (membership.getStatus() == MembershipStatus.ACTIVE
+          && !archived.contains(membership.getOrgId())) {
         orgRoles.put(membership.getOrgId(), membership.getOrgRole());
       }
     }

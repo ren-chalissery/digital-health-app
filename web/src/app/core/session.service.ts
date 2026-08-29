@@ -23,10 +23,18 @@ export class SessionService {
   readonly profileCompleted = computed(() => this.currentUser()?.profileCompleted ?? false);
   readonly hasOrganisation = computed(() => this.organisations().length > 0);
 
-  /** Phase 1 puts a clinician in one organisation; the model allows more, so this picks the first. */
-  readonly activeOrganisation = computed<OrganisationMembershipResponse | null>(
-    () => this.organisations()[0] ?? null,
-  );
+  /**
+   * Which organisation the clinician is working in. The server decides, so the choice survives a
+   * refresh and follows them to another device; the fallback to the first membership only matters
+   * for somebody who has never switched.
+   */
+  readonly activeOrganisation = computed<OrganisationMembershipResponse | null>(() => {
+    const organisations = this.organisations();
+    const chosen = this.currentUser()?.activeOrganisationId;
+    return organisations.find((org) => org.orgId === chosen) ?? organisations[0] ?? null;
+  });
+
+  readonly canSwitchOrganisation = computed(() => this.organisations().length > 1);
 
   readonly isOrgAdmin = computed(() => this.activeOrganisation()?.orgRole === 'ORG_ADMIN');
 
@@ -43,6 +51,12 @@ export class SessionService {
 
   set(user: CurrentUserResponse): void {
     this.currentUser.set(user);
+  }
+
+  async setActiveOrganisation(orgId: string): Promise<void> {
+    this.currentUser.set(
+      await firstValueFrom(this.api.setActiveOrganisation({ organisationId: orgId })),
+    );
   }
 
   async signOut(): Promise<void> {

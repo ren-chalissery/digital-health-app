@@ -73,6 +73,21 @@ public class OrganisationController {
     return organisationService.changeRole(CurrentPrincipal.require(), orgId, userId, role);
   }
 
+  // Declared before the {userId} route so that "me" is never mistaken for an identifier.
+  @DeleteMapping("/api/v1/orgs/{orgId}/members/me")
+  @PreAuthorize("@authz.isOrgMember(#orgId)")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+      operationId = "leaveOrganisation",
+      summary = "Leave an organisation",
+      description =
+          "Ends the caller's own membership and their teams within it. The last administrator may "
+              + "leave, which archives the organisation rather than leaving nobody able to "
+              + "administer it.")
+  public void leave(@PathVariable UUID orgId) {
+    organisationService.leave(CurrentPrincipal.require(), orgId);
+  }
+
   @DeleteMapping("/api/v1/orgs/{orgId}/members/{userId}")
   @PreAuthorize("@authz.isOrgAdmin(#orgId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -81,5 +96,18 @@ public class OrganisationController {
       summary = "Remove a member, ending their team memberships in this organisation")
   public void removeMember(@PathVariable UUID orgId, @PathVariable UUID userId) {
     organisationService.removeMember(CurrentPrincipal.require(), orgId, userId);
+  }
+
+  @DeleteMapping("/api/v1/orgs/{orgId}")
+  @PreAuthorize("@authz.isOrgAdmin(#orgId)")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+      operationId = "archiveOrganisation",
+      summary = "Archive an organisation",
+      description =
+          "Makes it unreachable for every member while keeping its memberships, teams, and audit "
+              + "history. Nothing is deleted.")
+  public void archive(@PathVariable UUID orgId) {
+    organisationService.archive(CurrentPrincipal.require(), orgId);
   }
 }

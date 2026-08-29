@@ -26,6 +26,14 @@ export interface OrganisationsApiInterface {
     configuration: Configuration;
 
     /**
+     * Archive an organisation
+     * Makes it unreachable for every member while keeping its memberships, teams, and audit history. Nothing is deleted.
+     * @endpoint delete /api/v1/orgs/{orgId}
+     * @param orgId 
+     */
+    archiveOrganisation(orgId: string, extraHttpRequestParams?: any): Observable<{}>;
+
+    /**
      * Change a member\&#39;s organisation role
      * 
      * @endpoint patch /api/v1/orgs/{orgId}/members/{userId}
@@ -50,6 +58,14 @@ export interface OrganisationsApiInterface {
      * @param orgId 
      */
     getOrganisation(orgId: string, extraHttpRequestParams?: any): Observable<OrganisationResponse>;
+
+    /**
+     * Leave an organisation
+     * Ends the caller\&#39;s own membership and their teams within it. The last administrator may leave, which archives the organisation rather than leaving nobody able to administer it.
+     * @endpoint delete /api/v1/orgs/{orgId}/members/me
+     * @param orgId 
+     */
+    leaveOrganisation(orgId: string, extraHttpRequestParams?: any): Observable<{}>;
 
     /**
      * List everybody in an organisation

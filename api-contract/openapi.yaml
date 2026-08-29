@@ -63,6 +63,27 @@ paths:
       summary: Describe the signed-in user
       tags:
       - Current user
+  /api/v1/me/active-organisation:
+    put:
+      description: Stored on the user so the choice follows them to another device.
+        Refused for any organisation that is not a live membership of the caller's.
+      operationId: setActiveOrganisation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetActiveOrganisationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+      summary: Choose which organisation to work in
+      tags:
+      - Current user
   /api/v1/me/profile:
     put:
       description: "Sets profileCompleted, which is what lets the client leave the\
@@ -106,6 +127,23 @@ paths:
       tags:
       - Organisations
   /api/v1/orgs/{orgId}:
+    delete:
+      description: "Makes it unreachable for every member while keeping its memberships,\
+        \ teams, and audit history. Nothing is deleted."
+      operationId: archiveOrganisation
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Archive an organisation
+      tags:
+      - Organisations
     get:
       operationId: getOrganisation
       parameters:
@@ -216,6 +254,25 @@ paths:
                   $ref: "#/components/schemas/OrgMemberResponse"
           description: OK
       summary: List everybody in an organisation
+      tags:
+      - Organisations
+  /api/v1/orgs/{orgId}/members/me:
+    delete:
+      description: "Ends the caller's own membership and their teams within it. The\
+        \ last administrator may leave, which archives the organisation rather than\
+        \ leaving nobody able to administer it."
+      operationId: leaveOrganisation
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Leave an organisation
       tags:
       - Organisations
   /api/v1/orgs/{orgId}/members/{userId}:
@@ -575,6 +632,9 @@ components:
     CurrentUserResponse:
       type: object
       properties:
+        activeOrganisationId:
+          type: string
+          format: uuid
         email:
           type: string
         fullName:
@@ -736,6 +796,14 @@ components:
           - OTHER
         slug:
           type: string
+    SetActiveOrganisationRequest:
+      type: object
+      properties:
+        organisationId:
+          type: string
+          format: uuid
+      required:
+      - organisationId
     TeamMemberDetailResponse:
       type: object
       properties:

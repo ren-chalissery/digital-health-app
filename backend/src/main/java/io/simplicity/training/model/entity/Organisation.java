@@ -48,4 +48,14 @@ public class Organisation {
   @UpdateTimestamp
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
+
+  @Column(name = "archived_at")
+  private Instant archivedAt;
+
+  @Column(name = "archived_by")
+  private UUID archivedBy;
+
+  public boolean isArchived() {
+    return archivedAt != null;
+  }
 }

@@ -12,6 +12,10 @@ import java.util.UUID;
  * clients show the profile wizard while the former is false, and the create-organisation screen
  * while the latter is empty. Keeping both decisions server-side means three independently written
  * clients cannot disagree about when onboarding is finished.
+ *
+ * <p>{@code activeOrganisationId} is which of the memberships the clinician is currently working
+ * in. It is always one of {@code organisations}, or null when there are none, so a client can
+ * follow it without checking.
  */
 public record CurrentUserResponse(
     UUID id,
@@ -22,4 +26,5 @@ public record CurrentUserResponse(
     boolean profileCompleted,
     UserStatus status,
     PlatformRole platformRole,
-    List<OrganisationMembershipResponse> organisations) {}
+    List<OrganisationMembershipResponse> organisations,
+    UUID activeOrganisationId) {}

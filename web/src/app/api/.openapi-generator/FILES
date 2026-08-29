@@ -27,6 +27,7 @@ model/models.ts
 model/org-member-response.ts
 model/organisation-membership-response.ts
 model/organisation-response.ts
+model/set-active-organisation-request.ts
 model/team-member-detail-response.ts
 model/team-membership-response.ts
 model/team-response.ts

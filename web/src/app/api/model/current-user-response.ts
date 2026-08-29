@@ -11,6 +11,7 @@ import { OrganisationMembershipResponse } from './organisation-membership-respon
 
 
 export interface CurrentUserResponse { 
+    activeOrganisationId?: string;
     email?: string;
     fullName?: string;
     id?: string;

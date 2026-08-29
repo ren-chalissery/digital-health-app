@@ -61,6 +61,13 @@ public class AppUser {
   @Column(name = "professional_role")
   private String professionalRole;
 
+  /**
+   * Which organisation this clinician is currently looking at. A preference only: membership is
+   * checked on every request regardless, so a stale or hostile value grants nothing.
+   */
+  @Column(name = "active_org_id")
+  private UUID activeOrgId;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "platform_role", nullable = false)
   @Builder.Default

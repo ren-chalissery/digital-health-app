@@ -8,6 +8,7 @@ import io.simplicity.training.service.CurrentUserService;
 import io.simplicity.training.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.simplicity.training.model.request.SetActiveOrganisationRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,20 @@ public class CurrentUserController {
               + "list to decide whether to show onboarding.")
   public CurrentUserResponse me() {
     return currentUserService.describe(CurrentPrincipal.require());
+  }
+
+  @PutMapping("/active-organisation")
+  @Operation(
+      operationId = "setActiveOrganisation",
+      summary = "Choose which organisation to work in",
+      description =
+          "Stored on the user so the choice follows them to another device. Refused for any "
+              + "organisation that is not a live membership of the caller's.")
+  public CurrentUserResponse setActiveOrganisation(
+      @Valid @RequestBody SetActiveOrganisationRequest request) {
+    AppPrincipal principal = CurrentPrincipal.require();
+    profileService.setActiveOrganisation(principal, request.organisationId());
+    return currentUserService.describe(principal);
   }
 
   @PutMapping("/profile")

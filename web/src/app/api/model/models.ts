@@ -9,6 +9,7 @@ export * from './invitation-response';
 export * from './org-member-response';
 export * from './organisation-membership-response';
 export * from './organisation-response';
+export * from './set-active-organisation-request';
 export * from './team-member-detail-response';
 export * from './team-membership-response';
 export * from './team-response';

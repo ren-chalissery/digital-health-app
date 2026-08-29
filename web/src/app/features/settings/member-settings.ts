@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { OrganisationsApi } from '../../api/api/organisations.service';
 import { ChangeOrgRoleRequest } from '../../api/model/change-org-role-request';
@@ -67,15 +68,50 @@ import { SessionService } from '../../core/session.service';
         </table>
       }
     </div>
+
+    <div class="card">
+      <div class="card__title"><h2>Archive this organisation</h2></div>
+      <p class="field__hint">
+        {{ organisationName() }} will disappear for everyone in it, including you. Nothing is
+        deleted — memberships, teams, and the record of who did what are all kept — but nobody will
+        be able to reach it again.
+      </p>
+
+      @if (archiveError()) {
+        <p class="notice notice--error" role="alert">{{ archiveError() }}</p>
+      }
+
+      <div class="field">
+        <label for="confirmName">Type <strong>{{ organisationName() }}</strong> to confirm</label>
+        <input id="confirmName" [value]="typedName()" (input)="onTypedName($event)" />
+      </div>
+
+      <div class="row">
+        <button
+          class="button button--danger"
+          type="button"
+          [disabled]="archiving() || typedName() !== organisationName()"
+          (click)="archive()"
+        >
+          {{ archiving() ? 'Archiving…' : 'Archive organisation' }}
+        </button>
+      </div>
+    </div>
   `,
 })
 export class MemberSettings implements OnInit {
   private readonly api = inject(OrganisationsApi);
   private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly members = signal<OrgMemberResponse[]>([]);
+  protected readonly archiving = signal(false);
+  protected readonly archiveError = signal<string | null>(null);
+  // Typing the name is deliberate friction: this one affects colleagues, not just the person
+  // clicking it.
+  protected readonly typedName = signal('');
 
   private get orgId(): string {
     return this.session.activeOrganisation()?.orgId ?? '';
@@ -83,6 +119,33 @@ export class MemberSettings implements OnInit {
 
   protected currentUserId(): string | undefined {
     return this.session.user()?.id;
+  }
+
+  protected organisationName(): string {
+    return this.session.activeOrganisation()?.name ?? '';
+  }
+
+  protected onTypedName(event: Event): void {
+    this.typedName.set((event.target as HTMLInputElement).value);
+  }
+
+  protected async archive(): Promise<void> {
+    if (this.archiving() || this.typedName() !== this.organisationName()) {
+      return;
+    }
+    this.archiving.set(true);
+    this.archiveError.set(null);
+    try {
+      await firstValueFrom(this.api.archiveOrganisation(this.orgId));
+      const user = await this.session.refresh();
+      await this.router.navigateByUrl(
+        (user.organisations ?? []).length > 0 ? '/dashboard' : '/welcome/organisation',
+      );
+    } catch (error) {
+      this.archiveError.set(problemMessage(error, 'Could not archive the organisation.'));
+    } finally {
+      this.archiving.set(false);
+    }
   }
 
   async ngOnInit(): Promise<void> {

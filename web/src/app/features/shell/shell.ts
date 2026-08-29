@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SessionService } from '../../core/session.service';
 
@@ -18,7 +18,20 @@ const TABS = [
       <div class="masthead__inner">
         <a class="masthead__brand" routerLink="/dashboard">Simplicity training</a>
         <span class="spacer"></span>
-        @if (organisation(); as org) {
+        @if (canSwitch()) {
+          <label class="masthead__org-switch">
+            <span class="visually-hidden">Current organisation</span>
+            <select
+              [value]="organisation()?.orgId ?? ''"
+              [disabled]="switching()"
+              (change)="switchTo($event)"
+            >
+              @for (org of organisations(); track org.orgId) {
+                <option [value]="org.orgId">{{ org.name }}</option>
+              }
+            </select>
+          </label>
+        } @else if (organisation(); as org) {
           <span class="masthead__org">{{ org.name }}</span>
         }
         <button class="button--link" type="button" (click)="signOut()">Sign out</button>
@@ -52,6 +65,25 @@ export class Shell {
 
   protected readonly tabs = TABS;
   protected readonly organisation = this.session.activeOrganisation;
+  protected readonly organisations = this.session.organisations;
+  protected readonly canSwitch = this.session.canSwitchOrganisation;
+  protected readonly switching = signal(false);
+
+  protected async switchTo(event: Event): Promise<void> {
+    const orgId = (event.target as HTMLSelectElement).value;
+    if (!orgId || orgId === this.organisation()?.orgId) {
+      return;
+    }
+    this.switching.set(true);
+    try {
+      await this.session.setActiveOrganisation(orgId);
+      // Back to the dashboard rather than staying put: the screen underneath may be showing the
+      // previous organisation's teams, and several of them are admin-only in one and not the other.
+      await this.router.navigateByUrl('/dashboard');
+    } finally {
+      this.switching.set(false);
+    }
+  }
 
   protected async signOut(): Promise<void> {
     await this.session.signOut();

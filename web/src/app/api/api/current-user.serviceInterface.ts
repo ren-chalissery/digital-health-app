@@ -12,6 +12,7 @@ import { HttpHeaders }                                       from '@angular/comm
 import { Observable }                                        from 'rxjs';
 
 import { CurrentUserResponse } from '../model/models';
+import { SetActiveOrganisationRequest } from '../model/models';
 import { UpdateProfileRequest } from '../model/models';
 
 
@@ -29,6 +30,14 @@ export interface CurrentUserApiInterface {
      * @endpoint get /api/v1/me
      */
     getCurrentUser(extraHttpRequestParams?: any): Observable<CurrentUserResponse>;
+
+    /**
+     * Choose which organisation to work in
+     * Stored on the user so the choice follows them to another device. Refused for any organisation that is not a live membership of the caller\&#39;s.
+     * @endpoint put /api/v1/me/active-organisation
+     * @param setActiveOrganisationRequest 
+     */
+    setActiveOrganisation(setActiveOrganisationRequest: SetActiveOrganisationRequest, extraHttpRequestParams?: any): Observable<CurrentUserResponse>;
 
     /**
      * Complete or update the professional profile

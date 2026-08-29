@@ -66,7 +66,25 @@ public class CurrentUserService {
         user.isProfileCompleted(),
         user.getStatus(),
         user.getPlatformRole(),
-        List.copyOf(memberships));
+        List.copyOf(memberships),
+        activeOrganisation(user, memberships));
+  }
+
+  /**
+   * The stored preference, or the first remaining membership when it is absent, archived, or no
+   * longer the caller's. Archived organisations are already gone from the principal, so a pointer
+   * at one simply fails to match and the clinician lands somewhere real rather than on an empty
+   * screen they cannot leave.
+   */
+  private UUID activeOrganisation(AppUser user, List<OrganisationMembershipResponse> memberships) {
+    if (memberships.isEmpty()) {
+      return null;
+    }
+    boolean stillAMember =
+        user.getActiveOrgId() != null
+            && memberships.stream()
+                .anyMatch(membership -> membership.orgId().equals(user.getActiveOrgId()));
+    return stillAMember ? user.getActiveOrgId() : memberships.get(0).orgId();
   }
 
   private List<TeamMembershipResponse> teamsWithin(AppPrincipal principal, UUID orgId) {
