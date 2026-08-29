@@ -1,7 +1,8 @@
 {
   "apiBaseUrl": "http://localhost:8080",
   "cognito": {
-    "userPoolId": "",
-    "userPoolClientId": ""
+    "userPoolId": "us-east-1_8df28ea0a",
+    "userPoolClientId": "0b8ea30514a94d5fa3085ca857",
+    "endpoint": "http://localhost:4566"
   }
 }

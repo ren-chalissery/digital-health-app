@@ -23,6 +23,8 @@ web/coverage/
 .env
 .env.*
 !.env.example
+# Written per environment: by local/bootstrap.sh here, by the deploy job in CI.
+web/public/config.json
 *.pem
 *.key
 

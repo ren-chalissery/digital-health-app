@@ -13,6 +13,7 @@ loadAppConfig()
         Cognito: {
           userPoolId: config.cognito.userPoolId,
           userPoolClientId: config.cognito.userPoolClientId,
+          ...(config.cognito.endpoint ? { userPoolEndpoint: config.cognito.endpoint } : {}),
         },
       },
     });

@@ -9,6 +9,8 @@ export interface AppConfig {
   cognito: {
     userPoolId: string;
     userPoolClientId: string;
+    /** Set only for local development, to reach the Floci emulator instead of Cognito itself. */
+    endpoint?: string;
   };
 }
 
