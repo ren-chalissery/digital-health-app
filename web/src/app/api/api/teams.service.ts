@@ -56,10 +56,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<TeamMemberDetailResponse>;
-    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamMemberDetailResponse>>;
-    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamMemberDetailResponse>>;
-    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<TeamMemberDetailResponse>;
+    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamMemberDetailResponse>>;
+    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamMemberDetailResponse>>;
+    public addTeamMember(orgId: string, teamId: string, addTeamMemberRequest: AddTeamMemberRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling addTeamMember.');
         }
@@ -76,7 +76,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
@@ -133,10 +133,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
-    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
-    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
-    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
+    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
+    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
+    public createTeam(orgId: string, createTeamRequest: CreateTeamRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling createTeam.');
         }
@@ -150,7 +150,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
@@ -269,10 +269,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public getTeam(orgId: string, teamId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
-    public getTeam(orgId: string, teamId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
-    public getTeam(orgId: string, teamId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
-    public getTeam(orgId: string, teamId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public getTeam(orgId: string, teamId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
+    public getTeam(orgId: string, teamId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
+    public getTeam(orgId: string, teamId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
+    public getTeam(orgId: string, teamId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling getTeam.');
         }
@@ -286,7 +286,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
@@ -332,10 +332,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public listTeamMembers(orgId: string, teamId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<TeamMemberDetailResponse>>;
-    public listTeamMembers(orgId: string, teamId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<TeamMemberDetailResponse>>>;
-    public listTeamMembers(orgId: string, teamId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<TeamMemberDetailResponse>>>;
-    public listTeamMembers(orgId: string, teamId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public listTeamMembers(orgId: string, teamId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<Array<TeamMemberDetailResponse>>;
+    public listTeamMembers(orgId: string, teamId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<TeamMemberDetailResponse>>>;
+    public listTeamMembers(orgId: string, teamId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<TeamMemberDetailResponse>>>;
+    public listTeamMembers(orgId: string, teamId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling listTeamMembers.');
         }
@@ -349,7 +349,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
@@ -394,10 +394,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public listTeams(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<TeamResponse>>;
-    public listTeams(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<TeamResponse>>>;
-    public listTeams(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<TeamResponse>>>;
-    public listTeams(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public listTeams(orgId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<Array<TeamResponse>>;
+    public listTeams(orgId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<TeamResponse>>>;
+    public listTeams(orgId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<TeamResponse>>>;
+    public listTeams(orgId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling listTeams.');
         }
@@ -408,7 +408,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
@@ -521,10 +521,10 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
-    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
-    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
-    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<TeamResponse>;
+    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TeamResponse>>;
+    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TeamResponse>>;
+    public updateTeam(orgId: string, teamId: string, updateTeamRequest: UpdateTeamRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (orgId === null || orgId === undefined) {
             throw new Error('Required parameter orgId was null or undefined when calling updateTeam.');
         }
@@ -541,7 +541,7 @@ export class TeamsApi extends BaseService implements TeamsApiInterface {
         localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
+            'application/json'
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
             localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);

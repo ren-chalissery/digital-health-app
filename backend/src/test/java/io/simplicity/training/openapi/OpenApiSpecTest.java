@@ -46,6 +46,20 @@ class OpenApiSpecTest extends AbstractIntegrationTest {
         .isEqualTo(generated);
   }
 
+  /**
+   * A wildcard media type here is not cosmetic. openapi-generator only parses a response whose
+   * media type it recognises as JSON, so a document declaring the wildcard produces clients that
+   * hand every response back as an opaque blob. Nothing fails loudly when that happens: fields
+   * simply read as undefined, and the first symptom was an onboarding wizard that looped because
+   * it could not see the flag it had just been told about.
+   */
+  @Test
+  void documentsEveryPayloadAsJson() throws Exception {
+    assertThat(generate())
+        .as("responses must be application/json, or the generated clients will not parse them")
+        .doesNotContain("*/*");
+  }
+
   @Test
   void describesTheBearerTokenAndLeavesThePreviewEndpointPublic() throws Exception {
     String document = generate();
