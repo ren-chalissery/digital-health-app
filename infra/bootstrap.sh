@@ -27,6 +27,7 @@ readonly DATA_STACK=digital-health-data
 readonly AUTH_STACK=digital-health-auth
 readonly WEB_STACK=digital-health-web
 readonly APP_STACK=digital-health-app
+readonly MEDIA_STACK=digital-health-media
 readonly ROLE_STACK=digital-health-deploy-role
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -142,6 +143,9 @@ deployStack "${AUTH_STACK}" auth.yaml "WebBaseUrl=https://${WEB_HOST}"
 deployStack "${WEB_STACK}" web.yaml \
   "WebDomainName=${WEB_HOST}" "CertificateArn=${cfCert}" "HostedZoneId=${zoneId}"
 
+# The upload bucket's CORS rule names the web origin, so this follows web too.
+deployStack "${MEDIA_STACK}" media.yaml "WebOrigin=https://${WEB_HOST}"
+
 # ---------------------------------------------------------------------------------------------
 step "Application stack and its first image"
 
@@ -149,6 +153,7 @@ appParams=(
   "NetworkStackName=${NETWORK_STACK}"
   "DataStackName=${DATA_STACK}"
   "AuthStackName=${AUTH_STACK}"
+  "MediaStackName=${MEDIA_STACK}"
   "ApiDomainName=${API_HOST}"
   "HostedZoneId=${zoneId}"
   "WebBaseUrl=https://${WEB_HOST}"
