@@ -15,6 +15,8 @@ api/modules.service.ts
 api/modules.serviceInterface.ts
 api/organisations.service.ts
 api/organisations.serviceInterface.ts
+api/reflections.service.ts
+api/reflections.serviceInterface.ts
 api/teams.service.ts
 api/teams.serviceInterface.ts
 configuration.ts
@@ -52,6 +54,7 @@ model/question-input.ts
 model/quiz-option-response.ts
 model/quiz-question-response.ts
 model/quiz-response.ts
+model/reflection-response.ts
 model/register-upload-request.ts
 model/replace-quiz-request.ts
 model/replace-sections-request.ts
@@ -67,6 +70,7 @@ model/update-profile-request.ts
 model/update-team-request.ts
 model/upload-target-response.ts
 model/version-response.ts
+model/write-reflection-request.ts
 ng-package.json
 package.json
 param.ts

@@ -9,6 +9,7 @@ import io.simplicity.training.repository.ModuleSectionRepository;
 import io.simplicity.training.repository.ModuleVersionRepository;
 import io.simplicity.training.repository.MediaAssetRepository;
 import io.simplicity.training.repository.OrgMembershipRepository;
+import io.simplicity.training.repository.ReflectionRepository;
 import io.simplicity.training.repository.QuizAttemptRepository;
 import io.simplicity.training.repository.QuizOptionRepository;
 import io.simplicity.training.repository.QuizQuestionRepository;
@@ -70,6 +71,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected QuizOptionRepository quizOptions;
   @Autowired protected QuizAttemptRepository quizAttempts;
   @Autowired protected MediaAssetRepository mediaAssets;
+  @Autowired protected ReflectionRepository reflections;
   @Autowired protected TestMediaConfiguration.RecordingObjectStore objectStore;
   @Autowired protected TestMediaConfiguration.ScriptedTranscoder transcoder;
 
@@ -91,6 +93,7 @@ public abstract class AbstractIntegrationTest {
     moduleVersions.deleteAllInBatch();
     modules.deleteAllInBatch();
     mediaAssets.deleteAllInBatch();
+    reflections.deleteAllInBatch();
     auditEvents.deleteAllInBatch();
     invitations.deleteAllInBatch();
     teamMembers.deleteAllInBatch();

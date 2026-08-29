@@ -13,6 +13,8 @@ tags:
   name: Media
 - description: The signed-in clinician's own profile and memberships
   name: Current user
+- description: The signed-in clinician's private journal
+  name: Reflections
 - description: Authoring training modules
   name: Modules
 - description: Modules assigned to the signed-in clinician
@@ -111,6 +113,107 @@ paths:
       summary: Complete or update the professional profile
       tags:
       - Current user
+  /api/v1/me/reflections:
+    get:
+      operationId: listReflections
+      parameters:
+      - in: query
+        name: q
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReflectionResponse"
+          description: OK
+      summary: "The caller's reflections, newest first, or those matching a search"
+      tags:
+      - Reflections
+    post:
+      operationId: writeReflection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WriteReflectionRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReflectionResponse"
+          description: Created
+      summary: Write a reflection
+      tags:
+      - Reflections
+  /api/v1/me/reflections/{reflectionId}:
+    delete:
+      operationId: deleteReflection
+      parameters:
+      - in: path
+        name: reflectionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Delete one
+      tags:
+      - Reflections
+    get:
+      description: "Somebody else's returns 404, because a 403 would confirm that\
+        \ it exists."
+      operationId: getReflection
+      parameters:
+      - in: path
+        name: reflectionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReflectionResponse"
+          description: OK
+      summary: Read one
+      tags:
+      - Reflections
+    put:
+      operationId: editReflection
+      parameters:
+      - in: path
+        name: reflectionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WriteReflectionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReflectionResponse"
+          description: OK
+      summary: Edit one
+      tags:
+      - Reflections
   /api/v1/organisations:
     post:
       description: The caller becomes its first administrator. Used by the self-signup
@@ -1733,6 +1836,22 @@ components:
         versionId:
           type: string
           format: uuid
+    ReflectionResponse:
+      type: object
+      properties:
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
     RegisterUploadRequest:
       type: object
       properties:
@@ -1951,6 +2070,19 @@ components:
         versionNumber:
           type: integer
           format: int32
+    WriteReflectionRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          maxLength: 20000
+          minLength: 0
+        title:
+          type: string
+          maxLength: 200
+          minLength: 0
+      required:
+      - body
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT
