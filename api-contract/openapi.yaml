@@ -13,6 +13,8 @@ tags:
   name: Media
 - description: The signed-in clinician's own profile and memberships
   name: Current user
+- description: Questions answered from the training material
+  name: Assistant
 - description: The signed-in clinician's private journal
   name: Reflections
 - description: Authoring training modules
@@ -272,6 +274,36 @@ paths:
       summary: Fetch one organisation
       tags:
       - Organisations
+  /api/v1/orgs/{orgId}/assistant/questions:
+    post:
+      description: "Answers only from published modules in this organisation, with\
+        \ citations. When the material does not cover the question it says so rather\
+        \ than guessing, and no model is called. It never reads reflections and never\
+        \ gives clinical advice."
+      operationId: askAssistant
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+          description: OK
+      summary: Ask a question about the training
+      tags:
+      - Assistant
   /api/v1/orgs/{orgId}/invitations:
     get:
       operationId: listInvitations
@@ -1298,6 +1330,26 @@ components:
       required:
       - optionId
       - questionId
+    AnswerResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        answered:
+          type: boolean
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/CitationResponse"
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          maxLength: 1000
+          minLength: 0
+      required:
+      - question
     AssignTeamsRequest:
       type: object
       properties:
@@ -1418,6 +1470,18 @@ components:
           - ORG_MEMBER
       required:
       - orgRole
+    CitationResponse:
+      type: object
+      properties:
+        assignedToYou:
+          type: boolean
+        moduleId:
+          type: string
+          format: uuid
+        moduleTitle:
+          type: string
+        sectionTitle:
+          type: string
     CreateInvitationRequest:
       type: object
       properties:

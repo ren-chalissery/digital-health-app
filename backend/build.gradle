@@ -42,6 +42,7 @@ dependencies {
 	// S3Presigner ships inside this artifact; there is no separate presigner module.
 	implementation 'software.amazon.awssdk:s3'
 	implementation 'software.amazon.awssdk:mediaconvert'
+	implementation 'software.amazon.awssdk:bedrockruntime'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

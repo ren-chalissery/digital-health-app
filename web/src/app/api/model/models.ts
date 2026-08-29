@@ -1,5 +1,7 @@
 export * from './add-team-member-request';
 export * from './answer-input';
+export * from './answer-response';
+export * from './ask-request';
 export * from './assign-teams-request';
 export * from './assigned-module-response';
 export * from './attempt-result-response';
@@ -7,6 +9,7 @@ export * from './authored-module-response';
 export * from './authored-option-response';
 export * from './authored-question-response';
 export * from './change-org-role-request';
+export * from './citation-response';
 export * from './create-invitation-request';
 export * from './create-module-request';
 export * from './create-organisation-request';

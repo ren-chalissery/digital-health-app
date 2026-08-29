@@ -3,6 +3,8 @@ README.md
 api.base.service.ts
 api.module.ts
 api/api.ts
+api/assistant.service.ts
+api/assistant.serviceInterface.ts
 api/current-user.service.ts
 api/current-user.serviceInterface.ts
 api/invitations.service.ts
@@ -25,6 +27,8 @@ git_push.sh
 index.ts
 model/add-team-member-request.ts
 model/answer-input.ts
+model/answer-response.ts
+model/ask-request.ts
 model/assign-teams-request.ts
 model/assigned-module-response.ts
 model/attempt-result-response.ts
@@ -32,6 +36,7 @@ model/authored-module-response.ts
 model/authored-option-response.ts
 model/authored-question-response.ts
 model/change-org-role-request.ts
+model/citation-response.ts
 model/create-invitation-request.ts
 model/create-module-request.ts
 model/create-organisation-request.ts

@@ -18,4 +18,7 @@ public interface ModuleVersionRepository extends JpaRepository<ModuleVersion, UU
   List<ModuleVersion> findByModuleIdOrderByVersionNumberDesc(UUID moduleId);
 
   List<ModuleVersion> findByModuleIdIn(List<UUID> moduleIds);
+
+  /** What the indexer picks up: published, and not yet embedded. */
+  List<ModuleVersion> findByStatusAndIndexedAtIsNull(ModuleStatus status);
 }

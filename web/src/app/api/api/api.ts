@@ -1,3 +1,6 @@
+export * from './assistant.service';
+import { AssistantApi } from './assistant.service';
+export * from './assistant.serviceInterface';
 export * from './current-user.service';
 import { CurrentUserApi } from './current-user.service';
 export * from './current-user.serviceInterface';
@@ -22,4 +25,4 @@ export * from './reflections.serviceInterface';
 export * from './teams.service';
 import { TeamsApi } from './teams.service';
 export * from './teams.serviceInterface';
-export const APIS = [CurrentUserApi, InvitationsApi, LearningApi, MediaApi, ModulesApi, OrganisationsApi, ReflectionsApi, TeamsApi];
+export const APIS = [AssistantApi, CurrentUserApi, InvitationsApi, LearningApi, MediaApi, ModulesApi, OrganisationsApi, ReflectionsApi, TeamsApi];

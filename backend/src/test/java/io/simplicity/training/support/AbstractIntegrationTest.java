@@ -8,6 +8,7 @@ import io.simplicity.training.repository.ModuleRepository;
 import io.simplicity.training.repository.ModuleSectionRepository;
 import io.simplicity.training.repository.ModuleVersionRepository;
 import io.simplicity.training.repository.MediaAssetRepository;
+import io.simplicity.training.repository.ModuleChunkRepository;
 import io.simplicity.training.repository.OrgMembershipRepository;
 import io.simplicity.training.repository.ReflectionRepository;
 import io.simplicity.training.repository.QuizAttemptRepository;
@@ -45,7 +46,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({
   TestcontainersConfiguration.class,
   TestJwtConfiguration.class,
-  TestMediaConfiguration.class
+  TestMediaConfiguration.class,
+  TestAssistantConfiguration.class
 })
 public abstract class AbstractIntegrationTest {
 
@@ -72,6 +74,8 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected QuizAttemptRepository quizAttempts;
   @Autowired protected MediaAssetRepository mediaAssets;
   @Autowired protected ReflectionRepository reflections;
+  @Autowired protected ModuleChunkRepository moduleChunks;
+  @Autowired protected TestAssistantConfiguration.RecordingAnswerGenerator answerGenerator;
   @Autowired protected TestMediaConfiguration.RecordingObjectStore objectStore;
   @Autowired protected TestMediaConfiguration.ScriptedTranscoder transcoder;
 
@@ -93,6 +97,7 @@ public abstract class AbstractIntegrationTest {
     moduleVersions.deleteAllInBatch();
     modules.deleteAllInBatch();
     mediaAssets.deleteAllInBatch();
+    moduleChunks.deleteAllInBatch();
     reflections.deleteAllInBatch();
     auditEvents.deleteAllInBatch();
     invitations.deleteAllInBatch();
@@ -105,5 +110,6 @@ public abstract class AbstractIntegrationTest {
     cognitoDirectory.reset();
     objectStore.reset();
     transcoder.reset();
+    answerGenerator.reset();
   }
 }

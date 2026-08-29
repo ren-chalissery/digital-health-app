@@ -176,6 +176,17 @@ Resources:
                 Condition:
                   StringEquals:
                     ses:FromAddress: !Ref MailFrom
+        - PolicyName: assistant
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Scoped to the two models actually used, in this region only, so a mistake in code
+              # cannot reach a model nobody chose or send content to another region.
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0'
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0'
         - !If
           - HasMedia
           - PolicyName: media

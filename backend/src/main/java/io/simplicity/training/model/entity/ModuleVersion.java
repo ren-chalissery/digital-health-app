@@ -54,6 +54,10 @@ public class ModuleVersion {
   @Column(name = "published_by")
   private UUID publishedBy;
 
+  /** When the assistant last embedded this version. Null means the indexer has yet to reach it. */
+  @Column(name = "indexed_at")
+  private Instant indexedAt;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

@@ -18,8 +18,11 @@ public class TestcontainersConfiguration {
   @ServiceConnection
   PostgreSQLContainer postgresContainer() {
     // Same major version as RDS in the deployed environment, so a migration that passes here
-    // cannot fail there on a version difference.
-    return new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"));
+    // cannot fail there on a version difference. The pgvector image rather than the plain one
+    // because RDS has the extension and postgres:17-alpine does not, and without it the assistant
+    // migration fails locally while working in production — the worst way round.
+    return new PostgreSQLContainer(
+        DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"));
   }
 
   @Bean

@@ -229,6 +229,12 @@ public class LearningService {
         moduleId, ModuleStatus.PUBLISHED);
   }
 
+  /** Exposed for citations, which need to say whether a cited module is one the caller can open. */
+  @Transactional(readOnly = true)
+  public List<UUID> assignedModuleIdsFor(AppPrincipal principal, UUID orgId) {
+    return assignedModuleIds(principal, orgId);
+  }
+
   private List<UUID> assignedModuleIds(AppPrincipal principal, UUID orgId) {
     List<UUID> teamIds =
         teams.findByOrgIdOrderByNameAsc(orgId).stream()
