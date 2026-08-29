@@ -2,13 +2,16 @@ package io.simplicity.training.service.media;
 
 import io.simplicity.training.config.AppProperties;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.mediaconvert.MediaConvertClient;
 import software.amazon.awssdk.services.mediaconvert.model.AacSettings;
 import software.amazon.awssdk.services.mediaconvert.model.AudioCodec;
+import software.amazon.awssdk.services.mediaconvert.model.AudioDefaultSelection;
 import software.amazon.awssdk.services.mediaconvert.model.AudioCodecSettings;
 import software.amazon.awssdk.services.mediaconvert.model.AudioDescription;
+import software.amazon.awssdk.services.mediaconvert.model.AudioSelector;
 import software.amazon.awssdk.services.mediaconvert.model.ContainerSettings;
 import software.amazon.awssdk.services.mediaconvert.model.ContainerType;
 import software.amazon.awssdk.services.mediaconvert.model.CreateJobRequest;
@@ -37,6 +40,7 @@ import software.amazon.awssdk.services.mediaconvert.model.VideoDescription;
 @Slf4j
 public class MediaConvertTranscoder implements Transcoder {
 
+  private static final String AUDIO_SELECTOR = "Audio Selector 1";
   private static final int HEIGHT = 720;
   private static final int BITRATE = 2_500_000;
 
@@ -63,6 +67,14 @@ public class MediaConvertTranscoder implements Transcoder {
                             .inputs(
                                 Input.builder()
                                     .fileInput("s3://" + media.uploadBucket() + "/" + sourceKey)
+                                    // An audio description has to name a selector defined here.
+                                    // Without one MediaConvert rejects the job outright.
+                                    .audioSelectors(
+                                        Map.of(
+                                            AUDIO_SELECTOR,
+                                            AudioSelector.builder()
+                                                .defaultSelection(AudioDefaultSelection.DEFAULT)
+                                                .build()))
                                     .build())
                             .outputGroups(outputGroup(media.assetBucket(), outputKeyPrefix))
                             .build())
@@ -135,6 +147,7 @@ public class MediaConvertTranscoder implements Transcoder {
                             .build())
                     .audioDescriptions(
                         AudioDescription.builder()
+                            .audioSourceName(AUDIO_SELECTOR)
                             .codecSettings(
                                 AudioCodecSettings.builder()
                                     .codec(AudioCodec.AAC)
