@@ -12,12 +12,14 @@ Parameters:
     Type: String
     Description: Repository name, without the owner.
 
-  DeployBranch:
+  DeployEnvironment:
     Type: String
-    Default: main
+    Default: production
     Description: >
-      Only this branch may assume the role. A pull request from a fork runs with a different
-      subject and is refused, which is what stops a contributor deploying by opening a PR.
+      Only a job declaring this GitHub environment may assume the role. A job that names an
+      environment gets a subject of repo:owner/name:environment:<name> rather than one naming the
+      branch, so trusting the branch form would refuse the very job meant to deploy. Which branches
+      may reach the environment is a deployment branch policy configured on the environment itself.
 
   CreateOidcProvider:
     Type: String
@@ -57,7 +59,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepository}:ref:refs/heads/${DeployBranch}'
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepository}:environment:${DeployEnvironment}'
       Policies:
         - PolicyName: deploy
           PolicyDocument:
