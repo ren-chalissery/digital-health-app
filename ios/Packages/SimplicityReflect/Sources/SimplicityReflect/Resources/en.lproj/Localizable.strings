@@ -1,2 +1,45 @@
-/* placeholder, replaced in Task 3 */
+/* Localised copy for SimplicityReflect. A .strings file rather than .xcstrings — see the
+   Localisation guard test in SimplicityAuth for why. */
+
 "reflect_title" = "Reflect";
+
+"reflect_search" = "Search your reflections";
+
+"reflect_entry_title" = "Title (optional)";
+
+"reflect_entry_body" = "What are you reflecting on?";
+
+"reflect_save" = "Save";
+
+"reflect_save_edit" = "Save changes";
+
+"reflect_saving" = "Saving…";
+
+"reflect_cancel" = "Cancel";
+
+"reflect_new" = "New reflection";
+
+"reflect_empty_title" = "Nothing here yet";
+
+/* States the promise plainly. It is the reason a clinician might write honestly. */
+"reflect_empty_body" = "Your reflections are private. Nobody else can read them — not your organisation, not an administrator, and not the assistant.";
+
+"reflect_no_matches" = "No reflections match that search.";
+
+"reflect_load_failed" = "We could not load your reflections. Check your connection and try again.";
+
+/* Deliberately explicit that the text is still on screen, because it exists nowhere else. */
+"reflect_save_failed" = "We could not save that. Your writing is still here — try again.";
+
+"reflect_delete_failed" = "We could not delete that. Try again in a moment.";
+
+"reflect_delete" = "Delete";
+
+"reflect_delete_confirm_title" = "Delete this reflection?";
+
+"reflect_delete_confirm_body" = "This cannot be undone.";
+
+/* %@ is what was spotted, then why it matters. */
+"reflect_warning" = "That looks like %1$@. %2$@";
+
+"reflect_warning_intro" = "Before you save:";
