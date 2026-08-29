@@ -31,3 +31,12 @@ web/public/config.json
 # Logs
 *.log
 npm-debug.log*
+
+# Verification harness virtualenv
+scripts/.venv/
+
+# Swift package build output
+ios/**/.build/
+ios/**/.swiftpm/
+ios/**/*.xcuserdata*
+ios/DerivedData/

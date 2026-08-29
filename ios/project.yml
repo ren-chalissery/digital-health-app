@@ -1,0 +1,85 @@
+# Bootstrap only. The generated Simplicity_iOS.xcodeproj is committed and is the source of truth;
+# this manifest exists so the project can be regenerated if it is ever corrupted. Nothing in the
+# build depends on XcodeGen.
+name: Simplicity_iOS
+options:
+  bundleIdPrefix: io.simplicity
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: UJY6H4M6AZ
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  SimplicityFoundation:
+    path: Packages/SimplicityFoundation
+  SimplicityApi:
+    path: Packages/SimplicityApi
+  SimplicityDesign:
+    path: Packages/SimplicityDesign
+  SimplicityServices:
+    path: Packages/SimplicityServices
+  SimplicityAuth:
+    path: Packages/SimplicityAuth
+
+targets:
+  Simplicity_iOS:
+    type: application
+    platform: iOS
+    sources: [Simplicity_iOS]
+    configFiles:
+      Debug: Config-Shared.xcconfig
+      Release: Config-Shared.xcconfig
+    info:
+      path: Simplicity_iOS/Info.plist
+      properties:
+        CFBundleDisplayName: Simplicity
+        UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
+        APIBaseURL: $(API_BASE_URL)
+        CognitoPoolId: $(COGNITO_POOL_ID)
+        CognitoClientId: $(COGNITO_CLIENT_ID)
+        CognitoRegion: $(COGNITO_REGION)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.simplicity.training
+    dependencies:
+      - package: SimplicityFoundation
+      - package: SimplicityApi
+      - package: SimplicityDesign
+      - package: SimplicityServices
+      - package: SimplicityAuth
+
+  SimplicityUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [SimplicityUITests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: io.simplicity.training.uitests
+        TEST_TARGET_NAME: Simplicity_iOS
+    dependencies:
+      - target: Simplicity_iOS
+
+schemes:
+  Simplicity_iOS:
+    build:
+      targets:
+        Simplicity_iOS: all
+        SimplicityUITests: [test]
+    test:
+      targets:
+        - SimplicityUITests
+    run:
+      config: Debug

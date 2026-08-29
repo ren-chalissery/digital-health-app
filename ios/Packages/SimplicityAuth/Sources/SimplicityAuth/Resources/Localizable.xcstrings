@@ -1,0 +1,169 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "confirm_body" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We sent a code to %@. Enter it below to finish creating your account." } } }
+    },
+    "confirm_code" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmation code" } } }
+    },
+    "confirm_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "That code was not accepted. Check it and try again, or send a new one." } } }
+    },
+    "confirm_missing_code" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter the code we emailed you." } } }
+    },
+    "confirm_resend" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Send a new code" } } }
+    },
+    "confirm_resend_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not send a new code. Try again in a moment." } } }
+    },
+    "confirm_resent" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "A new code is on its way." } } }
+    },
+    "confirm_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm" } } }
+    },
+    "confirm_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check your email" } } }
+    },
+    "onboarding_org_missing_name" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Give your organisation a name." } } }
+    },
+    "onboarding_org_name" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Organisation name" } } }
+    },
+    "onboarding_org_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create organisation" } } }
+    },
+    "onboarding_org_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Your organisation" } } }
+    },
+    "onboarding_org_type" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Type" } } }
+    },
+    "onboarding_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not save that. Check your connection and try again." } } }
+    },
+    "onboarding_profile_missing_name" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your name." } } }
+    },
+    "onboarding_profile_missing_role" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose your professional role." } } }
+    },
+    "onboarding_profile_name" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Full name" } } }
+    },
+    "onboarding_profile_phone" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Phone (optional)" } } }
+    },
+    "onboarding_profile_role" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Professional role" } } }
+    },
+    "onboarding_profile_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } } }
+    },
+    "onboarding_profile_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "About you" } } }
+    },
+    "password_needs_lowercase" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Include a lowercase letter." } } }
+    },
+    "password_needs_number" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Include a number." } } }
+    },
+    "password_needs_uppercase" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Include a capital letter." } } }
+    },
+    "password_too_short" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Use at least 12 characters." } } }
+    },
+    "reset_code" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset code" } } }
+    },
+    "reset_confirm_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not reset your password. Check the code and try again." } } }
+    },
+    "reset_done" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Your password has been changed. You can sign in with it now." } } }
+    },
+    "reset_email" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Email address" } } }
+    },
+    "reset_missing_code" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter the code we emailed you." } } }
+    },
+    "reset_missing_email" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your email address." } } }
+    },
+    "reset_new_password" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "New password" } } }
+    },
+    "reset_request_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not send a reset code. Try again in a moment." } } }
+    },
+    "reset_send_code" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Send reset code" } } }
+    },
+    "reset_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Change password" } } }
+    },
+    "reset_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset your password" } } }
+    },
+    "sign_in_create_account" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create an account" } } }
+    },
+    "sign_in_email" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Email address" } } }
+    },
+    "sign_in_failed" : {
+      "comment" : "Deliberately identical for a wrong password and an unknown address. The Cognito client sets PreventUserExistenceErrors, and the app should not become the oracle the pool refuses to be.",
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not sign you in. Check your email address and password and try again." } } }
+    },
+    "sign_in_forgot" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Forgotten your password?" } } }
+    },
+    "sign_in_missing_fields" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your email address and password." } } }
+    },
+    "sign_in_password" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Password" } } }
+    },
+    "sign_in_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in" } } }
+    },
+    "sign_in_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in" } } }
+    },
+    "sign_up_confirm_password" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm password" } } }
+    },
+    "sign_up_email" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Email address" } } }
+    },
+    "sign_up_failed" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "We could not create your account. That address may already have one." } } }
+    },
+    "sign_up_have_account" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "I already have an account" } } }
+    },
+    "sign_up_missing_email" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your email address." } } }
+    },
+    "sign_up_password" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Password" } } }
+    },
+    "sign_up_passwords_differ" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Those passwords do not match." } } }
+    },
+    "sign_up_submit" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create account" } } }
+    },
+    "sign_up_title" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create your account" } } }
+    }
+  }
+}
