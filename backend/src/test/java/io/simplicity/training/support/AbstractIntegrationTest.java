@@ -8,6 +8,7 @@ import io.simplicity.training.repository.OrgMembershipRepository;
 import io.simplicity.training.repository.OrganisationRepository;
 import io.simplicity.training.repository.TeamMemberRepository;
 import io.simplicity.training.repository.TeamRepository;
+import io.simplicity.training.support.TestJwtConfiguration.FakeCognitoUserDirectory;
 import io.simplicity.training.support.TestJwtConfiguration.TestTokenFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected MockMvc mockMvc;
   @Autowired protected TestTokenFactory tokens;
   @Autowired protected StringRedisTemplate redis;
+  @Autowired protected FakeCognitoUserDirectory cognitoDirectory;
 
   @Autowired protected AppUserRepository users;
   @Autowired protected OrganisationRepository organisations;
@@ -49,5 +51,6 @@ public abstract class AbstractIntegrationTest {
     users.deleteAllInBatch();
     organisations.deleteAllInBatch();
     redis.getConnectionFactory().getConnection().serverCommands().flushDb();
+    cognitoDirectory.reset();
   }
 }

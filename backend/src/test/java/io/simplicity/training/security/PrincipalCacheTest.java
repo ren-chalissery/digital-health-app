@@ -11,6 +11,8 @@ import io.simplicity.training.model.entity.Organisation;
 import io.simplicity.training.model.enums.OrgRole;
 import io.simplicity.training.model.enums.OrganisationType;
 import io.simplicity.training.support.AbstractIntegrationTest;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +24,10 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
   @Autowired private CachingPrincipalService principalCache;
   @Autowired private SessionService sessions;
   @Autowired private TokenRevocationService revocations;
+
+  private static Supplier<Optional<String>> addressOf(AppUser user) {
+    return () -> Optional.of(user.getEmail());
+  }
 
   @Test
   void cachesThePrincipalAfterTheFirstRequest() throws Exception {
@@ -45,8 +51,8 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
     orgMemberships.saveAndFlush(OrgMembership.of(user.getId(), org.getId(), OrgRole.ORG_ADMIN));
 
     // Populates the cache.
-    AppPrincipal fromDatabase = principalCache.resolve(SUB, user.getEmail());
-    AppPrincipal fromCache = principalCache.resolve(SUB, user.getEmail());
+    AppPrincipal fromDatabase = principalCache.resolve(SUB, addressOf(user));
+    AppPrincipal fromCache = principalCache.resolve(SUB, addressOf(user));
 
     assertThat(fromCache).isEqualTo(fromDatabase);
     assertThat(fromCache.orgRoles()).containsEntry(org.getId(), OrgRole.ORG_ADMIN);
@@ -57,12 +63,12 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
     AppUser user = aUser();
     Organisation org = anOrganisation();
 
-    principalCache.resolve(SUB, user.getEmail());
+    principalCache.resolve(SUB, addressOf(user));
     orgMemberships.saveAndFlush(OrgMembership.of(user.getId(), org.getId(), OrgRole.ORG_ADMIN));
 
     // Doubles as proof that reads genuinely hit Redis: a principal that silently fell through to
     // the database would report the new role here.
-    assertThat(principalCache.resolve(SUB, user.getEmail()).orgRoles())
+    assertThat(principalCache.resolve(SUB, addressOf(user)).orgRoles())
         .as("this is precisely why every mutation must evict rather than rely on the TTL")
         .isEmpty();
   }
@@ -71,12 +77,12 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
   void picksUpNewRolesOnceTheMutationEvicts() {
     AppUser user = aUser();
     Organisation org = anOrganisation();
-    principalCache.resolve(SUB, user.getEmail());
+    principalCache.resolve(SUB, addressOf(user));
 
     orgMemberships.saveAndFlush(OrgMembership.of(user.getId(), org.getId(), OrgRole.ORG_ADMIN));
     sessions.rolesChanged(user.getId());
 
-    assertThat(principalCache.resolve(SUB, user.getEmail()).orgRoles())
+    assertThat(principalCache.resolve(SUB, addressOf(user)).orgRoles())
         .containsEntry(org.getId(), OrgRole.ORG_ADMIN);
   }
 
@@ -118,8 +124,8 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
     orgMemberships.saveAndFlush(OrgMembership.of(user.getId(), org.getId(), OrgRole.ORG_MEMBER));
     sessions.rolesChanged(user.getId());
 
-    principalCache.resolve(SUB, user.getEmail());
-    AppPrincipal cached = principalCache.resolve(SUB, user.getEmail());
+    principalCache.resolve(SUB, addressOf(user));
+    AppPrincipal cached = principalCache.resolve(SUB, addressOf(user));
 
     assertThat(cached.userId()).isEqualTo(user.getId());
     assertThat(cached.email()).isEqualTo(user.getEmail());

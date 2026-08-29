@@ -11,7 +11,9 @@ import io.simplicity.training.repository.TeamMemberRepository;
 import io.simplicity.training.service.UserProvisioningService;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +35,8 @@ public class PrincipalService implements PrincipalLookup {
 
   @Override
   @Transactional
-  public AppPrincipal resolve(String cognitoSub, String email) {
-    AppUser user = provisioning.findOrCreate(cognitoSub, email);
+  public AppPrincipal resolve(String cognitoSub, Supplier<Optional<String>> verifiedEmail) {
+    AppUser user = provisioning.findOrCreate(cognitoSub, verifiedEmail);
     return forUser(user);
   }
 

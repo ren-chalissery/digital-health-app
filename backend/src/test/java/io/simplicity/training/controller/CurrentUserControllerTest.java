@@ -15,7 +15,6 @@ import io.simplicity.training.model.enums.OrganisationType;
 import io.simplicity.training.model.enums.TeamRole;
 import io.simplicity.training.model.enums.UserStatus;
 import io.simplicity.training.support.AbstractIntegrationTest;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
@@ -28,11 +27,10 @@ class CurrentUserControllerTest extends AbstractIntegrationTest {
 
   @Test
   void provisionsTheUserOnTheirVeryFirstRequest() throws Exception {
-    String token =
-        tokens.accessTokenFor("cognito-sub-1", Map.of("email", "New.Clinician@Example.Org"));
+    String bearer = tokens.bearerFor("cognito-sub-1", "New.Clinician@Example.Org");
 
     mockMvc
-        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.email").value("new.clinician@example.org"))
         .andExpect(jsonPath("$.profileCompleted").value(false))
@@ -43,11 +41,11 @@ class CurrentUserControllerTest extends AbstractIntegrationTest {
 
   @Test
   void provisionsOnlyOnceAcrossRepeatedRequests() throws Exception {
-    String token = tokens.accessTokenFor("cognito-sub-2", Map.of("email", "repeat@example.org"));
+    String bearer = tokens.bearerFor("cognito-sub-2", "repeat@example.org");
 
     for (int i = 0; i < 3; i++) {
       mockMvc
-          .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+          .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer))
           .andExpect(status().isOk());
     }
 
@@ -63,11 +61,10 @@ class CurrentUserControllerTest extends AbstractIntegrationTest {
     orgMemberships.saveAndFlush(
         OrgMembership.of(invited.getId(), org.getId(), OrgRole.ORG_MEMBER));
 
-    String token =
-        tokens.accessTokenFor("cognito-sub-3", Map.of("email", "invited@example.org"));
+    String bearer = tokens.bearerFor("cognito-sub-3", "invited@example.org");
 
     mockMvc
-        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(invited.getId().toString()))
         .andExpect(jsonPath("$.status").value("ACTIVE"))

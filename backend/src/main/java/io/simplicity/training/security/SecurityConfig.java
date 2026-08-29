@@ -64,7 +64,7 @@ public class SecurityConfig {
    */
   @Bean
   @ConditionalOnMissingBean(JwtDecoder.class)
-  JwtDecoder jwtDecoder(AppProperties properties) {
+  public JwtDecoder jwtDecoder(AppProperties properties) {
     String jwkSetUri = properties.cognito().jwkSetUri();
     if (jwkSetUri == null) {
       throw new IllegalStateException(

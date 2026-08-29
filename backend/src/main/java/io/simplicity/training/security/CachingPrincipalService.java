@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.simplicity.training.config.AppProperties;
 import io.simplicity.training.repository.AppUserRepository;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataAccessException;
@@ -58,12 +60,12 @@ public class CachingPrincipalService implements PrincipalLookup {
   }
 
   @Override
-  public AppPrincipal resolve(String cognitoSub, String email) {
+  public AppPrincipal resolve(String cognitoSub, Supplier<Optional<String>> verifiedEmail) {
     AppPrincipal cached = read(cognitoSub);
     if (cached != null) {
       return cached;
     }
-    AppPrincipal resolved = delegate.resolve(cognitoSub, email);
+    AppPrincipal resolved = delegate.resolve(cognitoSub, verifiedEmail);
     write(cognitoSub, resolved);
     return resolved;
   }

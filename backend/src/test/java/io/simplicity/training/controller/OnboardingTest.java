@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.simplicity.training.model.entity.AppUser;
 import io.simplicity.training.model.enums.OrgRole;
 import io.simplicity.training.support.AbstractIntegrationTest;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -24,7 +23,7 @@ class OnboardingTest extends AbstractIntegrationTest {
   @Test
   void takesASelfSignedUpClinicianFromNothingToAdministeringTheirOwnOrganisation()
       throws Exception {
-    String bearer = "Bearer " + tokens.accessTokenFor(SUB, Map.of("email", EMAIL));
+    String bearer = tokens.bearerFor(SUB, EMAIL);
 
     // 1. First call provisions the account and tells the client to show the wizard.
     mockMvc
@@ -70,7 +69,7 @@ class OnboardingTest extends AbstractIntegrationTest {
 
   @Test
   void makesTheCreatorAnAdministratorAndRecordsIt() throws Exception {
-    String bearer = "Bearer " + tokens.accessTokenFor(SUB, Map.of("email", EMAIL));
+    String bearer = tokens.bearerFor(SUB, EMAIL);
     mockMvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer));
 
     mockMvc
@@ -193,7 +192,7 @@ class OnboardingTest extends AbstractIntegrationTest {
   }
 
   private String signedIn(String sub, String email) throws Exception {
-    String bearer = "Bearer " + tokens.accessTokenFor(sub, Map.of("email", email));
+    String bearer = tokens.bearerFor(sub, email);
     mockMvc.perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearer));
     return bearer;
   }

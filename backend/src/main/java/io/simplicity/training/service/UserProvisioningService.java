@@ -5,6 +5,7 @@ import io.simplicity.training.model.entity.AppUser;
 import io.simplicity.training.model.enums.UserStatus;
 import io.simplicity.training.repository.AppUserRepository;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,42 +28,45 @@ public class UserProvisioningService {
 
   /**
    * @param cognitoSub the {@code sub} claim, stable for the life of the Cognito account
-   * @param email the verified address from the token, or null if the token carries no email claim
+   * @param verifiedEmail supplies the caller's address, and is evaluated only when there is no user
+   *     row yet, because it costs a round trip to Cognito
    */
   @Transactional
-  public AppUser findOrCreate(String cognitoSub, String email) {
+  public AppUser findOrCreate(String cognitoSub, Supplier<Optional<String>> verifiedEmail) {
     Optional<AppUser> bySub = users.findByCognitoSub(cognitoSub);
     if (bySub.isPresent()) {
       return bySub.get();
     }
 
+    String email =
+        verifiedEmail
+            .get()
+            .map(Emails::normalise)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Cannot provision a user for Cognito subject "
+                            + cognitoSub
+                            + " because Cognito reports no verified address for them"));
+
     // An administrator may have invited this address before the person created their Cognito
     // account. That row already carries their organisation membership, so claim it rather than
     // creating a second account for the same person.
-    if (email != null) {
-      Optional<AppUser> byEmail = users.findByEmail(email);
-      if (byEmail.isPresent()) {
-        AppUser existing = byEmail.get();
-        existing.setCognitoSub(cognitoSub);
-        if (existing.getStatus() == UserStatus.INVITED) {
-          existing.setStatus(UserStatus.ACTIVE);
-        }
-        log.info("Linked Cognito subject to invited user {}", existing.getId());
-        return users.save(existing);
+    Optional<AppUser> byEmail = users.findByEmail(email);
+    if (byEmail.isPresent()) {
+      AppUser existing = byEmail.get();
+      existing.setCognitoSub(cognitoSub);
+      if (existing.getStatus() == UserStatus.INVITED) {
+        existing.setStatus(UserStatus.ACTIVE);
       }
-    }
-
-    if (email == null) {
-      throw new IllegalStateException(
-          "Cannot provision a user for Cognito subject "
-              + cognitoSub
-              + " because the token carries no email claim");
+      log.info("Linked Cognito subject to invited user {}", existing.getId());
+      return users.save(existing);
     }
 
     AppUser created =
         AppUser.builder()
             .cognitoSub(cognitoSub)
-            .email(Emails.normalise(email))
+            .email(email)
             .status(UserStatus.ACTIVE)
             .profileCompleted(false)
             .build();

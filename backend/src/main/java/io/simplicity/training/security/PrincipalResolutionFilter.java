@@ -28,6 +28,7 @@ public class PrincipalResolutionFilter extends OncePerRequestFilter {
 
   private final PrincipalLookup principalLookup;
   private final TokenRevocationService revocations;
+  private final CognitoUserDirectory directory;
 
   @Override
   protected void doFilterInternal(
@@ -48,7 +49,8 @@ public class PrincipalResolutionFilter extends OncePerRequestFilter {
         return;
       }
 
-      AppPrincipal principal = principalLookup.resolve(cognitoSub, emailClaim(jwt));
+      AppPrincipal principal =
+          principalLookup.resolve(cognitoSub, () -> directory.verifiedEmail(jwt.getTokenValue()));
       if (!principal.isActive()) {
         log.info("Rejected a request from deactivated user {}", principal.userId());
         SecurityContextHolder.clearContext();
@@ -61,14 +63,5 @@ public class PrincipalResolutionFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
-  }
-
-  /**
-   * Cognito puts the address on the id token; an access token carries it only when the pool is
-   * configured to. Both claim names are checked so provisioning works either way.
-   */
-  private String emailClaim(Jwt jwt) {
-    String email = jwt.getClaimAsString("email");
-    return email != null ? email : jwt.getClaimAsString("username");
   }
 }

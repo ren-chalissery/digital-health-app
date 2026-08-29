@@ -33,6 +33,10 @@ spring:
       timeout: 2s
 
 app:
+  aws:
+    # Set only for local runs, to reach the Floci emulator instead of AWS. Deployed environments
+    # leave this empty so the SDK resolves real endpoints.
+    endpoint-override: ${AWS_ENDPOINT_URL:}
   cognito:
     # The JwtDecoder is built in code rather than via
     # spring.security.oauth2.resourceserver.jwt.issuer-uri, because that property performs OIDC
