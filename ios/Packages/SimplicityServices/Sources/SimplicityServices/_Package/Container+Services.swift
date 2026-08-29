@@ -10,4 +10,12 @@ public extension Container {
     var learningService: Factory<LearningService> {
         self { LearningServiceImpl() }.scope(.singleton)
     }
+
+    var reflectionService: Factory<ReflectionService> {
+        self { ReflectionServiceImpl() }.scope(.singleton)
+    }
+
+    var assistantService: Factory<AssistantService> {
+        self { AssistantServiceImpl() }.scope(.singleton)
+    }
 }
