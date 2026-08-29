@@ -132,17 +132,16 @@ jobs:
 
       # The repository lives in the app stack, which must therefore already exist. Bootstrapping it
       # the first time is a manual step, described in infra/README.md.
+      #
+      # Only the commit sha is tagged. The repository is immutable, so a 'latest' tag could be
+      # written exactly once and would fail every deploy after it.
       - name: Build and push the image
         working-directory: backend
-        env:
-          REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
           repository="$(aws cloudformation describe-stacks --stack-name "$APP_STACK" \
             --query "Stacks[0].Outputs[?OutputKey=='RepositoryUri'].OutputValue" --output text)"
-          docker build --platform linux/arm64 \
-            -t "$repository:${{ github.sha }}" -t "$repository:latest" .
+          docker build --platform linux/arm64 -t "$repository:${{ github.sha }}" .
           docker push "$repository:${{ github.sha }}"
-          docker push "$repository:latest"
 
       # Tagging the task definition with the commit rather than 'latest' is what makes a deploy
       # reproducible and a rollback a matter of redeploying an older sha.

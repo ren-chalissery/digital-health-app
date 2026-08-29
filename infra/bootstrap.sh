@@ -160,11 +160,19 @@ fi
 
 repository="$(output "${APP_STACK}" RepositoryUri)"
 sha="$(git -C "${ROOT}" rev-parse HEAD)"
-info "pushing ${repository}:${sha}"
-aws ecr get-login-password | docker login --username AWS --password-stdin "${repository%%/*}" >/dev/null
-docker build --platform linux/arm64 -q -t "${repository}:${sha}" -t "${repository}:latest" "${ROOT}/backend" >/dev/null
-docker push -q "${repository}:${sha}" >/dev/null
-docker push -q "${repository}:latest" >/dev/null
+
+# Tags are immutable, so a rerun at the same commit must not try to push again. Only the sha is
+# ever tagged: deploys pin to a commit, and a moving 'latest' cannot exist in an immutable
+# repository anyway.
+if aws ecr describe-images --repository-name "${repository##*/}" \
+    --image-ids "imageTag=${sha}" >/dev/null 2>&1; then
+  info "image ${sha} is already in the registry"
+else
+  info "pushing ${repository}:${sha}"
+  aws ecr get-login-password | docker login --username AWS --password-stdin "${repository%%/*}" >/dev/null
+  docker build --platform linux/arm64 -q -t "${repository}:${sha}" "${ROOT}/backend" >/dev/null
+  docker push -q "${repository}:${sha}" >/dev/null
+fi
 
 deployStack "${APP_STACK}" app.yaml "${appParams[@]}" "DesiredCount=1" "ImageTag=${sha}"
 
@@ -172,6 +180,41 @@ info "waiting for the service to stabilise"
 aws ecs wait services-stable \
   --cluster "$(output "${APP_STACK}" ClusterName)" \
   --services "$(output "${APP_STACK}" ServiceName)"
+
+# ---------------------------------------------------------------------------------------------
+step "Web bundle"
+
+# The same upload the pipeline performs. Without it the distribution serves 403 from an empty
+# bucket, and the URL printed at the end of this script would be a lie.
+(cd "${ROOT}/web" && npm ci --silent && npm run build --silent) >/dev/null
+readonly BUNDLE="${ROOT}/web/dist/web/browser"
+
+# Written here rather than built in, so one artefact can be promoted between environments.
+jq -n \
+  --arg apiBaseUrl "$(output "${APP_STACK}" ApiBaseUrl)" \
+  --arg userPoolId "$(output "${AUTH_STACK}" UserPoolId)" \
+  --arg userPoolClientId "$(output "${AUTH_STACK}" WebClientId)" \
+  '{apiBaseUrl: $apiBaseUrl, cognito: {userPoolId: $userPoolId, userPoolClientId: $userPoolClientId}}' \
+  >"${BUNDLE}/config.json"
+
+bucket="$(output "${WEB_STACK}" BucketName)"
+# Fingerprinted assets cached hard; the two files that are not fingerprinted must never be cached,
+# or a deploy would leave browsers running the previous bundle against the new API.
+aws s3 sync "${BUNDLE}" "s3://${bucket}" --delete --only-show-errors \
+  --cache-control 'public,max-age=31536000,immutable' \
+  --exclude index.html --exclude config.json
+aws s3 cp "${BUNDLE}/index.html" "s3://${bucket}/index.html" --only-show-errors \
+  --cache-control 'no-cache,no-store,must-revalidate'
+aws s3 cp "${BUNDLE}/config.json" "s3://${bucket}/config.json" --only-show-errors \
+  --cache-control 'no-cache,no-store,must-revalidate'
+info "uploaded to ${bucket}"
+
+distribution="$(output "${WEB_STACK}" DistributionId)"
+invalidation="$(aws cloudfront create-invalidation --distribution-id "${distribution}" \
+  --paths '/index.html' '/config.json' --query 'Invalidation.Id' --output text)"
+aws cloudfront wait invalidation-completed \
+  --distribution-id "${distribution}" --id "${invalidation}"
+info "cache invalidated"
 
 # ---------------------------------------------------------------------------------------------
 step "Email"
