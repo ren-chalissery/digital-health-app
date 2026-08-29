@@ -7,6 +7,7 @@ import io.simplicity.training.repository.InvitationRepository;
 import io.simplicity.training.repository.ModuleRepository;
 import io.simplicity.training.repository.ModuleSectionRepository;
 import io.simplicity.training.repository.ModuleVersionRepository;
+import io.simplicity.training.repository.MediaAssetRepository;
 import io.simplicity.training.repository.OrgMembershipRepository;
 import io.simplicity.training.repository.QuizAttemptRepository;
 import io.simplicity.training.repository.QuizOptionRepository;
@@ -25,12 +26,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** Full-stack tests: real HTTP handling, real Postgres, real Redis, locally signed tokens. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestcontainersConfiguration.class, TestJwtConfiguration.class})
+// Bucket names only. The object store and transcoder behind them are fakes, so nothing here
+// reaches AWS; without them the media service correctly refuses to work at all.
+@TestPropertySource(
+    properties = {
+      "app.media.upload-bucket=test-upload",
+      "app.media.asset-bucket=test-media",
+      "app.media.transcode-queue-arn=arn:aws:mediaconvert:test:0:queues/test",
+      "app.media.transcode-role-arn=arn:aws:iam::0:role/test"
+    })
+@Import({
+  TestcontainersConfiguration.class,
+  TestJwtConfiguration.class,
+  TestMediaConfiguration.class
+})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected MockMvc mockMvc;
@@ -54,6 +69,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected QuizQuestionRepository quizQuestions;
   @Autowired protected QuizOptionRepository quizOptions;
   @Autowired protected QuizAttemptRepository quizAttempts;
+  @Autowired protected MediaAssetRepository mediaAssets;
+  @Autowired protected TestMediaConfiguration.RecordingObjectStore objectStore;
+  @Autowired protected TestMediaConfiguration.ScriptedTranscoder transcoder;
 
   /**
    * The containers are shared across the whole suite, so each test starts from a clean slate
@@ -72,6 +90,7 @@ public abstract class AbstractIntegrationTest {
     moduleSections.deleteAllInBatch();
     moduleVersions.deleteAllInBatch();
     modules.deleteAllInBatch();
+    mediaAssets.deleteAllInBatch();
     auditEvents.deleteAllInBatch();
     invitations.deleteAllInBatch();
     teamMembers.deleteAllInBatch();
@@ -81,5 +100,7 @@ public abstract class AbstractIntegrationTest {
     organisations.deleteAllInBatch();
     redis.getConnectionFactory().getConnection().serverCommands().flushDb();
     cognitoDirectory.reset();
+    objectStore.reset();
+    transcoder.reset();
   }
 }

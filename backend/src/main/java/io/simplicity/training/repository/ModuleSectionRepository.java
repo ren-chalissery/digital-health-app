@@ -18,4 +18,7 @@ public interface ModuleSectionRepository extends JpaRepository<ModuleSection, UU
   void deleteByVersionId(UUID versionId);
 
   long countByVersionId(UUID versionId);
+
+  /** Every section using a given video, across every version. Used when deleting one. */
+  List<ModuleSection> findByMediaAssetId(UUID mediaAssetId);
 }

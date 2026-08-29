@@ -155,6 +155,8 @@ public class ModuleAuthoringService {
               .position(existing.getPosition())
               .title(existing.getTitle())
               .body(existing.getBody())
+              // A reference, not a copy: the video belongs to the organisation, not the version.
+              .mediaAssetId(existing.getMediaAssetId())
               .build());
     }
     return describe(module);
@@ -179,6 +181,7 @@ public class ModuleAuthoringService {
               .position(position++)
               .title(input.title().trim())
               .body(input.body() == null ? "" : input.body())
+              .mediaAssetId(input.mediaAssetId())
               .build());
     }
     return describe(module);
@@ -279,7 +282,11 @@ public class ModuleAuthoringService {
     for (ModuleSection section : sections.findByVersionIdOrderByPositionAsc(version.getId())) {
       body.add(
           new SectionResponse(
-              section.getId(), section.getPosition(), section.getTitle(), section.getBody()));
+              section.getId(),
+              section.getPosition(),
+              section.getTitle(),
+              section.getBody(),
+              section.getMediaAssetId()));
     }
     return new VersionResponse(
         version.getId(),

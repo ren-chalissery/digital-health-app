@@ -23,6 +23,8 @@ import { AttemptResultResponse } from '../model/attempt-result-response';
 // @ts-ignore
 import { LearnerModuleResponse } from '../model/learner-module-response';
 // @ts-ignore
+import { PlaybackResponse } from '../model/playback-response';
+// @ts-ignore
 import { QuizResponse } from '../model/quiz-response';
 // @ts-ignore
 import { SubmitAttemptRequest } from '../model/submit-attempt-request';
@@ -98,6 +100,70 @@ export class LearningApi extends BaseService implements LearningApiInterface {
         let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/learning/sections/${this.configuration.encodeParam({name: "sectionId", value: sectionId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/complete`;
         const { basePath, withCredentials } = this.configuration;
         return this.httpClient.request<LearnerModuleResponse>('put', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * A short-lived URL for a video in an assigned module
+     * Minted per request after the same assignment check that guards the module. Holding an asset id is not authorisation.
+     * @endpoint get /api/v1/orgs/{orgId}/learning/media/{assetId}/playback
+     * @param orgId 
+     * @param assetId 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getPlaybackUrl(orgId: string, assetId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<PlaybackResponse>;
+    public getPlaybackUrl(orgId: string, assetId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<PlaybackResponse>>;
+    public getPlaybackUrl(orgId: string, assetId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<PlaybackResponse>>;
+    public getPlaybackUrl(orgId: string, assetId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling getPlaybackUrl.');
+        }
+        if (assetId === null || assetId === undefined) {
+            throw new Error('Required parameter assetId was null or undefined when calling getPlaybackUrl.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/learning/media/${this.configuration.encodeParam({name: "assetId", value: assetId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/playback`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<PlaybackResponse>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,

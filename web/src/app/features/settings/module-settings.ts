@@ -1,10 +1,12 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { MediaApi } from '../../api/api/media.service';
 import { ModulesApi } from '../../api/api/modules.service';
 import { TeamsApi } from '../../api/api/teams.service';
 import { AuthoredModuleResponse } from '../../api/model/authored-module-response';
 import { ModuleSummaryResponse } from '../../api/model/module-summary-response';
+import { MediaAssetResponse } from '../../api/model/media-asset-response';
 import { QuestionInput } from '../../api/model/question-input';
 import { SectionInput } from '../../api/model/section-input';
 import { TeamResponse } from '../../api/model/team-response';
@@ -124,6 +126,22 @@ import { SessionService } from '../../core/session.service';
                   [name]="'section-body-' + $index"
                 ></textarea>
               </div>
+              <div class="field">
+                <label [for]="'section-media-' + $index">
+                  Video <span class="field__hint">optional</span>
+                </label>
+                <select
+                  [id]="'section-media-' + $index"
+                  [(ngModel)]="section.mediaAssetId"
+                  [name]="'section-media-' + $index"
+                >
+                  <option [ngValue]="undefined">No video</option>
+                  @for (asset of readyMedia(); track asset.assetId) {
+                    <option [ngValue]="asset.assetId">{{ asset.filename }}</option>
+                  }
+                </select>
+              </div>
+
               <div class="row">
                 <button class="button--link" type="button" (click)="move($index, -1)" [disabled]="$index === 0">
                   Move up
@@ -235,6 +253,39 @@ import { SessionService } from '../../core/session.service';
           </div>
         }
 
+        <h3>Video library</h3>
+        <p class="field__hint">
+          MP4 up to 500MB. Uploads go straight to storage and are converted for playback, which
+          takes a few minutes; a section can use one once it is ready.
+        </p>
+
+        @if (uploadError()) {
+          <p class="notice notice--error" role="alert">{{ uploadError() }}</p>
+        }
+
+        <div class="row">
+          <input type="file" accept="video/mp4,video/quicktime,video/webm" (change)="upload($event)" />
+          @if (uploadProgress() !== null) {
+            <span class="field__hint">Uploading… {{ uploadProgress() }}%</span>
+          }
+        </div>
+
+        @for (asset of media(); track asset.assetId) {
+          <div class="row">
+            <span>{{ asset.filename }}</span>
+            <span
+              class="badge"
+              [class.badge--success]="asset.status === 'READY'"
+              [class.badge--accent]="asset.status === 'PROCESSING'"
+            >
+              {{ mediaLabel(asset) }}
+            </span>
+            <button class="button--link" type="button" (click)="deleteMedia(asset.assetId!)">
+              Delete
+            </button>
+          </div>
+        }
+
         <h3>Assigned teams</h3>
         <p class="field__hint">Modules reach clinicians through their teams.</p>
         @for (team of teams(); track team.id) {
@@ -259,6 +310,7 @@ import { SessionService } from '../../core/session.service';
 export class ModuleSettings implements OnInit {
   private readonly api = inject(ModulesApi);
   private readonly teamsApi = inject(TeamsApi);
+  private readonly mediaApi = inject(MediaApi);
   private readonly session = inject(SessionService);
 
   protected readonly loading = signal(true);
@@ -271,6 +323,13 @@ export class ModuleSettings implements OnInit {
   protected readonly sections = signal<SectionInput[]>([]);
   protected readonly questions = signal<QuestionInput[]>([]);
   protected readonly assignedTeamIds = signal<string[]>([]);
+  protected readonly media = signal<MediaAssetResponse[]>([]);
+  protected readonly uploadProgress = signal<number | null>(null);
+  protected readonly uploadError = signal<string | null>(null);
+
+  protected readonly readyMedia = computed(() =>
+    this.media().filter((asset) => asset.status === 'READY'),
+  );
 
   protected title = '';
   protected summary = '';
@@ -281,7 +340,7 @@ export class ModuleSettings implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.load(), this.loadTeams()]);
+    await Promise.all([this.load(), this.loadTeams(), this.loadMedia()]);
     this.loading.set(false);
   }
 
@@ -370,6 +429,81 @@ export class ModuleSettings implements OnInit {
       );
       await this.load();
     }, 'Could not save the assignment.');
+  }
+
+  protected mediaLabel(asset: MediaAssetResponse): string {
+    if (asset.status === 'FAILED') {
+      return asset.failureReason ? 'Failed: ' + asset.failureReason : 'Failed';
+    }
+    return asset.status === 'READY' ? 'Ready' : 'Converting…';
+  }
+
+  /**
+   * Registers the file, PUTs it straight to storage, then tells the API it landed. The bytes never
+   * pass through the application.
+   */
+  protected async upload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.uploadError.set(null);
+    this.uploadProgress.set(0);
+    try {
+      const target = await firstValueFrom(
+        this.mediaApi.registerUpload(this.orgId, {
+          filename: file.name,
+          contentType: file.type,
+          sizeBytes: file.size,
+        }),
+      );
+      await this.putToStorage(target.uploadUrl!, file);
+      await firstValueFrom(this.mediaApi.completeUpload(this.orgId, target.assetId!));
+      await this.loadMedia();
+    } catch (error) {
+      this.uploadError.set(problemMessage(error, 'Could not upload that video.'));
+    } finally {
+      this.uploadProgress.set(null);
+      input.value = '';
+    }
+  }
+
+  // XMLHttpRequest rather than fetch, because only it reports upload progress, and a 500MB upload
+  // with no feedback looks like a hung page.
+  private putToStorage(url: string, file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('PUT', url);
+      request.setRequestHeader('Content-Type', file.type);
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          this.uploadProgress.set(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+      request.onload = () =>
+        request.status >= 200 && request.status < 300
+          ? resolve()
+          : reject(new Error('Storage rejected the upload (' + request.status + ')'));
+      request.onerror = () => reject(new Error('The upload failed'));
+      request.send(file);
+    });
+  }
+
+  protected async deleteMedia(assetId: string): Promise<void> {
+    await this.run(async () => {
+      await firstValueFrom(this.mediaApi.deleteMedia(this.orgId, assetId));
+      await this.loadMedia();
+      // A section may have just lost its video.
+      const moduleId = this.editing()?.moduleId;
+      if (moduleId) {
+        this.show(await firstValueFrom(this.api.getModule(this.orgId, moduleId)));
+      }
+    }, 'Could not delete that video.');
+  }
+
+  private async loadMedia(): Promise<void> {
+    this.media.set(await firstValueFrom(this.mediaApi.listMedia(this.orgId)));
   }
 
   protected addQuestion(): void {
@@ -461,6 +595,7 @@ export class ModuleSettings implements OnInit {
       (module.draft?.sections ?? []).map((section) => ({
         title: section.title ?? '',
         body: section.body ?? '',
+        mediaAssetId: section.mediaAssetId,
       })),
     );
     this.questions.set(

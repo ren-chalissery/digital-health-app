@@ -20,7 +20,10 @@ public final class ModuleRequests {
 
   /** Markdown. Rendered through a sanitiser by every client, never stored as HTML. */
   public record SectionInput(
-      @NotBlank @Size(max = 200) String title, @Size(max = 50_000) String body) {}
+      @NotBlank @Size(max = 200) String title,
+      @Size(max = 50_000) String body,
+      /** Optional video from the organisation's library. At most one per section. */
+      UUID mediaAssetId) {}
 
   /**
    * The draft's sections in full. Replacing wholesale rather than patching one at a time: editing,

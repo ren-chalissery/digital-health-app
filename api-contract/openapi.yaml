@@ -9,6 +9,8 @@ servers:
 security:
 - bearerAuth: []
 tags:
+- description: Video for training modules
+  name: Media
 - description: The signed-in clinician's own profile and memberships
   name: Current user
 - description: Authoring training modules
@@ -260,6 +262,34 @@ paths:
       summary: "Modules assigned to the caller's teams, with their progress"
       tags:
       - Learning
+  /api/v1/orgs/{orgId}/learning/media/{assetId}/playback:
+    get:
+      description: Minted per request after the same assignment check that guards
+        the module. Holding an asset id is not authorisation.
+      operationId: getPlaybackUrl
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: assetId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaybackResponse"
+          description: OK
+      summary: A short-lived URL for a video in an assigned module
+      tags:
+      - Learning
   /api/v1/orgs/{orgId}/learning/sections/{sectionId}/complete:
     put:
       description: Completing the last section completes the module in the same transaction.
@@ -376,6 +406,105 @@ paths:
       summary: Answer the quiz
       tags:
       - Learning
+  /api/v1/orgs/{orgId}/media:
+    get:
+      operationId: listMedia
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaAssetResponse"
+          description: OK
+      summary: The organisation's video library
+      tags:
+      - Media
+    post:
+      description: Returns a presigned URL the browser PUTs to directly. Video never
+        passes through the API on the way in.
+      operationId: registerUpload
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUploadRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadTargetResponse"
+          description: Created
+      summary: Register a video and get somewhere to put it
+      tags:
+      - Media
+  /api/v1/orgs/{orgId}/media/{assetId}:
+    delete:
+      description: Any section using it keeps its writing and loses the video.
+      operationId: deleteMedia
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: assetId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a video
+      tags:
+      - Media
+  /api/v1/orgs/{orgId}/media/{assetId}/uploaded:
+    post:
+      description: Hands the file to the transcoder; the asset becomes PROCESSING.
+      operationId: completeUpload
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: assetId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+          description: OK
+      summary: Report that the upload finished
+      tags:
+      - Media
   /api/v1/orgs/{orgId}/members:
     get:
       operationId: listOrganisationMembers
@@ -1336,6 +1465,27 @@ components:
           format: uuid
         wasCorrect:
           type: boolean
+    MediaAssetResponse:
+      type: object
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          format: int32
+        failureReason:
+          type: string
+        filename:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        status:
+          type: string
     ModuleSummaryResponse:
       type: object
       properties:
@@ -1446,6 +1596,14 @@ components:
           - OTHER
         slug:
           type: string
+    PlaybackResponse:
+      type: object
+      properties:
+        expiresInSeconds:
+          type: integer
+          format: int32
+        url:
+          type: string
     PublishRequest:
       type: object
       properties:
@@ -1512,6 +1670,22 @@ components:
         versionId:
           type: string
           format: uuid
+    RegisterUploadRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+          minLength: 1
+        filename:
+          type: string
+          minLength: 1
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - contentType
+      - filename
     ReplaceQuizRequest:
       type: object
       properties:
@@ -1541,6 +1715,9 @@ components:
           type: string
           maxLength: 50000
           minLength: 0
+        mediaAssetId:
+          type: string
+          format: uuid
         title:
           type: string
           maxLength: 200
@@ -1552,6 +1729,9 @@ components:
       properties:
         body:
           type: string
+        mediaAssetId:
+          type: string
+          format: uuid
         position:
           type: integer
           format: int32
@@ -1676,6 +1856,14 @@ components:
           minLength: 0
       required:
       - name
+    UploadTargetResponse:
+      type: object
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
     VersionResponse:
       type: object
       properties:

@@ -39,6 +39,9 @@ dependencies {
 	implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
 	implementation 'software.amazon.awssdk:sesv2'
 	implementation 'software.amazon.awssdk:cognitoidentityprovider'
+	// S3Presigner ships inside this artifact; there is no separate presigner module.
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:mediaconvert'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

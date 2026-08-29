@@ -37,4 +37,8 @@ public class ModuleSection {
   @Column(nullable = false)
   @Builder.Default
   private String body = "";
+
+  /** At most one video. An author who wants two makes two sections. */
+  @Column(name = "media_asset_id")
+  private UUID mediaAssetId;
 }

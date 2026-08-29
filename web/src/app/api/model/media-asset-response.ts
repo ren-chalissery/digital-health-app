@@ -9,11 +9,13 @@
  */
 
 
-export interface SectionResponse { 
-    body?: string;
-    mediaAssetId?: string;
-    position?: number;
-    sectionId?: string;
-    title?: string;
+export interface MediaAssetResponse { 
+    assetId?: string;
+    createdAt?: string;
+    durationSeconds?: number;
+    failureReason?: string;
+    filename?: string;
+    sizeBytes?: number;
+    status?: string;
 }
 

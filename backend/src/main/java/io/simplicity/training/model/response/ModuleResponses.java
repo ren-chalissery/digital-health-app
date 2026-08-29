@@ -11,7 +11,8 @@ public final class ModuleResponses {
   private ModuleResponses() {}
 
   /** One section as an author sees it, and as a learner reads it. */
-  public record SectionResponse(UUID sectionId, int position, String title, String body) {}
+  public record SectionResponse(
+      UUID sectionId, int position, String title, String body, UUID mediaAssetId) {}
 
   /** A version with its sections, for the authoring screen. */
   public record VersionResponse(

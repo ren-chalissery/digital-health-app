@@ -189,9 +189,19 @@ against a real emulator that Floci gives us for SES has no MediaConvert equivale
 
 ## 10. Out of scope
 
-Adaptive bitrate, subtitles and captions, thumbnails, watch tracking, resumable uploads, and any
-file type other than video. Captions are the most likely next request and the most defensible: a
-training product that cannot be used without sound is a poor one.
+Adaptive bitrate, thumbnails, watch tracking, resumable uploads, and any file type other than
+video.
+
+**Captions were considered for this phase and deliberately deferred to the next one.** A video
+whose content is carried in narration is unusable to anyone deaf or hard of hearing, and to anyone
+watching at a ward station without headphones — which is most of a hospital. Some of the clinicians
+this trains will themselves be hard of hearing, and WCAG treats captions on pre-recorded video as
+a baseline rather than an enhancement.
+
+The cost of deferring is not the implementation, which is a WebVTT file beside the video and a
+`<track>` element. It is that every module published before captions arrive has to be revisited,
+with people having watched uncaptioned content meanwhile. Worth doing soon and worth doing before
+the pilot widens.
 
 ## 11. Risks
 

@@ -9,6 +9,8 @@ api/invitations.service.ts
 api/invitations.serviceInterface.ts
 api/learning.service.ts
 api/learning.serviceInterface.ts
+api/media.service.ts
+api/media.serviceInterface.ts
 api/modules.service.ts
 api/modules.serviceInterface.ts
 api/organisations.service.ts
@@ -37,17 +39,20 @@ model/invitation-preview-response.ts
 model/invitation-response.ts
 model/learner-module-response.ts
 model/marked-question.ts
+model/media-asset-response.ts
 model/models.ts
 model/module-summary-response.ts
 model/option-input.ts
 model/org-member-response.ts
 model/organisation-membership-response.ts
 model/organisation-response.ts
+model/playback-response.ts
 model/publish-request.ts
 model/question-input.ts
 model/quiz-option-response.ts
 model/quiz-question-response.ts
 model/quiz-response.ts
+model/register-upload-request.ts
 model/replace-quiz-request.ts
 model/replace-sections-request.ts
 model/section-input.ts
@@ -60,6 +65,7 @@ model/team-response.ts
 model/update-module-request.ts
 model/update-profile-request.ts
 model/update-team-request.ts
+model/upload-target-response.ts
 model/version-response.ts
 ng-package.json
 package.json

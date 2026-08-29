@@ -41,6 +41,13 @@ Parameters:
     Type: String
     Description: Verified SES sender address for invitation emails.
 
+  MediaStackName:
+    Type: String
+    Default: ''
+    Description: >
+      Name of the deployed media stack. Left empty before that stack exists, in which case video is
+      simply unavailable and the rest of the application is unaffected.
+
   ImageTag:
     Type: String
     Default: latest
@@ -68,6 +75,7 @@ Parameters:
 
 Conditions:
   IssueCertificate: !Equals [!Ref CertificateArn, '']
+  HasMedia: !Not [!Equals [!Ref MediaStackName, '']]
   CreateDnsRecord: !Not [!Equals [!Ref HostedZoneId, '']]
 
 Resources:
@@ -168,6 +176,41 @@ Resources:
                 Condition:
                   StringEquals:
                     ses:FromAddress: !Ref MailFrom
+        - !If
+          - HasMedia
+          - PolicyName: media
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                # Presigning does not call S3, but reading an object to serve it and writing the
+                # upload target both do.
+                - Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - !Sub
+                      - 'arn:aws:s3:::${Bucket}/*'
+                      - Bucket: !ImportValue
+                          Fn::Sub: '${MediaStackName}-UploadBucketName'
+                    - !Sub
+                      - 'arn:aws:s3:::${Bucket}/*'
+                      - Bucket: !ImportValue
+                          Fn::Sub: '${MediaStackName}-AssetBucketName'
+                - Effect: Allow
+                  Action:
+                    - mediaconvert:CreateJob
+                    - mediaconvert:GetJob
+                    - mediaconvert:DescribeEndpoints
+                  Resource: '*'
+                # Scoped to the one role MediaConvert assumes. Unscoped PassRole would let this
+                # task hand MediaConvert any role in the account.
+                - Effect: Allow
+                  Action: iam:PassRole
+                  Resource: !ImportValue
+                    Fn::Sub: '${MediaStackName}-TranscodeRoleArn'
+          - !Ref AWS::NoValue
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -229,6 +272,30 @@ Resources:
               Value: 'true'
             - Name: MAIL_FROM
               Value: !Ref MailFrom
+            - Name: MEDIA_UPLOAD_BUCKET
+              Value: !If
+                - HasMedia
+                - !ImportValue
+                  Fn::Sub: '${MediaStackName}-UploadBucketName'
+                - ''
+            - Name: MEDIA_ASSET_BUCKET
+              Value: !If
+                - HasMedia
+                - !ImportValue
+                  Fn::Sub: '${MediaStackName}-AssetBucketName'
+                - ''
+            - Name: MEDIA_TRANSCODE_QUEUE_ARN
+              Value: !If
+                - HasMedia
+                - !ImportValue
+                  Fn::Sub: '${MediaStackName}-TranscodeQueueArn'
+                - ''
+            - Name: MEDIA_TRANSCODE_ROLE_ARN
+              Value: !If
+                - HasMedia
+                - !ImportValue
+                  Fn::Sub: '${MediaStackName}-TranscodeRoleArn'
+                - ''
           Secrets:
             - Name: DB_USERNAME
               ValueFrom: !Sub

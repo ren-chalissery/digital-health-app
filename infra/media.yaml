@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Video storage and transcoding. Two buckets, following tinderbox2_server: raw uploads are
+  untrusted input with a different lifecycle from processed output, and mixing them makes both
+  harder to reason about. Neither bucket is public and neither is fronted by CloudFront; playback
+  is a presigned GET minted per request by the application.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  WebOrigin:
+    Type: String
+    Description: >
+      Origin allowed to PUT into the upload bucket. The browser uploads straight to S3, so this is
+      what makes the preflight succeed.
+
+Resources:
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    # Source files, not results. Losing one costs a re-upload.
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub 'digital-health-upload-${EnvironmentName}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: [!Ref WebOrigin]
+            AllowedMethods: [PUT]
+            AllowedHeaders: ['*']
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          # Once transcoded the original is dead weight, and a week is long enough to investigate
+          # a failed job before it goes.
+          - Id: ExpireSourcesOnceTranscoded
+            Status: Enabled
+            ExpirationInDays: 7
+          - Id: AbandonIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  AssetBucket:
+    Type: AWS::S3::Bucket
+    # Losing this means re-uploading and re-transcoding every video an organisation has.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub 'digital-health-media-${EnvironmentName}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  TranscodeQueue:
+    Type: AWS::MediaConvert::Queue
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}'
+      Description: Training video
+      PricingPlan: ON_DEMAND
+
+  # Assumed by MediaConvert itself, which reads the upload bucket and writes the asset bucket on
+  # its own. Mirrors MoxionMediaConvertRole.
+  TranscodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'digital-health-mediaconvert-${EnvironmentName}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: mediaconvert.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: transcode
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub '${UploadBucket.Arn}/*'
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub '${AssetBucket.Arn}/*'
+
+Outputs:
+  UploadBucketName:
+    Value: !Ref UploadBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-UploadBucketName'
+
+  AssetBucketName:
+    Value: !Ref AssetBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-AssetBucketName'
+
+  TranscodeQueueArn:
+    Value: !GetAtt TranscodeQueue.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-TranscodeQueueArn'
+
+  TranscodeRoleArn:
+    Value: !GetAtt TranscodeRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-TranscodeRoleArn'

@@ -57,6 +57,16 @@ app:
   mail:
     from: ${MAIL_FROM:no-reply@example.invalid}
     enabled: ${MAIL_ENABLED:false}
+  media:
+    # Empty until the media stack is deployed, in which case video is unavailable and nothing else
+    # is affected.
+    upload-bucket: ${MEDIA_UPLOAD_BUCKET:}
+    asset-bucket: ${MEDIA_ASSET_BUCKET:}
+    transcode-queue-arn: ${MEDIA_TRANSCODE_QUEUE_ARN:}
+    transcode-role-arn: ${MEDIA_TRANSCODE_ROLE_ARN:}
+    # Long enough to start watching, short enough that a forwarded link is not much use.
+    playback-url-ttl: 15m
+    max-upload-bytes: 524288000
   web:
     base-url: ${WEB_BASE_URL:http://localhost:4200}
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

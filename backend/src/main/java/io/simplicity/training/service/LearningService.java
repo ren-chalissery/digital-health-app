@@ -105,7 +105,8 @@ public class LearningService {
         current.getId(),
         statusOf(principal.userId(), moduleId, current, body.size(), done.size()),
         body.stream()
-            .map(s -> new SectionResponse(s.getId(), s.getPosition(), s.getTitle(), s.getBody()))
+            .map(s -> new SectionResponse(
+                    s.getId(), s.getPosition(), s.getTitle(), s.getBody(), s.getMediaAssetId()))
             .toList(),
         done,
         quiz.hasQuestions(current.getId()),
@@ -180,6 +181,23 @@ public class LearningService {
     // Anything begun is in progress, including every section read with the quiz still to pass.
     // Comparing against the section count instead would report that as not started.
     return completedCount > 0 ? LearningStatus.IN_PROGRESS : LearningStatus.NOT_STARTED;
+  }
+
+  /**
+   * Whether the caller may reach the module a given version belongs to. Passed to the media service
+   * so the assignment rule stays here rather than being restated wherever a video is served.
+   */
+  @Transactional(readOnly = true)
+  public boolean mayReachVersion(AppPrincipal principal, UUID orgId, UUID versionId) {
+    ModuleVersion version = versions.findById(versionId).orElse(null);
+    if (version == null) {
+      return false;
+    }
+    // The published version only. A draft's video is not content, however it is reached.
+    return publishedVersion(version.getModuleId())
+            .map(published -> published.getId().equals(versionId))
+            .orElse(false)
+        && assignedModuleIds(principal, orgId).contains(version.getModuleId());
   }
 
   /**

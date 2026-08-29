@@ -10,7 +10,30 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 /** Strongly typed view of the {@code app.*} configuration tree. */
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(
-    Aws aws, Cognito cognito, Auth auth, Invitations invitations, Mail mail, Web web) {
+    Aws aws,
+    Cognito cognito,
+    Auth auth,
+    Invitations invitations,
+    Mail mail,
+    Media media,
+    Web web) {
+
+  /**
+   * @param uploadBucket empty until the media stack exists, which makes video unavailable and
+   *     leaves everything else working
+   */
+  public record Media(
+      String uploadBucket,
+      String assetBucket,
+      String transcodeQueueArn,
+      String transcodeRoleArn,
+      @DefaultValue("15m") Duration playbackUrlTtl,
+      @DefaultValue("524288000") long maxUploadBytes) {
+
+    public boolean isConfigured() {
+      return uploadBucket != null && !uploadBucket.isBlank();
+    }
+  }
 
   /**
    * @param endpointOverride points the AWS clients at a local emulator. Never set in a deployed

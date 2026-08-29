@@ -14,6 +14,7 @@ import { Observable }                                        from 'rxjs';
 import { AssignedModuleResponse } from '../model/models';
 import { AttemptResultResponse } from '../model/models';
 import { LearnerModuleResponse } from '../model/models';
+import { PlaybackResponse } from '../model/models';
 import { QuizResponse } from '../model/models';
 import { SubmitAttemptRequest } from '../model/models';
 
@@ -34,6 +35,15 @@ export interface LearningApiInterface {
      * @param sectionId 
      */
     completeSection(orgId: string, sectionId: string, extraHttpRequestParams?: any): Observable<LearnerModuleResponse>;
+
+    /**
+     * A short-lived URL for a video in an assigned module
+     * Minted per request after the same assignment check that guards the module. Holding an asset id is not authorisation.
+     * @endpoint get /api/v1/orgs/{orgId}/learning/media/{assetId}/playback
+     * @param orgId 
+     * @param assetId 
+     */
+    getPlaybackUrl(orgId: string, assetId: string, extraHttpRequestParams?: any): Observable<PlaybackResponse>;
 
     /**
      * The quiz for an assigned module

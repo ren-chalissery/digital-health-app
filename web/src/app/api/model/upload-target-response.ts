@@ -9,11 +9,8 @@
  */
 
 
-export interface SectionResponse { 
-    body?: string;
-    mediaAssetId?: string;
-    position?: number;
-    sectionId?: string;
-    title?: string;
+export interface UploadTargetResponse { 
+    assetId?: string;
+    uploadUrl?: string;
 }
 

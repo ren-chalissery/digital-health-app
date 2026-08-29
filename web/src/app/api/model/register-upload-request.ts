@@ -9,11 +9,9 @@
  */
 
 
-export interface SectionResponse { 
-    body?: string;
-    mediaAssetId?: string;
-    position?: number;
-    sectionId?: string;
-    title?: string;
+export interface RegisterUploadRequest { 
+    contentType: string;
+    filename: string;
+    sizeBytes?: number;
 }
 

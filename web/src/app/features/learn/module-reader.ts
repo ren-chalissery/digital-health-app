@@ -47,6 +47,16 @@ import { STATUS_LABELS } from './status-labels';
                 }
               </div>
 
+              @if (section.mediaAssetId) {
+                @if (videoUrl()[section.mediaAssetId]; as url) {
+                  <video class="video" controls preload="metadata" [src]="url"></video>
+                } @else {
+                  <button class="button--link" type="button" (click)="loadVideo(section.mediaAssetId!)">
+                    Load video
+                  </button>
+                }
+              }
+
               <div class="prose" [innerHTML]="rendered(section)"></div>
 
               @if (!isComplete(section)) {
@@ -145,6 +155,8 @@ export class ModuleReader implements OnInit {
   protected readonly quiz = signal<QuizResponse | null>(null);
   protected readonly result = signal<AttemptResultResponse | null>(null);
   protected readonly chosen = signal<Record<string, string>>({});
+  /** Playback URLs expire, so they are fetched when asked for rather than for the whole module. */
+  protected readonly videoUrl = signal<Record<string, string>>({});
 
   private readonly completed = computed(() => new Set(this.module()?.completedSectionIds ?? []));
 
@@ -201,6 +213,19 @@ export class ModuleReader implements OnInit {
       this.error.set(problemMessage(error, 'Could not record your progress.'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  protected async loadVideo(assetId: string): Promise<void> {
+    const orgId = this.session.activeOrganisation()?.orgId;
+    if (!orgId || this.videoUrl()[assetId]) {
+      return;
+    }
+    try {
+      const playback = await firstValueFrom(this.api.getPlaybackUrl(orgId, assetId));
+      this.videoUrl.update((current) => ({ ...current, [assetId]: playback.url ?? '' }));
+    } catch (error) {
+      this.error.set(problemMessage(error, 'Could not load the video.'));
     }
   }
 
