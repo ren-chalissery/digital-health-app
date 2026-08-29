@@ -1,0 +1,81 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'io.simplicity'
+version = '0.1.0'
+description = 'Digital training package API for the Simplicity digital therapeutic'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	awsSdkVersion = '2.54.7'
+	springdocVersion = '3.1.0'
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+
+	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+	implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+	implementation 'software.amazon.awssdk:ses'
+	implementation 'software.amazon.awssdk:cognitoidentityprovider'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	testImplementation 'org.testcontainers:testcontainers-postgresql'
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
+}
+
+// Writes the OpenAPI document to api-contract/openapi.yaml. CI runs this and fails if the
+// committed copy has drifted, so the three generated clients can never silently fall behind
+// the controllers.
+tasks.register('generateOpenApiSpec', JavaExec) {
+	group = 'documentation'
+	description = 'Boots the application context and writes api-contract/openapi.yaml'
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'io.simplicity.training.openapi.OpenApiSpecWriter'
+	args = [file("${rootDir}/../api-contract/openapi.yaml").absolutePath]
+	dependsOn tasks.named('testClasses')
+}
