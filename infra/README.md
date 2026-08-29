@@ -22,7 +22,40 @@ producers' stack names as parameters rather than assuming them.
 
 ## Deploying
 
-Once, by hand, before the pipeline can run anything:
+### First, a domain
+
+Everything below needs one. `app.yaml` has no domainless path: `ApiDomainName` is required and the
+load balancer always terminates TLS.
+
+The TLD is a deliverability decision, not just a naming one. Invitation email is how clinicians
+reach the product at all, and the cheap TLDs carry enough spam reputation to get filtered on
+arrival. Stay with `.com`, `.org`, or `.health`.
+
+Registering is a purchase with contact details attached, so it is not scripted:
+
+```bash
+aws route53domains check-domain-availability --region us-east-1 --domain-name example.org
+aws route53domains register-domain --region us-east-1 --cli-input-json file://domain.json
+```
+
+Route 53's registration API only exists in `us-east-1`, whatever region the rest of this lives in.
+Registering there creates the hosted zone automatically. A domain bought elsewhere works just as
+well, as long as its nameservers are delegated to a Route 53 zone in this account.
+
+### Then everything else
+
+```bash
+DOMAIN=example.org ./infra/bootstrap.sh
+```
+
+That covers the whole sequence: it refuses to run against the wrong account, issues the CloudFront
+certificate in `us-east-1` and validates it through Route 53, deploys the six stacks in order,
+pushes the first image, verifies the sending domain and writes its DKIM records, and sets the
+GitHub variables. It is idempotent, so a failed run can simply be repeated.
+
+`WEB_HOST`, `API_HOST`, and `MAIL_FROM` default to `app.`, `api.`, and `no-reply@` on the domain.
+
+The steps it performs, should you want to do them by hand instead:
 
 ```bash
 aws cloudformation deploy \
@@ -68,6 +101,12 @@ The `app` stack fails on its first deploy if no image has been pushed yet: the E
 to exist before the pipeline can push, and the service cannot start without an image. Deploy `app`
 once with `DesiredCount=0`, push an image, then set it back to 1.
 
+The `app` stack issues and validates its own certificate for `ApiDomainName`, which is why
+`CertificateArn` is left unset above and why the pipeline never passes it. Supplying that ARN back
+as a parameter flips the condition guarding the certificate, and CloudFormation then tries to
+delete one its own listener still references. Only CloudFront's certificate is passed in, because
+it has to live in `us-east-1` and a stack cannot create a certificate outside its own region.
+
 ## What the pipeline needs
 
 After that first manual round, pushes to `main` redeploy `app` and `web` from
@@ -79,7 +118,6 @@ AWS key to store — only these repository variables, none of which is a secret:
 | `AWS_REGION` | `ap-southeast-2` |
 | `AWS_DEPLOY_ROLE_ARN` | the `deploy-role` stack's role ARN |
 | `API_DOMAIN_NAME` | `api.example.org` |
-| `API_CERTIFICATE_ARN` | ACM certificate for the ALB, in `AWS_REGION` |
 | `WEB_DOMAIN_NAME` | `app.example.org` |
 | `WEB_CERTIFICATE_ARN` | ACM certificate for CloudFront, **in us-east-1** |
 | `WEB_BASE_URL` | `https://app.example.org` |
