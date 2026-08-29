@@ -1,0 +1,31 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Java / Gradle
+backend/build/
+backend/.gradle/
+backend/bin/
+.gradle/
+build/
+
+# Node / Angular
+node_modules/
+web/dist/
+web/.angular/
+web/coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
