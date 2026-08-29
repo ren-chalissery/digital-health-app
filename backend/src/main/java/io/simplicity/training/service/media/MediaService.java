@@ -86,7 +86,7 @@ public class MediaService {
 
     // MediaConvert writes alongside the source, appending the name modifier and extension to the
     // destination prefix it is given.
-    String prefix = asset.getUploadKey().substring(0, asset.getUploadKey().lastIndexOf('/') + 1);
+    String prefix = prefixOf(asset);
     asset.setTranscodeJobId(transcoder.submit(asset.getUploadKey(), prefix));
     asset.setStatus(MediaStatus.PROCESSING);
     asset.setPlaybackKey(prefix + "source-720p.mp4");
@@ -113,6 +113,9 @@ public class MediaService {
     objects.delete(properties.media().uploadBucket(), asset.getUploadKey());
     if (asset.getPlaybackKey() != null) {
       objects.delete(properties.media().assetBucket(), asset.getPlaybackKey());
+    }
+    if (asset.getCaptionKey() != null) {
+      objects.delete(properties.media().assetBucket(), asset.getCaptionKey());
     }
     assets.delete(asset);
   }
@@ -142,6 +145,60 @@ public class MediaService {
 
     return objects.presignGet(
         properties.media().assetBucket(), asset.getPlaybackKey(), properties.media().playbackUrlTtl());
+  }
+
+  /**
+   * Stores a caption track beside the video.
+   *
+   * <p>Validated only far enough to catch the mistake somebody will actually make, which is
+   * uploading an SRT: a WebVTT file must begin with the word WEBVTT, and a browser silently ignores
+   * a track that does not. Parsing cues properly is the browser's job, and rejecting a file it
+   * would have accepted would be worse than letting it through.
+   */
+  @Transactional
+  public MediaAsset setCaptions(UUID orgId, UUID assetId, String webvtt) {
+    requireConfigured();
+    MediaAsset asset = require(orgId, assetId);
+
+    String trimmed = webvtt == null ? "" : webvtt.stripLeading();
+    if (!trimmed.startsWith("WEBVTT")) {
+      throw new BadRequestException(
+          "Captions must be WebVTT, which begins with the line WEBVTT. An SRT file will not work.");
+    }
+
+    String key = prefixOf(asset) + "captions.vtt";
+    objects.putText(properties.media().assetBucket(), key, "text/vtt", trimmed);
+    asset.setCaptionKey(key);
+    return assets.save(asset);
+  }
+
+  @Transactional
+  public MediaAsset removeCaptions(UUID orgId, UUID assetId) {
+    MediaAsset asset = require(orgId, assetId);
+    if (asset.getCaptionKey() != null) {
+      objects.delete(properties.media().assetBucket(), asset.getCaptionKey());
+      asset.setCaptionKey(null);
+      assets.save(asset);
+    }
+    return asset;
+  }
+
+  /** The caption track for a video the caller may watch, or empty when there is none. */
+  @Transactional(readOnly = true)
+  public java.util.Optional<String> captionUrl(UUID orgId, UUID assetId) {
+    MediaAsset asset = require(orgId, assetId);
+    if (asset.getCaptionKey() == null) {
+      return java.util.Optional.empty();
+    }
+    return java.util.Optional.of(
+        objects.presignGet(
+            properties.media().assetBucket(),
+            asset.getCaptionKey(),
+            properties.media().playbackUrlTtl()));
+  }
+
+  private String prefixOf(MediaAsset asset) {
+    return asset.getUploadKey().substring(0, asset.getUploadKey().lastIndexOf('/') + 1);
   }
 
   private MediaAsset require(UUID orgId, UUID assetId) {

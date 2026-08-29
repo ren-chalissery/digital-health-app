@@ -60,6 +60,10 @@ public class MediaAsset {
   @Column(name = "duration_seconds")
   private Integer durationSeconds;
 
+  /** WebVTT beside the video. Null when nobody has written captions yet. */
+  @Column(name = "caption_key")
+  private String captionKey;
+
   @Column(name = "transcode_job_id")
   private String transcodeJobId;
 

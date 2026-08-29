@@ -14,5 +14,11 @@ public interface ObjectStore {
 
   String presignGet(String bucket, String key, Duration validFor);
 
+  /**
+   * For small text such as a caption track. Video never goes through here — it is presigned both
+   * ways precisely so this application never carries it.
+   */
+  void putText(String bucket, String key, String contentType, String body);
+
   void delete(String bucket, String key);
 }

@@ -49,7 +49,16 @@ import { STATUS_LABELS } from './status-labels';
 
               @if (section.mediaAssetId) {
                 @if (videoUrl()[section.mediaAssetId]; as url) {
-                  <video class="video" controls preload="metadata" [src]="url"></video>
+                  <!-- crossorigin is required for the track to load; without it the video plays
+                       and the captions silently never appear. -->
+                  <video class="video" controls preload="metadata" crossorigin="anonymous" [src]="url">
+                    @if (captionUrl()[section.mediaAssetId!]; as captions) {
+                      <track kind="captions" srclang="en" label="English" default [src]="captions" />
+                    }
+                  </video>
+                  @if (!captionUrl()[section.mediaAssetId!]) {
+                    <p class="field__hint">This video has no captions.</p>
+                  }
                 } @else {
                   <button class="button--link" type="button" (click)="loadVideo(section.mediaAssetId!)">
                     Load video
@@ -157,6 +166,7 @@ export class ModuleReader implements OnInit {
   protected readonly chosen = signal<Record<string, string>>({});
   /** Playback URLs expire, so they are fetched when asked for rather than for the whole module. */
   protected readonly videoUrl = signal<Record<string, string>>({});
+  protected readonly captionUrl = signal<Record<string, string>>({});
 
   private readonly completed = computed(() => new Set(this.module()?.completedSectionIds ?? []));
 
@@ -224,6 +234,9 @@ export class ModuleReader implements OnInit {
     try {
       const playback = await firstValueFrom(this.api.getPlaybackUrl(orgId, assetId));
       this.videoUrl.update((current) => ({ ...current, [assetId]: playback.url ?? '' }));
+      if (playback.captionUrl) {
+        this.captionUrl.update((current) => ({ ...current, [assetId]: playback.captionUrl! }));
+      }
     } catch (error) {
       this.error.set(problemMessage(error, 'Could not load the video.'));
     }

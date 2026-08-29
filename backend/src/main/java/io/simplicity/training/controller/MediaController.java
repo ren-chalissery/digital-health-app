@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -79,6 +80,24 @@ public class MediaController {
     media.delete(orgId, assetId);
   }
 
+  @PutMapping(value = "/{assetId}/captions", consumes = "text/vtt")
+  @Operation(
+      operationId = "setCaptions",
+      summary = "Attach a WebVTT caption track",
+      description =
+          "Sent as the request body rather than presigned, because a caption file is kilobytes "
+              + "where a video is hundreds of megabytes.")
+  public MediaAssetResponse setCaptions(
+      @PathVariable UUID orgId, @PathVariable UUID assetId, @RequestBody String webvtt) {
+    return describe(media.setCaptions(orgId, assetId, webvtt));
+  }
+
+  @DeleteMapping("/{assetId}/captions")
+  @Operation(operationId = "removeCaptions", summary = "Remove the caption track")
+  public MediaAssetResponse removeCaptions(@PathVariable UUID orgId, @PathVariable UUID assetId) {
+    return describe(media.removeCaptions(orgId, assetId));
+  }
+
   private MediaAssetResponse describe(MediaAsset asset) {
     return new MediaAssetResponse(
         asset.getId(),
@@ -87,6 +106,7 @@ public class MediaController {
         asset.getFailureReason(),
         asset.getDurationSeconds(),
         asset.getSizeBytes(),
+        asset.getCaptionKey() != null,
         asset.getCreatedAt());
   }
 

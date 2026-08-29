@@ -302,4 +302,145 @@ export class MediaApi extends BaseService implements MediaApiInterface {
         );
     }
 
+    /**
+     * Remove the caption track
+     * @endpoint delete /api/v1/orgs/{orgId}/media/{assetId}/captions
+     * @param orgId 
+     * @param assetId 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public removeCaptions(orgId: string, assetId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<MediaAssetResponse>;
+    public removeCaptions(orgId: string, assetId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<MediaAssetResponse>>;
+    public removeCaptions(orgId: string, assetId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<MediaAssetResponse>>;
+    public removeCaptions(orgId: string, assetId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling removeCaptions.');
+        }
+        if (assetId === null || assetId === undefined) {
+            throw new Error('Required parameter assetId was null or undefined when calling removeCaptions.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/media/${this.configuration.encodeParam({name: "assetId", value: assetId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/captions`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<MediaAssetResponse>('delete', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Attach a WebVTT caption track
+     * Sent as the request body rather than presigned, because a caption file is kilobytes where a video is hundreds of megabytes.
+     * @endpoint put /api/v1/orgs/{orgId}/media/{assetId}/captions
+     * @param orgId 
+     * @param assetId 
+     * @param body 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public setCaptions(orgId: string, assetId: string, body: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<MediaAssetResponse>;
+    public setCaptions(orgId: string, assetId: string, body: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<MediaAssetResponse>>;
+    public setCaptions(orgId: string, assetId: string, body: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<MediaAssetResponse>>;
+    public setCaptions(orgId: string, assetId: string, body: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (orgId === null || orgId === undefined) {
+            throw new Error('Required parameter orgId was null or undefined when calling setCaptions.');
+        }
+        if (assetId === null || assetId === undefined) {
+            throw new Error('Required parameter assetId was null or undefined when calling setCaptions.');
+        }
+        if (body === null || body === undefined) {
+            throw new Error('Required parameter body was null or undefined when calling setCaptions.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'text/vtt'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/v1/orgs/${this.configuration.encodeParam({name: "orgId", value: orgId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/media/${this.configuration.encodeParam({name: "assetId", value: assetId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/captions`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<MediaAssetResponse>('put', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: body,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
 }

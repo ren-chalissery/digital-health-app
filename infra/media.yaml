@@ -67,6 +67,16 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          # A caption track is fetched cross-origin by the video element, unlike the video source
+          # itself, and marking the element crossorigin brings the source under the same rule.
+          # Without this the video plays and the captions silently never appear.
+          - AllowedOrigins: [!Ref WebOrigin]
+            AllowedMethods: [GET, HEAD]
+            AllowedHeaders: ['*']
+            ExposedHeaders: [Content-Length, Content-Range, Accept-Ranges]
+            MaxAge: 3000
       VersioningConfiguration:
         Status: Enabled
 

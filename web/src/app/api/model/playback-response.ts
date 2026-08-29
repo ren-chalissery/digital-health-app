@@ -10,6 +10,7 @@
 
 
 export interface PlaybackResponse { 
+    captionUrl?: string;
     expiresInSeconds?: number;
     url?: string;
 }

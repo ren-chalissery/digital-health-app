@@ -280,11 +280,32 @@ import { SessionService } from '../../core/session.service';
             >
               {{ mediaLabel(asset) }}
             </span>
+            @if (asset.hasCaptions) {
+              <span class="badge badge--success">Captions</span>
+              <button class="button--link" type="button" (click)="removeCaptions(asset.assetId!)">
+                Remove captions
+              </button>
+            } @else if (asset.status === 'READY') {
+              <label class="button--link">
+                Add captions
+                <input
+                  type="file"
+                  accept=".vtt,text/vtt"
+                  hidden
+                  (change)="addCaptions(asset.assetId!, $event)"
+                />
+              </label>
+            }
             <button class="button--link" type="button" (click)="deleteMedia(asset.assetId!)">
               Delete
             </button>
           </div>
         }
+
+        <p class="field__hint">
+          Captions are a WebVTT file. Without them the video is unusable to anyone who is deaf or
+          hard of hearing, and to anyone watching somewhere they cannot play sound.
+        </p>
 
         <h3>Assigned teams</h3>
         <p class="field__hint">Modules reach clinicians through their teams.</p>
@@ -488,6 +509,27 @@ export class ModuleSettings implements OnInit {
       request.onerror = () => reject(new Error('The upload failed'));
       request.send(file);
     });
+  }
+
+  protected async addCaptions(assetId: string, event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+    await this.run(async () => {
+      // Sent as the body rather than presigned: a caption file is kilobytes.
+      await firstValueFrom(this.mediaApi.setCaptions(this.orgId, assetId, await file.text()));
+      await this.loadMedia();
+    }, 'Could not add those captions.');
+    input.value = '';
+  }
+
+  protected async removeCaptions(assetId: string): Promise<void> {
+    await this.run(async () => {
+      await firstValueFrom(this.mediaApi.removeCaptions(this.orgId, assetId));
+      await this.loadMedia();
+    }, 'Could not remove those captions.');
   }
 
   protected async deleteMedia(assetId: string): Promise<void> {

@@ -59,4 +59,23 @@ export interface MediaApiInterface {
      */
     registerUpload(orgId: string, registerUploadRequest: RegisterUploadRequest, extraHttpRequestParams?: any): Observable<UploadTargetResponse>;
 
+    /**
+     * Remove the caption track
+     * 
+     * @endpoint delete /api/v1/orgs/{orgId}/media/{assetId}/captions
+     * @param orgId 
+     * @param assetId 
+     */
+    removeCaptions(orgId: string, assetId: string, extraHttpRequestParams?: any): Observable<MediaAssetResponse>;
+
+    /**
+     * Attach a WebVTT caption track
+     * Sent as the request body rather than presigned, because a caption file is kilobytes where a video is hundreds of megabytes.
+     * @endpoint put /api/v1/orgs/{orgId}/media/{assetId}/captions
+     * @param orgId 
+     * @param assetId 
+     * @param body 
+     */
+    setCaptions(orgId: string, assetId: string, body: string, extraHttpRequestParams?: any): Observable<MediaAssetResponse>;
+
 }

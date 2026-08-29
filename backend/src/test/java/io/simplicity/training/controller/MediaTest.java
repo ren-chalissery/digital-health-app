@@ -194,6 +194,84 @@ class MediaTest extends AbstractIntegrationTest {
   }
 
   @Test
+  void aCaptionTrackIsStoredAndOfferedAlongsideTheVideo() throws Exception {
+    UUID assetId = readyAssetInAssignedModule();
+
+    mockMvc
+        .perform(
+            put("/api/v1/orgs/{orgId}/media/{assetId}/captions", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(ADMIN))
+                .contentType("text/vtt")
+                .content("WEBVTT\n\n00:00.000 --> 00:02.000\nWelcome.\n"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.hasCaptions").value(true));
+
+    assertThat(objectStore.stored.keySet()).anyMatch(key -> key.endsWith("captions.vtt"));
+
+    mockMvc
+        .perform(
+            get("/api/v1/orgs/{orgId}/learning/media/{assetId}/playback", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(LEARNER)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.captionUrl").exists());
+  }
+
+  @Test
+  void refusesSomethingThatIsNotWebVtt() throws Exception {
+    UUID assetId = uploadedAsset();
+
+    // An SRT is what somebody will actually try, and a browser ignores it in silence.
+    mockMvc
+        .perform(
+            put("/api/v1/orgs/{orgId}/media/{assetId}/captions", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(ADMIN))
+                .contentType("text/vtt")
+                .content("1\n00:00:00,000 --> 00:00:02,000\nWelcome.\n"))
+        .andExpect(status().isBadRequest());
+
+    assertThat(objectStore.stored).isEmpty();
+  }
+
+  @Test
+  void aVideoWithoutCaptionsSaysSoRatherThanFailing() throws Exception {
+    UUID assetId = readyAssetInAssignedModule();
+
+    mockMvc
+        .perform(
+            get("/api/v1/orgs/{orgId}/learning/media/{assetId}/playback", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(LEARNER)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.url").exists())
+        .andExpect(jsonPath("$.captionUrl").doesNotExist());
+  }
+
+  @Test
+  void removingCaptionsLeavesTheVideoPlayable() throws Exception {
+    UUID assetId = readyAssetInAssignedModule();
+    mockMvc
+        .perform(
+            put("/api/v1/orgs/{orgId}/media/{assetId}/captions", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(ADMIN))
+                .contentType("text/vtt")
+                .content("WEBVTT\n\n00:00.000 --> 00:01.000\nHello.\n"))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            delete("/api/v1/orgs/{orgId}/media/{assetId}/captions", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(ADMIN)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.hasCaptions").value(false));
+
+    mockMvc
+        .perform(
+            get("/api/v1/orgs/{orgId}/learning/media/{assetId}/playback", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(LEARNER)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.url").exists());
+  }
+
+  @Test
   void anOrdinaryMemberCannotUpload() throws Exception {
     mockMvc
         .perform(

@@ -15,6 +15,7 @@ export interface MediaAssetResponse {
     durationSeconds?: number;
     failureReason?: string;
     filename?: string;
+    hasCaptions?: boolean;
     sizeBytes?: number;
     status?: string;
 }

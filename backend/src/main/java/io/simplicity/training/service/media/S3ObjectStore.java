@@ -1,8 +1,10 @@
 package io.simplicity.training.service.media;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -47,6 +49,13 @@ public class S3ObjectStore implements ObjectStore {
                 .build())
         .url()
         .toString();
+  }
+
+  @Override
+  public void putText(String bucket, String key, String contentType, String body) {
+    s3.putObject(
+        PutObjectRequest.builder().bucket(bucket).key(key).contentType(contentType).build(),
+        RequestBody.fromString(body, StandardCharsets.UTF_8));
   }
 
   @Override

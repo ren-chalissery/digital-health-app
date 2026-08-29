@@ -38,6 +38,8 @@ public class TestMediaConfiguration {
 
     public final List<String> presignedPuts = new ArrayList<>();
     public final List<String> deleted = new ArrayList<>();
+    /** What was written, so a test can assert on the caption body that reached storage. */
+    public final Map<String, String> stored = new ConcurrentHashMap<>();
 
     @Override
     public String presignPut(String bucket, String key, String contentType, Duration validFor) {
@@ -51,13 +53,20 @@ public class TestMediaConfiguration {
     }
 
     @Override
+    public void putText(String bucket, String key, String contentType, String body) {
+      stored.put(key, body);
+    }
+
+    @Override
     public void delete(String bucket, String key) {
       deleted.add(key);
+      stored.remove(key);
     }
 
     public void reset() {
       presignedPuts.clear();
       deleted.clear();
+      stored.clear();
     }
   }
 

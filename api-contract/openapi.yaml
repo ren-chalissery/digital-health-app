@@ -478,6 +478,65 @@ paths:
       summary: Delete a video
       tags:
       - Media
+  /api/v1/orgs/{orgId}/media/{assetId}/captions:
+    delete:
+      operationId: removeCaptions
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: assetId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+          description: OK
+      summary: Remove the caption track
+      tags:
+      - Media
+    put:
+      description: "Sent as the request body rather than presigned, because a caption\
+        \ file is kilobytes where a video is hundreds of megabytes."
+      operationId: setCaptions
+      parameters:
+      - in: path
+        name: orgId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: assetId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          text/vtt:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAssetResponse"
+          description: OK
+      summary: Attach a WebVTT caption track
+      tags:
+      - Media
   /api/v1/orgs/{orgId}/media/{assetId}/uploaded:
     post:
       description: Hands the file to the transcoder; the asset becomes PROCESSING.
@@ -1481,6 +1540,8 @@ components:
           type: string
         filename:
           type: string
+        hasCaptions:
+          type: boolean
         sizeBytes:
           type: integer
           format: int64
@@ -1599,6 +1660,8 @@ components:
     PlaybackResponse:
       type: object
       properties:
+        captionUrl:
+          type: string
         expiresInSeconds:
           type: integer
           format: int32

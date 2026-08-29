@@ -17,8 +17,9 @@ public final class MediaResponses {
       String failureReason,
       Integer durationSeconds,
       Long sizeBytes,
+      boolean hasCaptions,
       Instant createdAt) {}
 
-  /** Short-lived, minted per request. */
-  public record PlaybackResponse(String url, int expiresInSeconds) {}
+  /** Short-lived, minted per request. {@code captionUrl} is null when nobody has written any. */
+  public record PlaybackResponse(String url, String captionUrl, int expiresInSeconds) {}
 }

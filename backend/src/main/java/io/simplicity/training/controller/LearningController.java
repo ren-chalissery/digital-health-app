@@ -110,7 +110,9 @@ public class LearningController {
     AppPrincipal principal = CurrentPrincipal.require();
     String url =
         media.playbackUrl(orgId, assetId, versionId -> learning.mayReachVersion(principal, orgId, versionId));
-    return new PlaybackResponse(url, (int) playbackTtl.toSeconds());
+    // Only reached once playbackUrl has settled that this caller may watch it.
+    return new PlaybackResponse(
+        url, media.captionUrl(orgId, assetId).orElse(null), (int) playbackTtl.toSeconds());
   }
 
   @PutMapping("/sections/{sectionId}/complete")
