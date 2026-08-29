@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  PostgreSQL and Valkey for the Digital Health App. The database password is generated and rotated
+  by RDS into Secrets Manager, so no credential appears in this template, in the pipeline, or in
+  any parameter.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  NetworkStackName:
+    Type: String
+    Description: Name of the deployed network stack, whose exports this stack imports.
+
+  DatabaseName:
+    Type: String
+    Default: digital_health
+
+  DatabaseUsername:
+    Type: String
+    Default: dhapp
+    Description: Master user. Its password is managed by RDS, not set here.
+
+  DatabaseInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+
+  DatabaseAllocatedStorage:
+    Type: Number
+    Default: 20
+    MinValue: 20
+
+  CacheNodeType:
+    Type: String
+    Default: cache.t4g.micro
+
+  BackupRetentionDays:
+    Type: Number
+    Default: 7
+    MinValue: 1
+
+Resources:
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub 'digital-health-${EnvironmentName}'
+      SubnetIds: !Split
+        - ','
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetIds'
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    # Losing this instance means losing every clinician's reflections and the audit trail.
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub 'digital-health-${EnvironmentName}'
+      Engine: postgres
+      EngineVersion: '17.7'
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      AllocatedStorage: !Ref DatabaseAllocatedStorage
+      MaxAllocatedStorage: 100
+      StorageType: gp3
+      StorageEncrypted: true
+      DBName: !Ref DatabaseName
+      MasterUsername: !Ref DatabaseUsername
+      # RDS generates the password straight into Secrets Manager. Nothing else ever sees it.
+      ManageMasterUserPassword: true
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-DataSecurityGroupId'
+      # In a public subnet but not publicly addressable: the security group is the boundary.
+      PubliclyAccessible: false
+      MultiAZ: false
+      BackupRetentionPeriod: !Ref BackupRetentionDays
+      PreferredBackupWindow: '16:00-17:00'
+      PreferredMaintenanceWindow: 'sun:17:30-sun:18:30'
+      DeletionProtection: true
+      EnablePerformanceInsights: false
+      AutoMinorVersionUpgrade: true
+      CopyTagsToSnapshot: true
+      Tags:
+        - Key: Application
+          Value: digital-health-app
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: !Sub 'digital-health-${EnvironmentName}'
+      Description: !Sub 'digital-health-${EnvironmentName}'
+      SubnetIds: !Split
+        - ','
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetIds'
+
+  # Everything here is a cache or a short-lived index: principals, the revocation denylist,
+  # invitation tokens, rate-limit counters. Losing the node costs a slower first request and a
+  # brief window where a revoked token still works, not data, so a single node with no replica
+  # and no snapshots is the right trade at this size.
+  #
+  # A replication group rather than a cache cluster, despite there being nothing to replicate:
+  # ElastiCache's CreateCacheCluster API rejects Valkey outright, and CreateReplicationGroup is the
+  # only way to ask for that engine.
+  Cache:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub 'digital-health-${EnvironmentName}'
+      ReplicationGroupDescription: !Sub 'digital-health-${EnvironmentName}'
+      Engine: valkey
+      EngineVersion: '8.0'
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheClusters: 1
+      AutomaticFailoverEnabled: false
+      MultiAZEnabled: false
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-DataSecurityGroupId'
+      Port: 6379
+      # The principal cache holds email addresses and role assignments, so encrypt the disk. In
+      # transit is left off to match the task's REDIS_SSL_ENABLED, with the security group as the
+      # boundary; turning both on together is a worthwhile follow-up.
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: false
+      PreferredMaintenanceWindow: 'sun:18:30-sun:19:30'
+      Tags:
+        - Key: Application
+          Value: digital-health-app
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+Outputs:
+  DatabaseEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-DatabaseEndpoint'
+
+  DatabasePort:
+    Value: !GetAtt Database.Endpoint.Port
+    Export:
+      Name: !Sub '${AWS::StackName}-DatabasePort'
+
+  DatabaseName:
+    Value: !Ref DatabaseName
+    Export:
+      Name: !Sub '${AWS::StackName}-DatabaseName'
+
+  DatabaseSecretArn:
+    Description: >
+      Secrets Manager secret holding {"username","password"}. The app stack injects the two keys
+      as separate ECS task secrets.
+    Value: !GetAtt Database.MasterUserSecret.SecretArn
+    Export:
+      Name: !Sub '${AWS::StackName}-DatabaseSecretArn'
+
+  CacheEndpoint:
+    Value: !GetAtt Cache.PrimaryEndPoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-CacheEndpoint'
+
+  CachePort:
+    Value: !GetAtt Cache.PrimaryEndPoint.Port
+    Export:
+      Name: !Sub '${AWS::StackName}-CachePort'

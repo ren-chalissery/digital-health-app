@@ -1,0 +1,17 @@
+# Phase 5. Committed now so the iOS client is generated from the same document as the web one
+# rather than hand-written later, but nothing runs this yet and ../ios holds no Xcode project.
+generatorName: swift6
+inputSpec: openapi.yaml
+outputDir: ../ios/MoxionApiClient
+
+additionalProperties:
+  projectName: SimplicityApi
+  responseAs: AsyncAwait
+  useSPMFileStructure: true
+  swiftPackagePath: .
+
+globalProperty:
+  apiDocs: false
+  modelDocs: false
+  apiTests: false
+  modelTests: false

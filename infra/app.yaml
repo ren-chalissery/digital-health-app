@@ -1,0 +1,382 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  ECR repository, ECS Fargate service, and Application Load Balancer for the Digital Health API.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  NetworkStackName:
+    Type: String
+
+  DataStackName:
+    Type: String
+
+  AuthStackName:
+    Type: String
+
+  ApiDomainName:
+    Type: String
+    Description: Fully qualified name for the API, for example api.example.org.
+
+  HostedZoneId:
+    Type: String
+    Default: ''
+    Description: >
+      Route 53 zone for ApiDomainName. Required unless CertificateArn is supplied: without it the
+      certificate cannot be validated automatically and the stack will hang waiting.
+
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: Existing ACM certificate for ApiDomainName. Leave empty to have one issued here.
+
+  WebBaseUrl:
+    Type: String
+    Description: Origin of the web client. Used for CORS and for links in invitation emails.
+
+  MailFrom:
+    Type: String
+    Description: Verified SES sender address for invitation emails.
+
+  ImageTag:
+    Type: String
+    Default: latest
+    Description: Image tag to run. The pipeline passes the commit sha so a rollback is a redeploy.
+
+  DesiredCount:
+    Type: Number
+    Default: 1
+    # Zero is legitimate, and required once: this stack creates the ECR repository, so on the very
+    # first deploy there is no image for a task to run and the service can only settle at nothing.
+    MinValue: 0
+
+  TaskCpu:
+    Type: String
+    Default: '512'
+    AllowedValues: ['256', '512', '1024', '2048']
+
+  TaskMemory:
+    Type: String
+    Default: '1024'
+
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+
+Conditions:
+  IssueCertificate: !Equals [!Ref CertificateArn, '']
+  CreateDnsRecord: !Not [!Equals [!Ref HostedZoneId, '']]
+
+Resources:
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub 'digital-health-${EnvironmentName}'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      LifecyclePolicy:
+        # Every commit to main pushes an image; without this the repository grows without bound.
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep the 20 most recent images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 20
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: IssueCertificate
+    Properties:
+      DomainName: !Ref ApiDomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref ApiDomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/digital-health-${EnvironmentName}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub 'digital-health-${EnvironmentName}'
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled
+
+  # Pulls the image and writes logs. It also reads the database secret, because ECS resolves task
+  # secrets before the container starts.
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: read-database-secret
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  Fn::ImportValue: !Sub '${DataStackName}-DatabaseSecretArn'
+
+  # What the application itself may do. Sending invitation email is the whole of it.
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: send-invitation-email
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ses:FromAddress: !Ref MailFrom
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub 'digital-health-${EnvironmentName}'
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      RuntimePlatform:
+        # Graviton, for about 20 per cent less than x86. Nothing is emulated to get there: the
+        # pipeline builds on an arm64 runner and developers build natively on Apple Silicon, so the
+        # architecture running in production is the one the image was actually exercised on.
+        CpuArchitecture: ARM64
+        OperatingSystemFamily: LINUX
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: api
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          Environment:
+            - Name: DB_URL
+              Value: !Sub
+                - 'jdbc:postgresql://${Host}:${Port}/${Name}'
+                - Host: !ImportValue
+                    Fn::Sub: '${DataStackName}-DatabaseEndpoint'
+                  Port: !ImportValue
+                    Fn::Sub: '${DataStackName}-DatabasePort'
+                  Name: !ImportValue
+                    Fn::Sub: '${DataStackName}-DatabaseName'
+            - Name: REDIS_HOST
+              Value:
+                Fn::ImportValue: !Sub '${DataStackName}-CacheEndpoint'
+            - Name: REDIS_PORT
+              Value:
+                Fn::ImportValue: !Sub '${DataStackName}-CachePort'
+            - Name: REDIS_SSL_ENABLED
+              Value: 'false'
+            - Name: COGNITO_ISSUER_URI
+              Value:
+                Fn::ImportValue: !Sub '${AuthStackName}-IssuerUri'
+            - Name: COGNITO_USER_POOL_ID
+              Value:
+                Fn::ImportValue: !Sub '${AuthStackName}-UserPoolId'
+            - Name: COGNITO_CLIENT_ID
+              Value:
+                Fn::ImportValue: !Sub '${AuthStackName}-WebClientId'
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: WEB_BASE_URL
+              Value: !Ref WebBaseUrl
+            - Name: CORS_ALLOWED_ORIGINS
+              Value: !Ref WebBaseUrl
+            - Name: MAIL_ENABLED
+              Value: 'true'
+            - Name: MAIL_FROM
+              Value: !Ref MailFrom
+          Secrets:
+            - Name: DB_USERNAME
+              ValueFrom: !Sub
+                - '${SecretArn}:username::'
+                - SecretArn: !ImportValue
+                    Fn::Sub: '${DataStackName}-DatabaseSecretArn'
+            - Name: DB_PASSWORD
+              ValueFrom: !Sub
+                - '${SecretArn}:password::'
+                - SecretArn: !ImportValue
+                    Fn::Sub: '${DataStackName}-DatabaseSecretArn'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: api
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}'
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-AlbSecurityGroupId'
+      Subnets: !Split
+        - ','
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetIds'
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: 'true'
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}'
+      VpcId:
+        Fn::ImportValue: !Sub '${NetworkStackName}-VpcId'
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckPath: /actuator/health/readiness
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+      TargetGroupAttributes:
+        # Flyway runs at start-up, so a cold task needs longer than the default before the load
+        # balancer gives up on it.
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates:
+        - CertificateArn: !If [IssueCertificate, !Ref Certificate, !Ref CertificateArn]
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  HttpRedirectListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: HttpsListener
+    Properties:
+      ServiceName: !Sub 'digital-health-${EnvironmentName}'
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      # A cold JVM plus Flyway takes a while; without this grace period the first health check
+      # fails and ECS kills the task it is still waiting for.
+      HealthCheckGracePeriodSeconds: 120
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          # Public subnets with no NAT Gateway, so the task needs a public address to pull its
+          # image and reach Cognito and SES. The security group is what keeps it unreachable.
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - Fn::ImportValue: !Sub '${NetworkStackName}-AppSecurityGroupId'
+          Subnets: !Split
+            - ','
+            - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetIds'
+      LoadBalancers:
+        - ContainerName: api
+          ContainerPort: 8080
+          TargetGroupArn: !Ref TargetGroup
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDnsRecord
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+
+Outputs:
+  RepositoryUri:
+    Value: !GetAtt Repository.RepositoryUri
+    Export:
+      Name: !Sub '${AWS::StackName}-RepositoryUri'
+
+  ClusterName:
+    Value: !Ref Cluster
+    Export:
+      Name: !Sub '${AWS::StackName}-ClusterName'
+
+  ServiceName:
+    Value: !GetAtt Service.Name
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceName'
+
+  LoadBalancerDnsName:
+    Value: !GetAtt LoadBalancer.DNSName
+
+  ApiBaseUrl:
+    Description: Value for the web client's apiBaseUrl.
+    Value: !Sub 'https://${ApiDomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiBaseUrl'

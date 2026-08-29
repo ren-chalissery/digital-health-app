@@ -1,0 +1,33 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Java / Gradle
+backend/build/
+backend/.gradle/
+backend/bin/
+.gradle/
+build/
+
+# Node / Angular
+node_modules/
+web/dist/
+web/.angular/
+web/coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+# Written per environment: by local/bootstrap.sh here, by the deploy job in CI.
+web/public/config.json
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*

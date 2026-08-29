@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Role GitHub Actions assumes to deploy. Trust is established through OIDC and scoped to one
+  repository, so there is no long-lived access key anywhere.
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: Owner of the repository, for example acme-health.
+
+  GitHubRepository:
+    Type: String
+    Description: Repository name, without the owner.
+
+  DeployBranch:
+    Type: String
+    Default: main
+    Description: >
+      Only this branch may assume the role. A pull request from a fork runs with a different
+      subject and is refused, which is what stops a contributor deploying by opening a PR.
+
+  CreateOidcProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >
+      Set to false when another stack in this account already registered GitHub as an OIDC
+      provider; an account may only have one per issuer.
+
+Conditions:
+  ShouldCreateProvider: !Equals [!Ref CreateOidcProvider, 'true']
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'digital-health-deploy-${GitHubRepository}'
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - ShouldCreateProvider
+                - !Ref GitHubOidcProvider
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepository}:ref:refs/heads/${DeployBranch}'
+      Policies:
+        - PolicyName: deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CloudFormation drives everything, so the role needs the permissions of the
+              # resources it creates. Narrowing this further means enumerating every property
+              # CloudFormation touches; the trust policy is the meaningful boundary.
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - ec2:*
+                  - ecs:*
+                  - ecr:*
+                  - elasticloadbalancing:*
+                  - rds:*
+                  - elasticache:*
+                  - cognito-idp:*
+                  - logs:*
+                  - acm:*
+                  - route53:*
+                  - cloudfront:*
+                  - secretsmanager:*
+                  - s3:*
+                  - ses:GetIdentityVerificationAttributes
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:TagRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
+                  - iam:UpdateAssumeRolePolicy
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/digital-health-*'
+              # Creating the RDS instance and the ECS service needs their service-linked roles the
+              # first time, and CloudFormation makes them on the caller's behalf.
+              - Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    iam:AWSServiceName:
+                      - ecs.amazonaws.com
+                      - rds.amazonaws.com
+                      - elasticache.amazonaws.com
+
+Outputs:
+  DeployRoleArn:
+    Description: Value for the workflow's role-to-assume.
+    Value: !GetAtt DeployRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DeployRoleArn'

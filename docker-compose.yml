@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: dha-postgres
+    environment:
+      POSTGRES_DB: digital_health
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d digital_health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    # Valkey rather than Redis, matching ElastiCache in the deployed environment.
+    image: valkey/valkey:8-alpine
+    container_name: dha-valkey
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  floci:
+    # Local Cognito and SES. Postgres and Valkey stay as their own services above: Floci can
+    # emulate RDS and ElastiCache, but only by starting the very same engines, so going through
+    # its control plane would add a hop and buy nothing.
+    image: floci/floci:1.7.0
+    container_name: dha-floci
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: cognito,ses
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4566/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
