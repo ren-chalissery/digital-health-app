@@ -49,7 +49,9 @@ Parameters:
   DesiredCount:
     Type: Number
     Default: 1
-    MinValue: 1
+    # Zero is legitimate, and required once: this stack creates the ECR repository, so on the very
+    # first deploy there is no image for a task to run and the service can only settle at nothing.
+    MinValue: 0
 
   TaskCpu:
     Type: String
