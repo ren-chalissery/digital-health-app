@@ -1,0 +1,34 @@
+{
+  "auth": {
+    "plugins": {
+      "awsCognitoAuthPlugin": {
+        "IdentityManager": {
+          "Default": {}
+        },
+        "CognitoUserPool": {
+          "Default": {
+            "PoolId": "ap-southeast-2_91O0ya5nC",
+            "AppClientId": "2sihmrojcivd93m8of9q4uk1k6",
+            "Region": "ap-southeast-2"
+          }
+        },
+        "Auth": {
+          "Default": {
+            "authenticationFlowType": "USER_SRP_AUTH",
+            "usernameAttributes": ["EMAIL"],
+            "signupAttributes": ["EMAIL"],
+            "passwordProtectionSettings": {
+              "passwordPolicyMinLength": 12,
+              "passwordPolicyCharacters": [
+                "REQUIRES_LOWERCASE",
+                "REQUIRES_UPPERCASE",
+                "REQUIRES_NUMBERS"
+              ]
+            },
+            "verificationMechanisms": ["EMAIL"]
+          }
+        }
+      }
+    }
+  }
+}
