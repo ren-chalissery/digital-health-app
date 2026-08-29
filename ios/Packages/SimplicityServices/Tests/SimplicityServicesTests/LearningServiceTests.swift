@@ -17,14 +17,14 @@ final class LearningServiceTests: SimplicityTestCase {
         case unreachable
     }
 
-    private nonisolated static func assigned(
+    nonisolated private static func assigned(
         title: String,
         status: AssignedModuleResponse.Status
     ) -> AssignedModuleResponse {
         AssignedModuleResponse(moduleId: UUID(), status: status, title: title)
     }
 
-    private nonisolated static func learnerModule(
+    nonisolated private static func learnerModule(
         status: LearnerModuleResponse.Status
     ) -> LearnerModuleResponse {
         LearnerModuleResponse(moduleId: Constants.moduleId, status: status, title: "A module")
