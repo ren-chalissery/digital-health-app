@@ -68,6 +68,31 @@ The `app` stack fails on its first deploy if no image has been pushed yet: the E
 to exist before the pipeline can push, and the service cannot start without an image. Deploy `app`
 once with `DesiredCount=0`, push an image, then set it back to 1.
 
+## What the pipeline needs
+
+After that first manual round, pushes to `main` redeploy `app` and `web` from
+[.github/workflows/ci.yml](../.github/workflows/ci.yml). It authenticates by OIDC, so there is no
+AWS key to store — only these repository variables, none of which is a secret:
+
+| Variable | Example |
+| --- | --- |
+| `AWS_REGION` | `ap-southeast-2` |
+| `AWS_DEPLOY_ROLE_ARN` | the `deploy-role` stack's role ARN |
+| `API_DOMAIN_NAME` | `api.example.org` |
+| `API_CERTIFICATE_ARN` | ACM certificate for the ALB, in `AWS_REGION` |
+| `WEB_DOMAIN_NAME` | `app.example.org` |
+| `WEB_CERTIFICATE_ARN` | ACM certificate for CloudFront, **in us-east-1** |
+| `WEB_BASE_URL` | `https://app.example.org` |
+| `HOSTED_ZONE_ID` | the Route 53 zone holding both records |
+| `MAIL_FROM` | `no-reply@example.org`, verified in SES |
+
+The job runs under a `production` GitHub environment, so approvals and branch restrictions are
+configured there rather than in the workflow.
+
+Deploys are keyed on the commit sha rather than `latest`, which is what makes a rollback a matter
+of redeploying an older sha. `config.json` is written from stack outputs after the bundle is built,
+so the same artefact could be promoted to another environment by writing a different file.
+
 ## Things worth knowing before changing any of this
 
 **Public subnets, no NAT Gateway.** A NAT Gateway costs about 32 US dollars a month, roughly a
