@@ -13,5 +13,10 @@ final class SmokeTests: XCTestCase {
             app.buttons["sign-in-submit"].waitForExistence(timeout: 60),
             "The signed-out app should reach the sign-in screen"
         )
+
+        XCTAssertFalse(
+            app.tabBars.firstMatch.exists,
+            "A signed-out app must not show the tabs"
+        )
     }
 }

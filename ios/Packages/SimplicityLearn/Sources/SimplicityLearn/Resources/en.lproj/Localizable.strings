@@ -51,3 +51,43 @@
 "status_needs_redoing" = "Updated since you finished";
 
 "status_not_started" = "Not started";
+"reader_load_failed" = "We could not open this module. Check your connection and try again.";
+
+/* Deliberately explicit that nothing was saved. A clinician who believes they finished a
+   module and did not is worse off than one who knows to try again. */
+"reader_progress_failed" = "We could not record that you read this section. It has not been saved — try again.";
+
+"reader_mark_read" = "Mark as read";
+
+"reader_read" = "Read";
+
+"reader_saving" = "Saving…";
+
+"video_load" = "Load video";
+
+"video_load_failed" = "We could not load this video. Try again in a moment.";
+
+/* Names the limitation, does not blame the video, and says what to do instead. */
+"video_captions_elsewhere" = "This video has captions, which the app cannot show yet. Open this module on the web to watch with them.";
+"quiz_title" = "Check your understanding";
+
+"quiz_locked" = "Work through every section first, then the questions unlock.";
+
+"quiz_intro" = "Every question has to be right. You can try as often as you like, and a wrong answer will explain itself.";
+
+"quiz_submit" = "Check my answers";
+
+"quiz_try_again" = "Try again";
+
+"quiz_checking" = "Checking…";
+
+"quiz_submit_failed" = "We could not check your answers. Try again in a moment.";
+
+"quiz_passed" = "Passed";
+
+"quiz_correct" = "Correct.";
+
+"quiz_incorrect" = "Not quite.";
+
+/* %1$lld correct, %2$lld total, %3$lld attempt number. */
+"quiz_score" = "%1$lld of %2$lld correct on attempt %3$lld";
