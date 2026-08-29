@@ -16,7 +16,7 @@ set -euo pipefail
 
 readonly EXPECTED_ACCOUNT="${EXPECTED_ACCOUNT:-917993967729}"
 readonly REGION="${AWS_REGION:-ap-southeast-2}"
-readonly DOMAIN="${DOMAIN:?Set DOMAIN, for example simplicity-training.com}"
+readonly DOMAIN="${DOMAIN:-simplicityhelp.com}"
 readonly WEB_HOST="${WEB_HOST:-app.${DOMAIN}}"
 readonly API_HOST="${API_HOST:-api.${DOMAIN}}"
 readonly MAIL_FROM="${MAIL_FROM:-no-reply@${DOMAIN}}"

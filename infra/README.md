@@ -31,21 +31,27 @@ The TLD is a deliverability decision, not just a naming one. Invitation email is
 reach the product at all, and the cheap TLDs carry enough spam reputation to get filtered on
 arrival. Stay with `.com`, `.org`, or `.health`.
 
-Registering is a purchase with contact details attached, so it is not scripted:
+This deployment uses **simplicityhelp.com**, registered through Route 53 in account
+`917993967729`, which creates the hosted zone as part of registration.
 
-```bash
-aws route53domains check-domain-availability --region us-east-1 --domain-name example.org
-aws route53domains register-domain --region us-east-1 --cli-input-json file://domain.json
+Registering is a purchase with contact details attached, so it is not scripted. The console is the
+easier path for it:
+
+```
+https://us-east-1.console.aws.amazon.com/route53/domains/home#/DomainSearch
 ```
 
-Route 53's registration API only exists in `us-east-1`, whatever region the rest of this lives in.
-Registering there creates the hosted zone automatically. A domain bought elsewhere works just as
-well, as long as its nameservers are delegated to a Route 53 zone in this account.
+Route 53's registration API only exists in `us-east-1`, whatever region the rest of this lives in,
+and the console follows the same rule. A domain bought elsewhere works just as well, as long as its
+nameservers are delegated to a Route 53 zone in this account.
+
+Watch for the ICANN verification email sent to the registrant address. Unanswered, it suspends the
+domain after fifteen days.
 
 ### Then everything else
 
 ```bash
-DOMAIN=example.org ./infra/bootstrap.sh
+./infra/bootstrap.sh
 ```
 
 That covers the whole sequence: it refuses to run against the wrong account, issues the CloudFront
@@ -53,7 +59,8 @@ certificate in `us-east-1` and validates it through Route 53, deploys the six st
 pushes the first image, verifies the sending domain and writes its DKIM records, and sets the
 GitHub variables. It is idempotent, so a failed run can simply be repeated.
 
-`WEB_HOST`, `API_HOST`, and `MAIL_FROM` default to `app.`, `api.`, and `no-reply@` on the domain.
+That gives `app.simplicityhelp.com`, `api.simplicityhelp.com`, and `no-reply@simplicityhelp.com`.
+Override `DOMAIN`, `WEB_HOST`, `API_HOST`, or `MAIL_FROM` to change any of them.
 
 The steps it performs, should you want to do them by hand instead:
 
@@ -78,11 +85,11 @@ aws cloudformation deploy --template-file data.yaml \
 
 aws cloudformation deploy --template-file auth.yaml \
   --stack-name digital-health-auth --capabilities CAPABILITY_IAM \
-  --parameter-overrides WebBaseUrl=https://app.example.org
+  --parameter-overrides WebBaseUrl=https://app.simplicityhelp.com
 
 aws cloudformation deploy --template-file web.yaml \
   --stack-name digital-health-web --capabilities CAPABILITY_IAM \
-  --parameter-overrides WebDomainName=app.example.org CertificateArn=arn:aws:acm:us-east-1:...
+  --parameter-overrides WebDomainName=app.simplicityhelp.com CertificateArn=arn:aws:acm:us-east-1:...
 
 aws cloudformation deploy --template-file app.yaml \
   --stack-name digital-health-app --capabilities CAPABILITY_IAM \
@@ -90,10 +97,10 @@ aws cloudformation deploy --template-file app.yaml \
     NetworkStackName=digital-health-network \
     DataStackName=digital-health-data \
     AuthStackName=digital-health-auth \
-    ApiDomainName=api.example.org \
+    ApiDomainName=api.simplicityhelp.com \
     HostedZoneId=Z... \
-    WebBaseUrl=https://app.example.org \
-    MailFrom=no-reply@example.org \
+    WebBaseUrl=https://app.simplicityhelp.com \
+    MailFrom=no-reply@simplicityhelp.com \
     ImageTag=<commit sha>
 ```
 
@@ -117,12 +124,12 @@ AWS key to store — only these repository variables, none of which is a secret:
 | --- | --- |
 | `AWS_REGION` | `ap-southeast-2` |
 | `AWS_DEPLOY_ROLE_ARN` | the `deploy-role` stack's role ARN |
-| `API_DOMAIN_NAME` | `api.example.org` |
-| `WEB_DOMAIN_NAME` | `app.example.org` |
+| `API_DOMAIN_NAME` | `api.simplicityhelp.com` |
+| `WEB_DOMAIN_NAME` | `app.simplicityhelp.com` |
 | `WEB_CERTIFICATE_ARN` | ACM certificate for CloudFront, **in us-east-1** |
-| `WEB_BASE_URL` | `https://app.example.org` |
+| `WEB_BASE_URL` | `https://app.simplicityhelp.com` |
 | `HOSTED_ZONE_ID` | the Route 53 zone holding both records |
-| `MAIL_FROM` | `no-reply@example.org`, verified in SES |
+| `MAIL_FROM` | `no-reply@simplicityhelp.com`, verified in SES |
 
 The job runs under a `production` GitHub environment, so approvals and branch restrictions are
 configured there rather than in the workflow.
