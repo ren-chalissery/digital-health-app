@@ -52,6 +52,25 @@ plugin, and Xcode refuses to run an unvalidated plugin from the command line —
 `Plugin "SmithyCodeGeneratorPlugin" must be enabled before it can be used`. Opening the workspace in
 Xcode and trusting it once fixes the GUI, not `xcodebuild`.
 
+`LiveSignInTest` skips unless given credentials, because it signs in against the **real** Cognito
+pool. It is the only thing that proves Amplify's SRP implementation and the pool agree — every
+other test substitutes a mock for exactly the code most likely to be wrong. Run it with a
+disposable account created by [`scripts/verification.py`](../scripts/README.md), never a real one:
+
+```bash
+TEST_RUNNER_LIVE_EMAIL=verify-...@simplicityhelp.com \
+TEST_RUNNER_LIVE_PASSWORD=... \
+xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:SimplicityUITests/LiveSignInTest \
+  -skipPackagePluginValidation -skipMacroValidation
+```
+
+The `TEST_RUNNER_` prefix is required: `xcodebuild` forwards only prefixed variables into the test
+process on the simulator, stripping the prefix. Without it the test silently skips. Allow a
+generous timeout on a cold simulator — the first launch after a build took over 60 seconds where
+subsequent ones take 9.
+
 Tests are Swift Testing, not XCTest — the exception is `SimplicityUITests`, because XCUITest has no
 Swift Testing equivalent. Suites that resolve anything from the Factory container extend
 `SimplicityTestCase` and are marked `@Suite(.serialized)`, since a shared container cannot be reset

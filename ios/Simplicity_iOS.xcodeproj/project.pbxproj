@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0994F3593D8112F9AE60B8ED /* SimplicityFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 63F3A231399EAAE506278C99 /* SimplicityFoundation */; };
+		11391C9DFFFE74094E929E91 /* LiveSignInTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F133D5B4CE0F614B820389 /* LiveSignInTest.swift */; };
 		17AAA9A5D754423E28692BAE /* SimplicityApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3322EB5BADB635FBE48ABC09 /* SimplicityApp.swift */; };
 		1BA43D3CEE99F46836B8FBEE /* SimplicityServices in Frameworks */ = {isa = PBXBuildFile; productRef = CB92855CBB99CCA2E465F397 /* SimplicityServices */; };
 		38B48378DF315EBFF22D57AF /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C52CA28446F644281AF4F8 /* AppConfiguration.swift */; };
@@ -48,8 +49,9 @@
 		C528FE0E2C161F09D14F7F83 /* amplifyconfiguration.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = amplifyconfiguration.json; sourceTree = "<group>"; };
 		CC90C4508C623C748346045A /* SimplicityUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SimplicityUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C52CA28446F644281AF4F8 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		E6F133D5B4CE0F614B820389 /* LiveSignInTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSignInTest.swift; sourceTree = "<group>"; };
 		EC32DF04B18ED73335036D89 /* Simplicity_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Simplicity_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		"TEMP_FF4EC316-2693-4FBA-B705-C331B0B4556A" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
+		"TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +73,7 @@
 		082038F67445BB7C31C9E70E /* SimplicityUITests */ = {
 			isa = PBXGroup;
 			children = (
+				E6F133D5B4CE0F614B820389 /* LiveSignInTest.swift */,
 				795D6F46FD2A897569BCE437 /* SmokeTests.swift */,
 			);
 			path = SimplicityUITests;
@@ -138,10 +141,10 @@
 			path = Packages;
 			sourceTree = "<group>";
 		};
-		"TEMP_5F0076B7-5F7F-4FD6-892E-EAB44845DFBE" /* ios */ = {
+		"TEMP_9D1FFBD2-5D9F-4E5C-BDE6-1CA41EC105BF" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_FF4EC316-2693-4FBA-B705-C331B0B4556A" /* Config-Shared.xcconfig */,
+				"TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -267,6 +270,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				11391C9DFFFE74094E929E91 /* LiveSignInTest.swift in Sources */,
 				D3C0BAD1C373DABF15033DD9 /* SmokeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -284,7 +288,7 @@
 /* Begin XCBuildConfiguration section */
 		1278996D91AD4130E497E397 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_FF4EC316-2693-4FBA-B705-C331B0B4556A" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -428,7 +432,7 @@
 		};
 		B1321714BCBC956E3D92D11F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_FF4EC316-2693-4FBA-B705-C331B0B4556A" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
