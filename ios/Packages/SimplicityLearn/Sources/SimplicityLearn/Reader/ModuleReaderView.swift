@@ -19,7 +19,7 @@ public struct ModuleReaderView: View {
     public var body: some View {
         content
             .navigationTitle(model.module?.title ?? "")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             .task { await model.load() }
     }
 
@@ -99,5 +99,19 @@ public struct ModuleReaderView: View {
                 .clipShape(Capsule())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private extension View {
+
+    /// `navigationBarTitleDisplayMode` does not exist on macOS, and the package stays buildable
+    /// there so its view models can be tested with `swift test`.
+    @ViewBuilder
+    func inlineTitle() -> some View {
+        #if os(iOS)
+        navigationBarTitleDisplayMode(.inline)
+        #else
+        self
+        #endif
     }
 }

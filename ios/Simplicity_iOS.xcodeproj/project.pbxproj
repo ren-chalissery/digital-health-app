@@ -53,7 +53,7 @@
 		E2C52CA28446F644281AF4F8 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
 		E6F133D5B4CE0F614B820389 /* LiveSignInTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSignInTest.swift; sourceTree = "<group>"; };
 		EC32DF04B18ED73335036D89 /* Simplicity_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Simplicity_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		"TEMP_C4076702-EBC5-41C2-9B22-0D605D1C127D" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
+		"TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,10 +145,10 @@
 			path = Packages;
 			sourceTree = "<group>";
 		};
-		"TEMP_2CDFD32C-7C7C-43B8-81DD-0412635ED344" /* ios */ = {
+		"TEMP_23D06E9F-855C-4BF5-8F66-C9AD2AC8206D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_C4076702-EBC5-41C2-9B22-0D605D1C127D" /* Config-Shared.xcconfig */,
+				"TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -294,7 +294,7 @@
 /* Begin XCBuildConfiguration section */
 		1278996D91AD4130E497E397 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C4076702-EBC5-41C2-9B22-0D605D1C127D" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -438,7 +438,7 @@
 		};
 		B1321714BCBC956E3D92D11F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C4076702-EBC5-41C2-9B22-0D605D1C127D" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
