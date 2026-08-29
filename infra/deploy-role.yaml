@@ -12,6 +12,17 @@ Parameters:
     Type: String
     Description: Repository name, without the owner.
 
+  GitHubOwnerId:
+    Type: String
+    Description: >
+      Numeric account id, from `gh api repos/OWNER/REPO --jq .owner.id`. GitHub issues immutable
+      OIDC claims, so the subject carries owner@id and repo@id rather than names alone, and a
+      condition matching on names never matches anything.
+
+  GitHubRepositoryId:
+    Type: String
+    Description: Numeric repository id, from `gh api repos/OWNER/REPO --jq .id`.
+
   DeployEnvironment:
     Type: String
     Default: production
@@ -59,7 +70,9 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepository}:environment:${DeployEnvironment}'
+                # Pinned to the numeric ids rather than wildcarded past them. Binding trust to
+                # something nobody can rename into is the whole point of the immutable claim.
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}@${GitHubOwnerId}/${GitHubRepository}@${GitHubRepositoryId}:environment:${DeployEnvironment}'
       Policies:
         - PolicyName: deploy
           PolicyDocument:

@@ -126,8 +126,12 @@ info "certificate ${cfCert}"
 # ---------------------------------------------------------------------------------------------
 step "Foundation stacks"
 
+# The OIDC subject carries numeric ids, not just names, so the role has to be told them.
+ownerId="$(gh api "repos/${GITHUB_REPO}" --jq .owner.id)"
+repoId="$(gh api "repos/${GITHUB_REPO}" --jq .id)"
 deployStack "${ROLE_STACK}" deploy-role.yaml \
-  "GitHubOrg=${GITHUB_REPO%%/*}" "GitHubRepository=${GITHUB_REPO##*/}"
+  "GitHubOrg=${GITHUB_REPO%%/*}" "GitHubRepository=${GITHUB_REPO##*/}" \
+  "GitHubOwnerId=${ownerId}" "GitHubRepositoryId=${repoId}"
 
 deployStack "${NETWORK_STACK}" network.yaml
 
