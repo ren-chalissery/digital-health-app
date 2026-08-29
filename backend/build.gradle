@@ -37,7 +37,7 @@ dependencies {
 	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
 	implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
-	implementation 'software.amazon.awssdk:ses'
+	implementation 'software.amazon.awssdk:sesv2'
 	implementation 'software.amazon.awssdk:cognitoidentityprovider'
 
 	compileOnly 'org.projectlombok:lombok'

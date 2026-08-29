@@ -84,5 +84,10 @@ public class TestJwtConfiguration {
     public String bearerFor(String cognitoSub) {
       return "Bearer " + accessTokenFor(cognitoSub);
     }
+
+    /** For a pool configured to put the address on the access token, which is how we provision. */
+    public String bearerFor(String cognitoSub, String email) {
+      return "Bearer " + accessTokenFor(cognitoSub, Map.of("email", email));
+    }
   }
 }
