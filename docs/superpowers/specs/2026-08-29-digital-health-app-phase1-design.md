@@ -260,9 +260,18 @@ erDiagram
 **`audit_event`** — `id` (uuid pk), `actor_user_id`, `org_id`, `action`, `target_type`,
 `target_id`, `metadata` (jsonb), `ip_address`, `created_at`.
 
-`user` is a reserved word in PostgreSQL, hence `app_user`. The first migration enables the `citext`
-extension so email comparison is case-insensitive without every query having to remember to
-lowercase.
+`user` is a reserved word in PostgreSQL, hence `app_user`.
+
+**Email case handling.** The first migration enables the `citext` extension and types the email
+columns as `citext`, which makes the unique indexes case-insensitive: two accounts differing only
+in case cannot both exist. That protection does not extend to lookups issued through JPA.
+Hibernate binds string parameters as `varchar`, and PostgreSQL resolves `citext = $1::varchar` by
+casting the column *down* to `text`, producing a case-sensitive comparison — verified directly
+against PostgreSQL 16 rather than assumed. Addresses are therefore also normalised to lower case in
+the application, on write via a `@PrePersist` callback on `AppUser` and on read via default methods
+on `AppUserRepository`. The two mechanisms are deliberately redundant: normalisation makes lookups
+correct, and the citext index makes duplicates impossible even if some future code path writes the
+column directly.
 
 ### 5.2 Forward compatibility
 
