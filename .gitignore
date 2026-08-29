@@ -31,3 +31,6 @@ web/public/config.json
 # Logs
 *.log
 npm-debug.log*
+
+# Verification harness virtualenv
+scripts/.venv/
