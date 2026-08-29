@@ -100,18 +100,30 @@ Resources:
   # invitation tokens, rate-limit counters. Losing the node costs a slower first request and a
   # brief window where a revoked token still works, not data, so a single node with no replica
   # and no snapshots is the right trade at this size.
+  #
+  # A replication group rather than a cache cluster, despite there being nothing to replicate:
+  # ElastiCache's CreateCacheCluster API rejects Valkey outright, and CreateReplicationGroup is the
+  # only way to ask for that engine.
   Cache:
-    Type: AWS::ElastiCache::CacheCluster
+    Type: AWS::ElastiCache::ReplicationGroup
     Properties:
-      ClusterName: !Sub 'digital-health-${EnvironmentName}'
+      ReplicationGroupId: !Sub 'digital-health-${EnvironmentName}'
+      ReplicationGroupDescription: !Sub 'digital-health-${EnvironmentName}'
       Engine: valkey
       EngineVersion: '8.0'
       CacheNodeType: !Ref CacheNodeType
-      NumCacheNodes: 1
-      AZMode: single-az
+      NumCacheClusters: 1
+      AutomaticFailoverEnabled: false
+      MultiAZEnabled: false
       CacheSubnetGroupName: !Ref CacheSubnetGroup
-      VpcSecurityGroupIds:
+      SecurityGroupIds:
         - Fn::ImportValue: !Sub '${NetworkStackName}-DataSecurityGroupId'
+      Port: 6379
+      # The principal cache holds email addresses and role assignments, so encrypt the disk. In
+      # transit is left off to match the task's REDIS_SSL_ENABLED, with the security group as the
+      # boundary; turning both on together is a worthwhile follow-up.
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: false
       PreferredMaintenanceWindow: 'sun:18:30-sun:19:30'
       Tags:
         - Key: Application
@@ -144,11 +156,11 @@ Outputs:
       Name: !Sub '${AWS::StackName}-DatabaseSecretArn'
 
   CacheEndpoint:
-    Value: !GetAtt Cache.RedisEndpoint.Address
+    Value: !GetAtt Cache.PrimaryEndPoint.Address
     Export:
       Name: !Sub '${AWS::StackName}-CacheEndpoint'
 
   CachePort:
-    Value: !GetAtt Cache.RedisEndpoint.Port
+    Value: !GetAtt Cache.PrimaryEndPoint.Port
     Export:
       Name: !Sub '${AWS::StackName}-CachePort'
