@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Cognito user pool for the Digital Health App. Cognito owns credentials, email verification, and
+  password reset; the application database owns profiles, organisations, and roles. The clients
+  render their own sign-in screens, so no hosted UI or Cognito domain is provisioned.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  WebBaseUrl:
+    Type: String
+    Description: Origin of the Angular client, used in invitation and verification emails.
+    Default: https://localhost:4200
+
+  SesSourceArn:
+    Type: String
+    Default: ''
+    Description: >
+      ARN of a verified SES identity used to send Cognito emails. Leave empty to use Cognito's
+      built-in sender, which is capped at 50 messages a day and is only suitable for early testing.
+
+Conditions:
+  UseSes: !Not [!Equals [!Ref SesSourceArn, '']]
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    # A user pool cannot be recreated without every clinician losing their credentials.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: !Sub 'digital-health-${EnvironmentName}'
+      # Email is the identifier. Cognito requires an immutable username, so aliasing email keeps
+      # the sign-in experience simple while leaving the internal username stable.
+      UsernameAttributes:
+        - email
+      UsernameConfiguration:
+        CaseSensitive: false
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: 'OFF'
+      DeletionProtection: ACTIVE
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        # Invitations are issued by this application, not by Cognito, so that the invite carries
+        # the organisation and role the recipient is being granted.
+        AllowAdminCreateUserOnly: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+      EmailConfiguration: !If
+        - UseSes
+        - EmailSendingAccount: DEVELOPER
+          SourceArn: !Ref SesSourceArn
+        - EmailSendingAccount: COGNITO_DEFAULT
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
+      UserPoolTags:
+        Application: digital-health-app
+        Environment: !Ref EnvironmentName
+
+  # One client per platform, so a compromised or retired mobile build can be revoked without
+  # signing every web user out.
+  WebClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub 'digital-health-web-${EnvironmentName}'
+      UserPoolId: !Ref UserPool
+      # Public client: a browser cannot keep a secret.
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      # Short access tokens bound the window in which a revoked user keeps working. The Redis
+      # denylist closes that window entirely; this limits how long the denylist must remember.
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      ReadAttributes:
+        - email
+        - email_verified
+      WriteAttributes:
+        - email
+
+  IosClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub 'digital-health-ios-${EnvironmentName}'
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 90
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+
+  AndroidClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub 'digital-health-android-${EnvironmentName}'
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 90
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+
+Outputs:
+  UserPoolId:
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  IssuerUri:
+    Description: Value for the application's COGNITO_ISSUER_URI setting.
+    Value: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}'
+    Export:
+      Name: !Sub '${AWS::StackName}-IssuerUri'
+
+  WebClientId:
+    Value: !Ref WebClient
+    Export:
+      Name: !Sub '${AWS::StackName}-WebClientId'
+
+  IosClientId:
+    Value: !Ref IosClient
+    Export:
+      Name: !Sub '${AWS::StackName}-IosClientId'
+
+  AndroidClientId:
+    Value: !Ref AndroidClient
+    Export:
+      Name: !Sub '${AWS::StackName}-AndroidClientId'
+
+  WebBaseUrl:
+    Value: !Ref WebBaseUrl
