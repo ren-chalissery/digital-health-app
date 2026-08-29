@@ -1,33 +1,34 @@
-#if canImport(UIKit)
 import SwiftUI
-import UIKit
 
-/// iOS only: `UITextContentType` and `UIKeyboardType` have no macOS equivalent, and the package
-/// stays buildable on macOS so its logic can be tested with `swift test`.
+/// What a field is for, rather than which UIKit constants to set.
+///
+/// Callers name the meaning and this decides the keyboard, the autofill hint and the
+/// capitalisation. Keeping `UITextContentType` out of the signature is what lets this package
+/// build on macOS, and therefore be tested with `swift test`.
+public enum FieldKind {
+    case email
+    case password
+    case newPassword
+    case oneTimeCode
+    case personName
+    case phone
+    case plain
+}
+
 public struct FormField: View {
 
     // MARK: Properties
 
     private let label: String
-    private let isSecure: Bool
-    private let contentType: UITextContentType?
-    private let keyboardType: UIKeyboardType
+    private let kind: FieldKind
     @Binding private var text: String
 
     // MARK: Init
 
-    public init(
-        label: String,
-        text: Binding<String>,
-        isSecure: Bool = false,
-        contentType: UITextContentType? = nil,
-        keyboardType: UIKeyboardType = .default
-    ) {
+    public init(label: String, text: Binding<String>, kind: FieldKind = .plain) {
         self.label = label
         self._text = text
-        self.isSecure = isSecure
-        self.contentType = contentType
-        self.keyboardType = keyboardType
+        self.kind = kind
     }
 
     // MARK: SwiftUI
@@ -40,10 +41,7 @@ public struct FormField: View {
 
             field
                 .textFieldStyle(.plain)
-                .textContentType(contentType)
-                .keyboardType(keyboardType)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
+                .fieldKind(kind)
                 .padding(Spacing.x3)
                 .background(Color.brandSurface)
                 .clipShape(RoundedRectangle(cornerRadius: Spacing.x2))
@@ -52,11 +50,68 @@ public struct FormField: View {
 
     @ViewBuilder
     private var field: some View {
-        if isSecure {
+        if kind == .password || kind == .newPassword {
             SecureField(label, text: $text)
         } else {
             TextField(label, text: $text)
         }
+    }
+}
+
+private extension View {
+
+    @ViewBuilder
+    func fieldKind(_ kind: FieldKind) -> some View {
+        #if os(iOS)
+        self
+            .textContentType(kind.contentType)
+            .keyboardType(kind.keyboardType)
+            .textInputAutocapitalization(kind.capitalisation)
+            .autocorrectionDisabled(kind.disablesAutocorrection)
+        #else
+        self
+        #endif
+    }
+}
+
+#if os(iOS)
+import UIKit
+
+private extension FieldKind {
+
+    var contentType: UITextContentType? {
+        switch self {
+        case .email: .username
+        case .password: .password
+        case .newPassword: .newPassword
+        case .oneTimeCode: .oneTimeCode
+        case .personName: .name
+        case .phone: .telephoneNumber
+        case .plain: nil
+        }
+    }
+
+    var keyboardType: UIKeyboardType {
+        switch self {
+        case .email: .emailAddress
+        case .oneTimeCode: .numberPad
+        case .phone: .phonePad
+        default: .default
+        }
+    }
+
+    var capitalisation: TextInputAutocapitalization {
+        switch self {
+        case .personName: .words
+        case .plain: .sentences
+        default: .never
+        }
+    }
+
+    /// Off everywhere except free text. An autocorrected email address or code is a support
+    /// ticket, and a corrected name is an insult.
+    var disablesAutocorrection: Bool {
+        self != .plain
     }
 }
 #endif
