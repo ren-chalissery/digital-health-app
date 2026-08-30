@@ -1,0 +1,116 @@
+/* Localised copy for SimplicityAuth.
+   
+   A .strings file rather than the newer .xcstrings: .xcstrings is a source format that
+   Xcode compiles into a .loctable, and `swift package` only copies it, so every lookup
+   returned its own key under `swift test`. .strings is read at runtime, so the copy
+   behaves the same in the test suite as it does in the app — which lets the wording be
+   tested, and the wording here has been chosen carefully. */
+
+"confirm_body" = "We sent a code to %@. Enter it below to finish creating your account.";
+
+"confirm_code" = "Confirmation code";
+
+"confirm_failed" = "That code was not accepted. Check it and try again, or send a new one.";
+
+"confirm_missing_code" = "Enter the code we emailed you.";
+
+"confirm_resend" = "Send a new code";
+
+"confirm_resend_failed" = "We could not send a new code. Try again in a moment.";
+
+"confirm_resent" = "A new code is on its way.";
+
+"confirm_submit" = "Confirm";
+
+"confirm_title" = "Check your email";
+
+"onboarding_failed" = "We could not save that. Check your connection and try again.";
+
+"onboarding_org_missing_name" = "Give your organisation a name.";
+
+"onboarding_org_name" = "Organisation name";
+
+"onboarding_org_submit" = "Create organisation";
+
+"onboarding_org_title" = "Your organisation";
+
+"onboarding_org_type" = "Type";
+
+"onboarding_profile_missing_name" = "Enter your name.";
+
+"onboarding_profile_missing_role" = "Choose your professional role.";
+
+"onboarding_profile_name" = "Full name";
+
+"onboarding_profile_phone" = "Phone (optional)";
+
+"onboarding_profile_role" = "Professional role";
+
+"onboarding_profile_submit" = "Continue";
+
+"onboarding_profile_title" = "About you";
+
+"password_needs_lowercase" = "Include a lowercase letter.";
+
+"password_needs_number" = "Include a number.";
+
+"password_needs_uppercase" = "Include a capital letter.";
+
+"password_too_short" = "Use at least 12 characters.";
+
+"reset_code" = "Reset code";
+
+"reset_confirm_failed" = "We could not reset your password. Check the code and try again.";
+
+"reset_done" = "Your password has been changed. You can sign in with it now.";
+
+"reset_email" = "Email address";
+
+"reset_missing_code" = "Enter the code we emailed you.";
+
+"reset_missing_email" = "Enter your email address.";
+
+"reset_new_password" = "New password";
+
+"reset_request_failed" = "We could not send a reset code. Try again in a moment.";
+
+"reset_send_code" = "Send reset code";
+
+"reset_submit" = "Change password";
+
+"reset_title" = "Reset your password";
+
+"sign_in_create_account" = "Create an account";
+
+"sign_in_email" = "Email address";
+
+/* Deliberately identical for a wrong password and an unknown address. The Cognito client sets PreventUserExistenceErrors, and the app should not become the oracle the pool refuses to be. */
+"sign_in_failed" = "We could not sign you in. Check your email address and password and try again.";
+
+"sign_in_forgot" = "Forgotten your password?";
+
+"sign_in_missing_fields" = "Enter your email address and password.";
+
+"sign_in_password" = "Password";
+
+"sign_in_submit" = "Sign in";
+
+"sign_in_title" = "Sign in";
+
+"sign_up_confirm_password" = "Confirm password";
+
+"sign_up_email" = "Email address";
+
+"sign_up_failed" = "We could not create your account. That address may already have one.";
+
+"sign_up_have_account" = "I already have an account";
+
+"sign_up_missing_email" = "Enter your email address.";
+
+"sign_up_password" = "Password";
+
+"sign_up_passwords_differ" = "Those passwords do not match.";
+
+"sign_up_submit" = "Create account";
+
+"sign_up_title" = "Create your account";

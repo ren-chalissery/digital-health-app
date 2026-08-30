@@ -18,6 +18,7 @@
 		8389335F32F11B071C253879 /* SimplicityDesign in Frameworks */ = {isa = PBXBuildFile; productRef = 413488861BE27284822A57CB /* SimplicityDesign */; };
 		A434BF7F3B497CFC24E7F778 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E55FAF9B12628535A1F49C /* RootView.swift */; };
 		B2D96CFF0140484EA15E9244 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D7D1B46581D9B3D423FA1B /* AppRouter.swift */; };
+		BF31CB25FA61CC76AE0FA789 /* SimplicityLearn in Frameworks */ = {isa = PBXBuildFile; productRef = FE35A197F0214EA2F517EEB2 /* SimplicityLearn */; };
 		D3C0BAD1C373DABF15033DD9 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 795D6F46FD2A897569BCE437 /* SmokeTests.swift */; };
 		D8FE240DF1456CE76286816A /* amplifyconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = C528FE0E2C161F09D14F7F83 /* amplifyconfiguration.json */; };
 		D9526904CA6525CCBE31B92A /* SimplicityAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 583B906DDD2F507918F83D1D /* SimplicityAuth */; };
@@ -42,6 +43,7 @@
 		86911A7260F5709FC9A85BD2 /* SimplicityServices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SimplicityServices; path = Packages/SimplicityServices; sourceTree = SOURCE_ROOT; };
 		A19448B9C3CA11C12F06FB1F /* SimplicityDesign */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SimplicityDesign; path = Packages/SimplicityDesign; sourceTree = SOURCE_ROOT; };
 		A3D7D1B46581D9B3D423FA1B /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		A4F14E9D7C8BFAF53FACEC37 /* SimplicityLearn */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SimplicityLearn; path = Packages/SimplicityLearn; sourceTree = SOURCE_ROOT; };
 		A58AB19EE98E11D345F775DF /* SimplicityApi */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SimplicityApi; path = Packages/SimplicityApi; sourceTree = SOURCE_ROOT; };
 		A9E55FAF9B12628535A1F49C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AE4550F071DF75398935F130 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -51,7 +53,7 @@
 		E2C52CA28446F644281AF4F8 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
 		E6F133D5B4CE0F614B820389 /* LiveSignInTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSignInTest.swift; sourceTree = "<group>"; };
 		EC32DF04B18ED73335036D89 /* Simplicity_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Simplicity_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		"TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
+		"TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config-Shared.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				8389335F32F11B071C253879 /* SimplicityDesign in Frameworks */,
 				1BA43D3CEE99F46836B8FBEE /* SimplicityServices in Frameworks */,
 				D9526904CA6525CCBE31B92A /* SimplicityAuth in Frameworks */,
+				BF31CB25FA61CC76AE0FA789 /* SimplicityLearn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,15 +139,16 @@
 				31DC65BD7E1F5B6C333FF051 /* SimplicityAuth */,
 				A19448B9C3CA11C12F06FB1F /* SimplicityDesign */,
 				5A51DB5472B8D47EF212DD60 /* SimplicityFoundation */,
+				A4F14E9D7C8BFAF53FACEC37 /* SimplicityLearn */,
 				86911A7260F5709FC9A85BD2 /* SimplicityServices */,
 			);
 			path = Packages;
 			sourceTree = "<group>";
 		};
-		"TEMP_9D1FFBD2-5D9F-4E5C-BDE6-1CA41EC105BF" /* ios */ = {
+		"TEMP_23D06E9F-855C-4BF5-8F66-C9AD2AC8206D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */,
+				"TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -189,6 +193,7 @@
 				413488861BE27284822A57CB /* SimplicityDesign */,
 				CB92855CBB99CCA2E465F397 /* SimplicityServices */,
 				583B906DDD2F507918F83D1D /* SimplicityAuth */,
+				FE35A197F0214EA2F517EEB2 /* SimplicityLearn */,
 			);
 			productName = Simplicity_iOS;
 			productReference = EC32DF04B18ED73335036D89 /* Simplicity_iOS.app */;
@@ -228,6 +233,7 @@
 				F0AB2A68FFF1B5A6E149F64D /* XCLocalSwiftPackageReference "Packages/SimplicityAuth" */,
 				80F956EAF240DBEF35BE9A00 /* XCLocalSwiftPackageReference "Packages/SimplicityDesign" */,
 				AC2CBED197D38E07CBB2D2A5 /* XCLocalSwiftPackageReference "Packages/SimplicityFoundation" */,
+				C8A3DDB8A1611EE268DFF60B /* XCLocalSwiftPackageReference "Packages/SimplicityLearn" */,
 				3391BF81DA201ECC19C4C3AA /* XCLocalSwiftPackageReference "Packages/SimplicityServices" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -288,7 +294,7 @@
 /* Begin XCBuildConfiguration section */
 		1278996D91AD4130E497E397 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -432,7 +438,7 @@
 		};
 		B1321714BCBC956E3D92D11F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6AEAFA28-4B3F-44DC-87A7-752FE056987D" /* Config-Shared.xcconfig */;
+			baseConfigurationReference = "TEMP_7772F260-7DD3-4CEF-8242-9D1F26A727E3" /* Config-Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -530,6 +536,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/SimplicityFoundation;
 		};
+		C8A3DDB8A1611EE268DFF60B /* XCLocalSwiftPackageReference "Packages/SimplicityLearn" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SimplicityLearn;
+		};
 		F0AB2A68FFF1B5A6E149F64D /* XCLocalSwiftPackageReference "Packages/SimplicityAuth" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/SimplicityAuth;
@@ -556,6 +566,10 @@
 		CB92855CBB99CCA2E465F397 /* SimplicityServices */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SimplicityServices;
+		};
+		FE35A197F0214EA2F517EEB2 /* SimplicityLearn */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SimplicityLearn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

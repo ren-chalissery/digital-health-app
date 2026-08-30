@@ -36,8 +36,17 @@ view, it belongs in `SimplicityDesign`.
 # One package
 cd Packages/SimplicityFoundation && swift test
 
-# Every package
-for p in Packages/*/; do (cd "$p" && swift test) || break; done
+# Every package. The `if` matters: piping `swift test` into a filter hides its exit code, and a
+# package that fails to compile then prints nothing at all rather than failing loudly.
+for p in Packages/*/; do
+  out=$( (cd "$p" && swift test 2>&1) )
+  if echo "$out" | rg -q "Test run with .* passed"; then
+    printf "%-22s ok\n" "$(basename "$p")"
+  else
+    printf "%-22s FAILED\n" "$(basename "$p")"
+    echo "$out" | rg "error:|✘" | head -5
+  fi
+done
 
 # The app, including the UI smoke test
 xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \

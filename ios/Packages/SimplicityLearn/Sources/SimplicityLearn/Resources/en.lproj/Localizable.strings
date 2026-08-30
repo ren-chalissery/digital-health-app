@@ -1,0 +1,93 @@
+/* Localised copy for SimplicityLearn.
+   
+   A .strings file rather than the newer .xcstrings: .xcstrings is a source format that
+   Xcode compiles into a .loctable, and `swift package` only copies it, so every lookup
+   returned its own key under `swift test`. .strings is read at runtime, so the copy
+   behaves the same in the test suite as it does in the app — which lets the wording be
+   tested, and the wording here has been chosen carefully. */
+
+"dashboard_completed_count" = "%lld complete";
+
+/* %@ is the clinician's first name. */
+"dashboard_greeting" = "Kia ora, %@";
+
+"dashboard_greeting_anonymous" = "Kia ora";
+
+"dashboard_lede_all_done" = "You have finished everything assigned to you.";
+
+"dashboard_lede_loading" = "Loading your training…";
+
+"dashboard_lede_none_assigned" = "Nothing has been assigned to your teams yet.";
+
+"dashboard_lede_outstanding_many" = "You have %lld modules outstanding.";
+
+/* Only ever used with a count of one; the plural form is a separate key. */
+"dashboard_lede_outstanding_one" = "You have %lld module outstanding.";
+
+"dashboard_next_title" = "Pick up where you left off";
+
+"dashboard_title" = "Dashboard";
+
+"learn_empty_body" = "When an administrator assigns training to your team, it will appear here.";
+
+"learn_empty_title" = "Nothing assigned yet";
+
+"learn_load_failed" = "We could not load your training. Check your connection and try again.";
+
+"learn_no_matches" = "No modules match that search.";
+
+"learn_search" = "Search your training";
+
+/* %1$lld is sections completed, %2$lld is the total. */
+"learn_section_progress" = "%1$lld of %2$lld sections";
+
+"learn_title" = "Learn";
+
+"status_completed" = "Complete";
+
+"status_in_progress" = "In progress";
+
+/* Deliberately plain. The clinician did finish it; it is back because the content changed substantively, not because anything they did was wrong. */
+"status_needs_redoing" = "Updated since you finished";
+
+"status_not_started" = "Not started";
+"reader_load_failed" = "We could not open this module. Check your connection and try again.";
+
+/* Deliberately explicit that nothing was saved. A clinician who believes they finished a
+   module and did not is worse off than one who knows to try again. */
+"reader_progress_failed" = "We could not record that you read this section. It has not been saved — try again.";
+
+"reader_mark_read" = "Mark as read";
+
+"reader_read" = "Read";
+
+"reader_saving" = "Saving…";
+
+"video_load" = "Load video";
+
+"video_load_failed" = "We could not load this video. Try again in a moment.";
+
+/* Names the limitation, does not blame the video, and says what to do instead. */
+"video_captions_elsewhere" = "This video has captions, which the app cannot show yet. Open this module on the web to watch with them.";
+"quiz_title" = "Check your understanding";
+
+"quiz_locked" = "Work through every section first, then the questions unlock.";
+
+"quiz_intro" = "Every question has to be right. You can try as often as you like, and a wrong answer will explain itself.";
+
+"quiz_submit" = "Check my answers";
+
+"quiz_try_again" = "Try again";
+
+"quiz_checking" = "Checking…";
+
+"quiz_submit_failed" = "We could not check your answers. Try again in a moment.";
+
+"quiz_passed" = "Passed";
+
+"quiz_correct" = "Correct.";
+
+"quiz_incorrect" = "Not quite.";
+
+/* %1$lld correct, %2$lld total, %3$lld attempt number. */
+"quiz_score" = "%1$lld of %2$lld correct on attempt %3$lld";
