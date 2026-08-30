@@ -37,6 +37,8 @@ packages:
     path: Packages/SimplicityReflect
   SimplicityAssistant:
     path: Packages/SimplicityAssistant
+  SimplicityAdmin:
+    path: Packages/SimplicityAdmin
 
 targets:
   Simplicity_iOS:
@@ -68,6 +70,7 @@ targets:
       - package: SimplicityLearn
       - package: SimplicityReflect
       - package: SimplicityAssistant
+      - package: SimplicityAdmin
 
   SimplicityUITests:
     type: bundle.ui-testing

@@ -1,3 +1,4 @@
+import SimplicityAdmin
 import SimplicityAssistant
 import SimplicityDesign
 import SimplicityLearn
@@ -15,6 +16,7 @@ struct MainTabView: View {
 
     @State private var dashboardPath: [UUID] = []
     @State private var learnPath: [UUID] = []
+    @State private var settingsPath: [AdminDestination] = []
     @State private var isAsking = false
 
     // MARK: SwiftUI
@@ -67,12 +69,33 @@ struct MainTabView: View {
     }
 
     private var settings: some View {
-        NavigationStack {
-            List {
-                Button("Sign out", role: .destructive, action: onSignOut)
-                    .accessibilityIdentifier("sign-out")
+        NavigationStack(path: $settingsPath) {
+            SettingsView(
+                onSignOut: onSignOut,
+                onSwitched: resetForNewOrganisation,
+                onOpen: { settingsPath.append($0) }
+            )
+            .navigationDestination(for: AdminDestination.self) { destination in
+                switch destination {
+                case .members:
+                    MembersView()
+                case .teams:
+                    TeamsView { settingsPath.append($0) }
+                case .invitations:
+                    InvitationsView()
+                case let .team(id, name):
+                    TeamDetailView(teamId: id, teamName: name)
+                }
             }
-            .navigationTitle("Settings")
         }
+    }
+
+    /// Everything on screen belongs to the organisation just left — a module reader open on
+    /// something the clinician may no longer be able to see, an admin screen for a clinic they
+    /// only belong to. Clearing the stacks makes each tab reload against the new one.
+    private func resetForNewOrganisation() {
+        dashboardPath = []
+        learnPath = []
+        settingsPath = []
     }
 }

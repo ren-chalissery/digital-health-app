@@ -1,0 +1,120 @@
+/* Localised copy for SimplicityAdmin. */
+
+"settings_title" = "Settings";
+
+"settings_organisation" = "Organisation";
+
+"settings_administration" = "Administration";
+
+"settings_members" = "Members";
+
+"settings_teams" = "Teams";
+
+"settings_invitations" = "Invitations";
+
+"settings_leave" = "Leave this organisation";
+
+"settings_leave_confirm_title" = "Leave %@?";
+
+"settings_leave_confirm_body" = "You will lose access to its training. An administrator would have to invite you back.";
+
+"settings_leave_failed" = "We could not remove you from that organisation. Try again in a moment.";
+
+/* The reader can act on this: promote somebody first. Hence its own message. */
+"settings_leave_last_admin" = "You are the only administrator, so leaving would strand this organisation. Make somebody else an administrator first.";
+
+"settings_switch_failed" = "We could not switch organisation. Try again in a moment.";
+
+"settings_sign_out" = "Sign out";
+
+"role_org_admin" = "Administrator";
+
+"role_org_member" = "Member";
+
+"role_team_admin" = "Team administrator";
+
+"role_team_member" = "Team member";
+"members_title" = "Members";
+
+"members_load_failed" = "We could not load the members of this organisation.";
+
+"members_role_failed" = "We could not change that role. Try again in a moment.";
+
+"members_remove_failed" = "We could not remove that person. They still have access.";
+
+"members_remove" = "Remove";
+
+/* Names the consequence rather than asking a bare "are you sure". Ported from the web. */
+"members_remove_confirm_title" = "Remove %@?";
+
+"members_remove_confirm_body" = "They will also leave every team in this organisation.";
+
+"members_you" = "You";
+
+"members_no_profile" = "Has not completed their profile";
+"teams_title" = "Teams";
+
+"teams_load_failed" = "We could not load this organisation's teams.";
+
+"teams_create_failed" = "We could not create that team. Your details are still here.";
+
+"teams_delete_failed" = "We could not delete that team.";
+
+"teams_new_name" = "Team name";
+
+"teams_new_description" = "Description (optional)";
+
+"teams_create" = "Create team";
+
+"teams_delete" = "Delete";
+
+"teams_delete_confirm_title" = "Delete %@?";
+
+"teams_delete_confirm_body" = "Modules assigned to this team will no longer reach anybody through it.";
+
+"teams_member_count" = "%lld members";
+
+"teams_empty" = "No teams yet. Teams are how training reaches people.";
+
+"team_load_failed" = "We could not load this team.";
+
+"team_add_failed" = "We could not add that person to the team.";
+
+"team_remove_failed" = "We could not remove that person from the team.";
+
+"team_members" = "Members";
+
+"team_add" = "Add somebody";
+
+"team_no_candidates" = "Everybody in this organisation is already in this team.";
+"invitations_title" = "Invitations";
+
+"invitations_load_failed" = "We could not load this organisation's invitations.";
+
+"invitations_send_failed" = "We could not send that invitation. The address is still here.";
+
+"invitations_revoke_failed" = "We could not revoke that invitation.";
+
+"invitations_email" = "Email address";
+
+"invitations_role" = "Role";
+
+"invitations_team" = "Team";
+
+"invitations_no_team" = "No team";
+
+"invitations_send" = "Send invitation";
+
+"invitations_revoke" = "Revoke";
+
+"invitations_empty" = "No invitations outstanding.";
+
+"invitations_expires" = "Expires %@";
+
+"invitation_status_pending" = "Pending";
+
+"invitation_status_accepted" = "Accepted";
+
+"invitation_status_revoked" = "Revoked";
+
+"invitation_status_expired" = "Expired";
