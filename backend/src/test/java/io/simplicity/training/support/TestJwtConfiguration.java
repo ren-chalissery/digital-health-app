@@ -8,7 +8,9 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import io.simplicity.training.config.AppProperties;
 import io.simplicity.training.security.CognitoUserDirectory;
+import io.simplicity.training.security.SecurityConfig;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -48,10 +50,19 @@ public class TestJwtConfiguration {
     }
   }
 
+  /**
+   * Locally signed, but validated exactly as production validates.
+   *
+   * <p>Only the key source differs. Skipping the validator here would let the suite pass while an
+   * ID token or an unknown client authorised requests in production, which is precisely the gap
+   * these tests exist to close.
+   */
   @Bean
   @Primary
-  JwtDecoder testJwtDecoder() throws JOSEException {
-    return NimbusJwtDecoder.withPublicKey(RSA_KEY.toRSAPublicKey()).build();
+  JwtDecoder testJwtDecoder(AppProperties properties) throws JOSEException {
+    NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(RSA_KEY.toRSAPublicKey()).build();
+    decoder.setJwtValidator(SecurityConfig.cognitoValidator(properties));
+    return decoder;
   }
 
   /**

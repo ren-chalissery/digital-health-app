@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
@@ -73,9 +74,13 @@ class AwsContractTest {
   }
 
   private static AppProperties propertiesFor(String issuerUri) {
+    return propertiesFor(issuerUri, java.util.List.of());
+  }
+
+  private static AppProperties propertiesFor(String issuerUri, java.util.List<String> clientIds) {
     return new AppProperties(
         new AppProperties.Aws(endpoint()),
-        new AppProperties.Cognito(issuerUri, null, null, "us-east-1"),
+        new AppProperties.Cognito(issuerUri, null, clientIds, "us-east-1"),
         new AppProperties.Auth(Duration.ofMinutes(15), Duration.ofMinutes(5)),
         new AppProperties.Invitations(Duration.ofDays(7), 50),
         new AppProperties.Mail(SENDER, true),
@@ -114,10 +119,20 @@ class AwsContractTest {
   void validatesAPoolIssuedTokenWithTheDecoderTheApplicationUses() {
     CognitoIdentityProviderClient cognito = AWS.cognitoClient(propertiesFor(null));
     String poolId = aPool(cognito);
-    String accessToken = aSignedInUser(cognito, poolId, aClient(cognito, poolId));
+    String clientId = aClient(cognito, poolId);
+    String accessToken = aSignedInUser(cognito, poolId, clientId);
 
-    JwtDecoder decoder =
-        new SecurityConfig().jwtDecoder(propertiesFor(endpoint() + "/" + poolId));
+    // Keys and issuer are configured separately here, which production does not need to do. The
+    // emulator signs tokens with an `iss` of its own that is not reachable as a JWKS URL, so the
+    // keys come from the endpoint the test can actually call while the issuer expectation comes
+    // from the token. What is being proven is that the real validator accepts a genuinely
+    // pool-issued token — signature, token_use, client and issuer together.
+    NimbusJwtDecoder decoder =
+        NimbusJwtDecoder.withJwkSetUri(endpoint() + "/" + poolId + "/.well-known/jwks.json")
+            .build();
+    decoder.setJwtValidator(
+        SecurityConfig.cognitoValidator(
+            propertiesFor(issuerOf(accessToken), java.util.List.of(clientId))));
     Jwt decoded = decoder.decode(accessToken);
 
     assertThat(decoded.getSubject()).isNotBlank();
@@ -127,6 +142,15 @@ class AwsContractTest {
   private String aSignedInUser(CognitoIdentityProviderClient cognito) {
     String poolId = aPool(cognito);
     return aSignedInUser(cognito, poolId, aClient(cognito, poolId));
+  }
+
+  /** Whatever the pool actually put in {@code iss}, rather than what we would guess. */
+  private static String issuerOf(String accessToken) {
+    try {
+      return com.nimbusds.jwt.SignedJWT.parse(accessToken).getJWTClaimsSet().getIssuer();
+    } catch (java.text.ParseException e) {
+      throw new IllegalArgumentException("Not a readable access token", e);
+    }
   }
 
   private String aPool(CognitoIdentityProviderClient cognito) {

@@ -49,7 +49,12 @@ public record AppProperties(
   }
 
   public record Cognito(
-      String issuerUri, String userPoolId, String clientId, @DefaultValue("ap-southeast-2") String region) {
+      String issuerUri,
+      String userPoolId,
+      // A list, not a value. The pool issues tokens to a web, an iOS and an Android client, and
+      // validating against only one of them would reject the other two outright.
+      List<String> clientIds,
+      @DefaultValue("ap-southeast-2") String region) {
 
     /** Cognito always publishes its keys at this well-known location. */
     public String jwkSetUri() {

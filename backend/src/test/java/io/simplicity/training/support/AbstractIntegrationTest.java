@@ -41,7 +41,10 @@ import org.springframework.test.web.servlet.MockMvc;
       "app.media.upload-bucket=test-upload",
       "app.media.asset-bucket=test-media",
       "app.media.transcode-queue-arn=arn:aws:mediaconvert:test:0:queues/test",
-      "app.media.transcode-role-arn=arn:aws:iam::0:role/test"
+      "app.media.transcode-role-arn=arn:aws:iam::0:role/test",
+      // The tokens the suite mints have to satisfy the same validator production uses.
+      "app.cognito.issuer-uri=https://cognito-idp.test.amazonaws.com/test-pool",
+      "app.cognito.client-ids=test-client,test-client-ios,test-client-android"
     })
 @Import({
   TestcontainersConfiguration.class,
