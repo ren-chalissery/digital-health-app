@@ -83,8 +83,16 @@ struct MainTabView: View {
                     TeamsView { settingsPath.append($0) }
                 case .invitations:
                     InvitationsView()
+                case .modules:
+                    ModuleAdminView { settingsPath.append($0) }
                 case let .team(id, name):
                     TeamDetailView(teamId: id, teamName: name)
+                case let .module(id, title):
+                    ModuleEditorView(moduleId: id, title: title) { settingsPath.append($0) }
+                case let .quiz(moduleId):
+                    QuizEditorView(moduleId: moduleId)
+                case let .publish(moduleId):
+                    PublishView(moduleId: moduleId)
                 }
             }
         }

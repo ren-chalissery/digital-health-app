@@ -22,4 +22,12 @@ public extension Container {
     var organisationService: Factory<OrganisationService> {
         self { OrganisationServiceImpl() }.scope(.singleton)
     }
+
+    var mediaService: Factory<MediaService> {
+        self { MediaServiceImpl() }.scope(.singleton)
+    }
+
+    var authoringService: Factory<AuthoringService> {
+        self { AuthoringServiceImpl() }.scope(.singleton)
+    }
 }

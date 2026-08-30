@@ -118,3 +118,121 @@
 "invitation_status_revoked" = "Revoked";
 
 "invitation_status_expired" = "Expired";
+"authoring_title" = "Modules";
+
+"authoring_load_failed" = "We could not load this organisation's modules.";
+
+"authoring_create_failed" = "We could not create that module. Your details are still here.";
+
+"authoring_archive_failed" = "We could not archive that module.";
+
+"authoring_draft_failed" = "We could not open a draft of this module.";
+
+"authoring_save_failed" = "We could not save your changes. They are still here — try again.";
+
+"authoring_section_needs_title" = "Every section needs a heading. A learner navigates by them.";
+
+"authoring_new_title" = "Module title";
+
+"authoring_new_summary" = "Summary (optional)";
+
+"authoring_create" = "Create module";
+
+"authoring_archive" = "Archive";
+
+"authoring_empty" = "No modules yet.";
+
+"authoring_state_draft" = "Draft";
+
+"authoring_state_published" = "Published";
+
+/* Published, then edited. A learner is still seeing the older version. */
+"authoring_state_unpublished_changes" = "Published, with unpublished changes";
+
+"authoring_sections" = "Sections";
+
+"authoring_add_section" = "Add a section";
+
+"authoring_section_title" = "Heading";
+
+"authoring_section_body" = "Body (Markdown)";
+
+"authoring_save" = "Save";
+
+"authoring_saving" = "Saving…";
+
+"authoring_open_draft" = "Edit";
+
+"authoring_open_draft_hint" = "A published module cannot be changed. Editing opens a draft; learners keep seeing the published version until you publish again.";
+
+"authoring_unsaved" = "Unsaved changes";
+/* %lld is the question number. Naming the position is the point — "a question is invalid"
+   in a list of nine is useless to somebody trying to fix it. */
+"quiz_editor_needs_prompt" = "Question %lld needs a prompt.";
+
+"quiz_editor_needs_two_options" = "Question %lld needs at least two options.";
+
+"quiz_editor_needs_option_labels" = "Every option in question %lld needs a label.";
+
+"quiz_editor_needs_one_correct" = "Question %lld needs exactly one correct answer.";
+
+"quiz_editor_title" = "Quiz";
+
+"quiz_editor_add_question" = "Add a question";
+
+"quiz_editor_add_option" = "Add an option";
+
+"quiz_editor_prompt" = "Question";
+
+"quiz_editor_explanation" = "Explanation shown after answering (optional)";
+
+"quiz_editor_option" = "Option";
+
+"quiz_editor_empty" = "No questions. A module without a quiz is complete once every section is read.";
+"upload_title" = "Video";
+
+"upload_choose" = "Choose a video";
+
+"upload_record" = "Record a video";
+
+"upload_failed" = "We could not upload that video. Nothing was saved — try again.";
+
+/* There is no resume: a failed upload starts again from nothing, so the size is checked first. */
+"upload_too_large" = "That video is larger than 500 MB. Trim it and try again.";
+
+"upload_transcode_failed" = "That video could not be processed.";
+
+"upload_still_processing" = "Still processing. It will appear once it is ready.";
+
+"upload_uploading" = "Uploading…";
+
+"upload_processing" = "Processing. This takes a few minutes, and you can leave this screen.";
+
+"upload_ready" = "Ready";
+
+"upload_none" = "No video on this section.";
+
+"upload_remove" = "Remove video";
+"publish_title" = "Publish";
+
+"publish_teams" = "Who gets this";
+
+"publish_no_teams" = "No teams yet. Create one before assigning this module.";
+
+"publish_assign" = "Save assignment";
+
+"publish_assign_failed" = "We could not change who this module reaches.";
+
+"publish_needs_sections" = "A module needs at least one section before it can be published.";
+
+"publish_failed" = "We could not publish this module.";
+
+"publish_now" = "Publish";
+
+"publish_done" = "Published. Learners in the assigned teams can see it now.";
+
+/* The one authoring control that needs real copy rather than a label: it decides whether
+   everybody who already finished has to do it again. */
+"publish_supersedes" = "Everyone who finished this must do it again";
+
+"publish_supersedes_hint" = "Turn this on when the guidance itself changed. A corrected typo should leave completions alone.";
