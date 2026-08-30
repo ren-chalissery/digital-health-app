@@ -18,9 +18,7 @@ run = Run()
 try:
     admin = run.account("admin")
 
-    org = run.call("POST", "/api/v1/organisations", admin,
-                   {"name": f"Verify Clinic {run.id}", "organisationType": "CLINIC"}).json()
-    org_id = org["id"]
+    org_id = run.organisation(f"Verify Clinic {run.id}", admin)
 
     team = run.call("POST", f"/api/v1/orgs/{org_id}/teams", admin,
                     {"name": f"Team {run.id}"}).json()

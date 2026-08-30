@@ -33,6 +33,10 @@ packages:
     path: Packages/SimplicityAuth
   SimplicityLearn:
     path: Packages/SimplicityLearn
+  SimplicityReflect:
+    path: Packages/SimplicityReflect
+  SimplicityAssistant:
+    path: Packages/SimplicityAssistant
 
 targets:
   Simplicity_iOS:
@@ -62,6 +66,8 @@ targets:
       - package: SimplicityServices
       - package: SimplicityAuth
       - package: SimplicityLearn
+      - package: SimplicityReflect
+      - package: SimplicityAssistant
 
   SimplicityUITests:
     type: bundle.ui-testing

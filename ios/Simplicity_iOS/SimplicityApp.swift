@@ -26,6 +26,7 @@ struct SimplicityApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(router: router)
+                .privacyScreen()
                 .task {
                     await ApiConfiguration.apply(AppApiAdapter())
                     await router.start()

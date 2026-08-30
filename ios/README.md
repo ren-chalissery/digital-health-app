@@ -56,6 +56,10 @@ xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
 swiftlint --strict
 ```
 
+If a package fails with `cannot find type 'X' in scope` pointing at a file that plainly declares
+`X`, its incremental build state is stale — adding a type to a `.package(path:)` dependency does
+not always invalidate dependents. Delete that package's `.build` and run again.
+
 Those two `-skip` flags are not optional. Amplify depends on smithy-swift, which ships a build
 plugin, and Xcode refuses to run an unvalidated plugin from the command line — the build fails with
 `Plugin "SmithyCodeGeneratorPlugin" must be enabled before it can be used`. Opening the workspace in

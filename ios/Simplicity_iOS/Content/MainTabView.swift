@@ -1,8 +1,10 @@
+import SimplicityAssistant
 import SimplicityDesign
 import SimplicityLearn
+import SimplicityReflect
 import SwiftUI
 
-/// The four tabs the web has. Reflect and the assistant arrive in later plans.
+/// The four tabs the web has.
 ///
 /// `tabItem` rather than iOS 18's `Tab`, because the deployment target is iOS 17.
 struct MainTabView: View {
@@ -13,6 +15,7 @@ struct MainTabView: View {
 
     @State private var dashboardPath: [UUID] = []
     @State private var learnPath: [UUID] = []
+    @State private var isAsking = false
 
     // MARK: SwiftUI
 
@@ -29,18 +32,39 @@ struct MainTabView: View {
             NavigationStack(path: $learnPath) {
                 ModuleListView { learnPath.append($0) }
                     .navigationDestination(for: UUID.self) { ModuleReaderView(moduleId: $0) }
+                    .toolbar { askButton }
             }
             .tabItem { Label("Learn", systemImage: "book") }
 
-            Placeholder(title: "Reflect")
-                .tabItem { Label("Reflect", systemImage: "square.and.pencil") }
+            NavigationStack {
+                ReflectView()
+            }
+            .tabItem { Label("Reflect", systemImage: "square.and.pencil") }
 
             settings
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
+        .sheet(isPresented: $isAsking) {
+            AskView { moduleId in
+                learnPath.append(moduleId)
+            }
+        }
     }
 
     // MARK: Private
+
+    /// A sheet from Learn rather than a fifth tab, for the reason Phase 4 gave: a fifth tab would
+    /// mean reworking the shell for a feature nobody has used yet.
+    private var askButton: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                isAsking = true
+            } label: {
+                Label("Ask about the training", systemImage: "questionmark.circle")
+            }
+            .accessibilityIdentifier("ask-open")
+        }
+    }
 
     private var settings: some View {
         NavigationStack {
@@ -49,22 +73,6 @@ struct MainTabView: View {
                     .accessibilityIdentifier("sign-out")
             }
             .navigationTitle("Settings")
-        }
-    }
-}
-
-private struct Placeholder: View {
-
-    let title: String
-
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView(
-                title,
-                systemImage: "clock",
-                description: Text(verbatim: "Coming in a later release.")
-            )
-            .navigationTitle(title)
         }
     }
 }
