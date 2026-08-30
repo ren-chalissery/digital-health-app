@@ -62,12 +62,45 @@ the token valid. **A clinician removed from an organisation keeps working access
 minutes.**
 
 That is the single most consequential gap found, because it is the one where the product does
-something a user would reasonably assume it does not. Removal, deactivation and suspension all
-denylist from now on.
+something a user would reasonably assume it does not. Removal, leaving, archiving, deactivation and
+suspension all revoke from now on.
 
 Role *changes* deliberately do not. Demoting an administrator to a member should take effect
 promptly but need not sign them out of the product mid-sentence, and cache eviction already covers
 it within the same request.
+
+#### Revocation has to mean "tokens issued before now", not "this person is banned"
+
+The denylist as written is a boolean with a fifteen-minute TTL:
+
+```java
+public boolean isRevoked(String cognitoSub) {
+  return cognitoSub != null && Boolean.TRUE.equals(redis.hasKey(key(cognitoSub)));
+}
+```
+
+Wiring that to `removeMember` unchanged would be a worse bug than the one it fixes. A clinician who
+works across two clinics and is removed from one would be locked out of **both** — and out of
+signing back in — for fifteen minutes, because the check rejects any token from that subject
+including a freshly minted one.
+
+So the entry stores the instant of revocation, and the filter rejects a token whose `iat` precedes
+it. A token issued after the revocation is accepted immediately, which is exactly the desired
+behaviour: the old token dies, the next one works, and the person sees the organisation they still
+belong to.
+
+Deactivation stays correct under this scheme without special-casing, because
+`PrincipalResolutionFilter` separately refuses an inactive principal however new their token is.
+
+#### The client has to ask for a new token
+
+Even with `iat` comparison, a client that keeps presenting its existing token will see 401s until
+that token naturally expires. Amplify refreshes when a token is close to expiry, not when a request
+is rejected.
+
+So both clients gain a single retry: on a 401, force a refresh and try once more. Without it, the
+multi-organisation clinician above still waits up to fifteen minutes — the failure is just quieter.
+This is the same "session-refresh-on-403" gap Plan 4 recorded and deferred.
 
 ### 3.2 The JWT decoder validates almost nothing
 
@@ -151,7 +184,9 @@ this one does not.
 
 | Area | Change |
 | --- | --- |
-| Revocation | `removeMember`, `leave`, deactivation and suspension call `accessRevoked` |
+| Revocation | Denylist stores the revocation instant; the filter rejects tokens with an earlier `iat` |
+| Revocation | `removeMember`, `leave`, `archive`, deactivation and suspension call `accessRevoked` |
+| Clients | On a 401, refresh the token once and retry, so a revoked session recovers in seconds |
 | JWT | Validate `iss` and `token_use == "access"`; validate `client_id` against a **list** |
 | Config | `app.cognito.client-id` becomes `client-ids`; `infra/app.yaml` passes web, iOS and Android |
 | Alerting | One SNS topic, email subscription, and alarms for 5xx, unhealthy targets, RDS storage and CPU, ECS running count |
@@ -168,8 +203,10 @@ this one does not.
 The interesting assertions, all of which fail today:
 
 - A removed member's existing token is refused on the next request, not in fifteen minutes.
+- **A token issued *after* the revocation is accepted** — the test that stops this locking a
+  two-clinic clinician out of the clinic they still belong to.
 - Somebody who leaves has their token refused too.
-- A deactivated user's token is refused.
+- A deactivated user's token is refused however new it is.
 - An **ID token** is refused where an access token is expected.
 - A token from an unknown client id is refused.
 - A token from **each** of the three known client ids is accepted — the test that would have caught
@@ -188,7 +225,8 @@ after deployment already exercises the health path that the unhealthy-target ala
 | Risk | Mitigation |
 | --- | --- |
 | Client-id validation locks out a client | It is a list, and a test asserts all three are accepted before this ships |
-| Denylisting on removal signs somebody out mid-task | That is the intent; the TTL is fifteen minutes, so it self-heals rather than persisting |
+| Revocation locks somebody out of an organisation they still belong to | The entry is an instant, not a ban: a token issued after it is accepted. Asserted by its own test |
+| Denylisting on removal signs somebody out mid-task | That is the intent, and the client's retry turns it into a pause rather than a fifteen-minute wait |
 | Alarms that cry wolf | A deliberately small set, thresholds set above normal variation, one email topic rather than paging |
 | Turning on Redis TLS breaks the app | A template and a flag deployed together; the smoke check after deployment fails loudly if the cache is unreachable |
 | Fail-closed rate limiting turns a Redis outage into an outage | Applied only to invitations, never to reading or writing training or reflections |
