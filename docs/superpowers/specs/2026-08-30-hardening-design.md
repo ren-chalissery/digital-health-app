@@ -162,12 +162,27 @@ which is not an abuse concern so much as a runaway-client one.
 
 **Valkey is encrypted at rest but not in transit**, and the task sets `REDIS_SSL_ENABLED: 'false'`.
 The traffic stays inside the VPC, so this is defence in depth rather than an open door — but the
-data crossing it is principal caches and denylist entries, and enabling it is a template change plus
-a client flag.
+data crossing it is principal caches and denylist entries.
 
-**The API serves no security headers.** CloudFront sets HSTS, `X-Content-Type-Options` and
-`X-Frame-Options` for the web bundle; the ALB and Spring set none for the API. For a JSON API the
-practical wins are HSTS and `X-Content-Type-Options: nosniff`.
+Not "a template change plus a client flag", though: doing both at once is an outage. A cache that
+requires TLS rejects a client that is not yet using it, and a client using TLS is rejected by a
+cache that does not yet accept it. Valkey 8.0 supports `TransitEncryptionMode: preferred`, which
+accepts both, so the migration is three deployments — accept both, move the client, then require —
+each one safe on its own and reversible.
+
+~~**The API serves no security headers.**~~ **Wrong — checked against production, which answers:**
+
+```
+strict-transport-security: max-age=31536000 ; includeSubDomains
+x-content-type-options: nosniff
+x-frame-options: DENY
+cache-control: no-cache, no-store, max-age=0, must-revalidate
+```
+
+Those are Spring Security's defaults, present because nothing turned them off, and they include
+both headers this section was about to recommend adding. Nothing to do. The claim came from reading
+`SecurityConfig` for an explicit `headers(...)` block and concluding from its absence — the exact
+inversion of how defaults work.
 
 **No dependency scanning of any kind** — no Dependabot, no `npm audit` in CI, no OWASP check. For a
 product handling clinical data with three ecosystems of dependencies, that is the cheapest
