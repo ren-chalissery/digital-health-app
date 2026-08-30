@@ -82,9 +82,10 @@ public final class SettingsViewModel {
             user = try await session.refresh()
             didLeave = true
         } catch {
-            // A sole administrator cannot leave without stranding the organisation, and the server
-            // says so with a conflict. That deserves its own explanation rather than a generic
-            // failure, because the reader can act on it — promote somebody first.
+            // Currently unreachable: production returns 204 even for the only administrator, so a
+            // sole admin can strand their own organisation. That looks like a server gap rather
+            // than a decision, and the branch stays so the app explains it usefully the day the
+            // guard appears — but nothing here should be read as evidence that it exists.
             errorMessage = Self.isConflict(error)
                 ? String(localized: "settings_leave_last_admin", bundle: .module)
                 : String(localized: "settings_leave_failed", bundle: .module)
