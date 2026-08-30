@@ -60,8 +60,14 @@ public class InvitationService {
   public InvitationResponse create(
       AppPrincipal actor, UUID orgId, CreateInvitationRequest request) {
 
+    // Refused if Redis is down. This limit is the only thing standing between a compromised
+    // administrator account and a bulk mailer, so an unenforceable one is worse than an outage.
     if (!rateLimiter.tryAcquire(
-        "invite", orgId.toString(), properties.invitations().maxPerHourPerOrg(), Duration.ofHours(1))) {
+        "invite",
+        orgId.toString(),
+        properties.invitations().maxPerHourPerOrg(),
+        Duration.ofHours(1),
+        RateLimiter.OnOutage.REFUSE)) {
       throw new ConflictException(
           "This organisation has sent too many invitations in the last hour. Please try again later.");
     }

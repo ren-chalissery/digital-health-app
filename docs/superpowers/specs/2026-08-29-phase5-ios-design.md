@@ -221,8 +221,9 @@ can be cancelled, and `.../media/{assetId}/uploaded` is called on completion exa
 it. Transcoding is the server's business; the app polls the asset until it is `READY`, the same as
 the web.
 
-The five-hundred-megabyte cap and the one-asset-per-minute rate limit are enforced server-side
-already. The app checks the size before starting, because failing a long upload at the end for a
+The five-hundred-megabyte cap and the one-asset-per-minute rate limit are enforced server-side.
+(The cap always was. The rate limit was not, despite this paragraph, until the hardening work added
+it — `MediaService.register` had no limiter at all.) The app checks the size before starting, because failing a long upload at the end for a
 reason knowable at the start is unkind.
 
 ## 8. Testing

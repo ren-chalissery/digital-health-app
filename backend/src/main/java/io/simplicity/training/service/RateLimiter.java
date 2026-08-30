@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * A fixed-window counter in Redis, used to stop a compromised administrator account from being
  * turned into a bulk mailer.
  *
- * <p>If Redis is unreachable the request is allowed. Losing the cache should degrade throttling,
- * not lock every administrator out of inviting colleagues.
+ * <p>When Redis is unreachable the answer depends on the feature, so each caller states its own
+ * posture rather than inheriting one.
  */
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,22 @@ public class RateLimiter {
 
   private final StringRedisTemplate redis;
 
-  public boolean tryAcquire(String scope, String key, int limit, Duration window) {
+  /** What to do when the counter cannot be reached. There is no default: see {@link #tryAcquire}. */
+  public enum OnOutage {
+    /** The feature is worth more than the limit. */
+    ALLOW,
+    /** The limit is worth more than the feature. */
+    REFUSE
+  }
+
+  /**
+   * @param onOutage what to do if Redis is unreachable. Stated by every caller rather than
+   *     defaulted, because the right answer differs per feature and a default makes the wrong one
+   *     invisible: allowing every question through is a kindness, allowing every invitation
+   *     through is an open mail relay.
+   */
+  public boolean tryAcquire(
+      String scope, String key, int limit, Duration window, OnOutage onOutage) {
     String redisKey = "ratelimit:" + scope + ":" + key;
     try {
       Long count = redis.opsForValue().increment(redisKey);
@@ -30,8 +45,13 @@ public class RateLimiter {
       }
       return count == null || count <= limit;
     } catch (DataAccessException e) {
-      log.warn("Rate limiting unavailable for {}, allowing the request", redisKey, e);
-      return true;
+      boolean allowed = onOutage == OnOutage.ALLOW;
+      log.warn(
+          "Rate limiting unavailable for {}, {} the request",
+          redisKey,
+          allowed ? "allowing" : "refusing",
+          e);
+      return allowed;
     }
   }
 }
