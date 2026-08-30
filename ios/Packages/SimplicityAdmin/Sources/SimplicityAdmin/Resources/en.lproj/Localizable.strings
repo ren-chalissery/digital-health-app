@@ -118,3 +118,51 @@
 "invitation_status_revoked" = "Revoked";
 
 "invitation_status_expired" = "Expired";
+"authoring_title" = "Modules";
+
+"authoring_load_failed" = "We could not load this organisation's modules.";
+
+"authoring_create_failed" = "We could not create that module. Your details are still here.";
+
+"authoring_archive_failed" = "We could not archive that module.";
+
+"authoring_draft_failed" = "We could not open a draft of this module.";
+
+"authoring_save_failed" = "We could not save your changes. They are still here — try again.";
+
+"authoring_section_needs_title" = "Every section needs a heading. A learner navigates by them.";
+
+"authoring_new_title" = "Module title";
+
+"authoring_new_summary" = "Summary (optional)";
+
+"authoring_create" = "Create module";
+
+"authoring_archive" = "Archive";
+
+"authoring_empty" = "No modules yet.";
+
+"authoring_state_draft" = "Draft";
+
+"authoring_state_published" = "Published";
+
+/* Published, then edited. A learner is still seeing the older version. */
+"authoring_state_unpublished_changes" = "Published, with unpublished changes";
+
+"authoring_sections" = "Sections";
+
+"authoring_add_section" = "Add a section";
+
+"authoring_section_title" = "Heading";
+
+"authoring_section_body" = "Body (Markdown)";
+
+"authoring_save" = "Save";
+
+"authoring_saving" = "Saving…";
+
+"authoring_open_draft" = "Edit";
+
+"authoring_open_draft_hint" = "A published module cannot be changed. Editing opens a draft; learners keep seeing the published version until you publish again.";
+
+"authoring_unsaved" = "Unsaved changes";

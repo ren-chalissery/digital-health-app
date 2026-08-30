@@ -6,7 +6,9 @@ public enum AdminDestination: Hashable {
     case members
     case teams
     case invitations
+    case modules
     case team(id: UUID, name: String)
+    case module(id: UUID, title: String)
 }
 
 public struct SettingsView: View {
@@ -151,6 +153,15 @@ public struct SettingsView: View {
                 }
             }
             .accessibilityIdentifier("settings-teams")
+
+            Button { onOpen(.modules) } label: {
+                Label {
+                    Text("authoring_title", bundle: .module)
+                } icon: {
+                    Image(systemName: "book.closed")
+                }
+            }
+            .accessibilityIdentifier("settings-modules")
 
             Button { onOpen(.invitations) } label: {
                 Label {
