@@ -56,17 +56,29 @@ a silent failure of the whole task.
 
 Each alarm names the user-visible consequence in its `AlarmDescription`, not the metric.
 
+Metric names and dimensions below were read out of CloudWatch rather than recalled. Two would have
+been wrong: `AWS/ECS` publishes `CPUUtilization`, `MemoryUtilization` and `LiveTaskCount` but **no
+`RunningTaskCount`**, and the cache dimension is `CacheClusterId: digital-health-prod-001` — the
+node, with its `-001` suffix, not the replication group.
+
 | Alarm | Condition | Why it matters |
 | --- | --- | --- |
 | API returning errors | ALB `HTTPCode_Target_5XX_Count` > 5 in 5 minutes | Requests are failing |
-| API unreachable | ALB `UnHealthyHostCount` >= 1 for 5 minutes | The service is down |
-| No capacity | ECS `RunningTaskCount` < 1 for 5 minutes | Nothing is serving |
+| API has no healthy target | ALB `HealthyHostCount` < 1 for 5 minutes | Nothing is serving |
+| API partly unhealthy | ALB `UnHealthyHostCount` >= 1 for 10 minutes | Degraded, or flapping |
 | Database nearly full | RDS `FreeStorageSpace` < 2GB | Writes stop when it fills |
 | Database struggling | RDS `CPUUtilization` > 80% for 15 minutes | Slow before it is broken |
 | Cache struggling | ElastiCache `DatabaseMemoryUsagePercentage` > 80% | Evictions mean revocations are lost |
 
-`TreatMissingData: notBreaching` everywhere except the ECS task count, where missing data means the
-service is not reporting and *is* the alarm.
+`HealthyHostCount` rather than an ECS task count: it is the metric that means "a request can be
+served", it needs no Container Insights, and its dimensions come from
+`!GetAtt LoadBalancer.LoadBalancerFullName` rather than a constructed string.
+
+`TreatMissingData: notBreaching` everywhere except `HealthyHostCount`, where no data means nothing
+is reporting and *is* the alarm — `breaching` there.
+
+Storage: `AllocatedStorage` is a parameter with `MaxAllocatedStorage: 100`, so autoscaling handles
+growth and 2GB free is a floor that only trips if autoscaling itself has stopped.
 
 - [ ] **Step 3: Validate, change-set, deploy**
 
@@ -120,6 +132,11 @@ level is known — that judgement needs data this repository does not have yet.
 
 **Three deployments. Do not collapse them.**
 
+**CI does not deploy `data.yaml`** — it only passes the stack name. So steps 1 and 3 are applied by
+hand and step 2 happens on merge, which fixes the order rigidly: merging step 2 before step 1 has
+been applied by hand points a TLS client at a cache that does not accept TLS. Step 1 must be live in
+AWS *before* the step 2 commit reaches `main`.
+
 - [ ] **Step 1: Make the cache accept both**
 
 ```yaml
@@ -161,15 +178,25 @@ Each step is its own commit, so a bisect lands on the deployment that broke rath
 
 `audit_event.ip_address` exists on the table and the entity; `AuditService.record` never sets it.
 
-- [ ] **Step 1: Decide, do not drift**
+- [ ] **Step 1: Decide, do not drift — BLOCKED, needs a human**
 
-Fill it. An administrative audit trail without a source address answers "who" and "what" but never
-"from where", which is the question asked first when an account is suspected of being compromised.
+This task was written expecting to fill the column, on the reasoning that an audit trail without a
+source address answers "who" and "what" but never "from where", which is the first question asked
+when an account is suspected of being compromised.
 
-Record the privacy position in the code: it is personal information under the Privacy Act 2020,
-collected for security, and it needs the same retention rule as the rest of the audit table. If the
-answer is that no such rule exists yet, **drop the column instead** — a promise unkept in the schema
-is worse than an honest absence.
+Checking changed that. **There is no retention rule on `audit_event` anywhere** — no scheduled
+purge, no lifecycle, nothing. Rows live forever. Filling this column therefore means retaining
+health professionals' IP addresses indefinitely, which is personal information under the Privacy
+Act 2020, whose principle 9 says not to keep it longer than needed.
+
+So the choice is not "fill it or leave it broken", it is:
+
+1. Fill it **and** add a retention rule to the audit table, which is more work and a bigger decision
+   than this task assumed.
+2. Drop the column, and stop the schema promising something it never delivers.
+
+That is a compliance posture rather than an engineering preference, and it is not mine to pick.
+Blocked pending an answer.
 
 - [ ] **Step 2: The address has to be the client's**
 
