@@ -21,7 +21,7 @@
 "settings_leave_failed" = "We could not remove you from that organisation. Try again in a moment.";
 
 /* The reader can act on this: promote somebody first. Hence its own message. */
-"settings_leave_last_admin" = "You are the only administrator, so leaving would strand this organisation. Make somebody else an administrator first.";
+"settings_leave_confirm_body_last_admin" = "You are its only administrator, so leaving will archive this organisation. Its training will no longer be available to anyone.";
 
 "settings_switch_failed" = "We could not switch organisation. Try again in a moment.";
 

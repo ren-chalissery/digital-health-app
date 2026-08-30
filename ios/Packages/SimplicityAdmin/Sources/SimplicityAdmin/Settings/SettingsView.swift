@@ -76,7 +76,12 @@ public struct SettingsView: View {
                 Text("settings_leave", bundle: .module)
             }
         } message: {
-            Text("settings_leave_confirm_body", bundle: .module)
+            Text(
+                model.willArchiveOnLeave
+                    ? "settings_leave_confirm_body_last_admin"
+                    : "settings_leave_confirm_body",
+                bundle: .module
+            )
         }
     }
 
