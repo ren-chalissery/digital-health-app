@@ -157,6 +157,38 @@ a certificate outside its own region.
 the first two, `Snapshot` on the database. Deleting a stack should never be what loses a
 clinician's credentials or their reflections.
 
+## Alarms
+
+The app stack raises a `digital-health-<env>-alarms` SNS topic and six CloudWatch alarms: the API
+returning 5xx, having no healthy target, having an unhealthy one for ten minutes, the database low
+on storage or busy, and the cache near full.
+
+Alarm descriptions say what a person would notice rather than which metric moved, because the
+description is what arrives in the email at an inconvenient hour.
+
+**Set the `ALARM_EMAIL` repository variable, then confirm the subscription.** AWS sends that address
+a confirmation link and delivers nothing until somebody clicks it. The stack reports success
+regardless, so an unconfirmed subscription looks exactly like a working one:
+
+```bash
+aws sns list-subscriptions-by-topic --topic-arn "$(aws cloudformation describe-stacks \
+  --stack-name digital-health-app-prod \
+  --query "Stacks[0].Outputs[?OutputKey=='AlarmTopicArn'].OutputValue" --output text)" \
+  --query 'Subscriptions[*].SubscriptionArn' --output text
+```
+
+`PendingConfirmation` there means nobody is being told anything.
+
+With `ALARM_EMAIL` unset the alarms still exist and still record state; they simply have no
+subscriber, which is a reasonable interim position but not a monitored one.
+
+To prove the path end to end without waiting for an outage:
+
+```bash
+aws cloudwatch set-alarm-state --alarm-name digital-health-prod-api-errors \
+  --state-value ALARM --state-reason "testing the notification path"
+```
+
 ## Checking a change
 
 ```bash
