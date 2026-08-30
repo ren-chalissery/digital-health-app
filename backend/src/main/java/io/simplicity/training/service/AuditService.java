@@ -2,6 +2,7 @@ package io.simplicity.training.service;
 
 import io.simplicity.training.model.entity.AuditEvent;
 import io.simplicity.training.repository.AuditEventRepository;
+import io.simplicity.training.security.ClientAddress;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,10 @@ public class AuditService {
             .targetType(targetType)
             .targetId(targetId == null ? null : targetId.toString())
             .metadata(metadataJson)
+            // "From where", which is the first question asked when an account is suspected of
+            // being compromised, and the one this table could not answer despite having a column
+            // for it. Null for scheduled work, which has no request behind it.
+            .ipAddress(ClientAddress.current())
             .build());
   }
 }

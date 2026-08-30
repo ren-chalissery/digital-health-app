@@ -178,7 +178,11 @@ Each step is its own commit, so a bisect lands on the deployment that broke rath
 
 `audit_event.ip_address` exists on the table and the entity; `AuditService.record` never sets it.
 
-- [ ] **Step 1: Decide, do not drift — BLOCKED, needs a human**
+- [x] **Step 1: Decided — fill it now, retention later**
+
+Answered: fill the column and accept indefinite retention for the time being. **That leaves a
+retention rule owed on `audit_event`**, and it is now owed more urgently than before, because the
+table holds personal information it did not hold yesterday.
 
 This task was written expecting to fill the column, on the reasoning that an audit trail without a
 source address answers "who" and "what" but never "from where", which is the first question asked
@@ -189,14 +193,8 @@ purge, no lifecycle, nothing. Rows live forever. Filling this column therefore m
 health professionals' IP addresses indefinitely, which is personal information under the Privacy
 Act 2020, whose principle 9 says not to keep it longer than needed.
 
-So the choice is not "fill it or leave it broken", it is:
-
-1. Fill it **and** add a retention rule to the audit table, which is more work and a bigger decision
-   than this task assumed.
-2. Drop the column, and stop the schema promising something it never delivers.
-
-That is a compliance posture rather than an engineering preference, and it is not mine to pick.
-Blocked pending an answer.
+So the choice was not "fill it or leave it broken" but whether to add retention first, drop the
+column, or accept the retention gap. The third was chosen deliberately.
 
 - [ ] **Step 2: The address has to be the client's**
 
