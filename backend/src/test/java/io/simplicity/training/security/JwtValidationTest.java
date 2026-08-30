@@ -1,14 +1,18 @@
 package io.simplicity.training.security;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.simplicity.training.config.AppProperties;
 import io.simplicity.training.model.entity.AppUser;
 import io.simplicity.training.support.AbstractIntegrationTest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 
 /**
@@ -21,6 +25,8 @@ import org.springframework.http.HttpHeaders;
 class JwtValidationTest extends AbstractIntegrationTest {
 
   private static final String SUB = "sub-jwt-validation";
+
+  @Autowired private AppProperties properties;
 
   @BeforeEach
   void seedAUser() {
@@ -42,6 +48,30 @@ class JwtValidationTest extends AbstractIntegrationTest {
           .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, bearerWith("client_id", clientId)))
           .andExpect(status().isOk());
     }
+  }
+
+  /**
+   * A missing setting has to stop the application, not silently reject everybody.
+   *
+   * <p>An empty list makes the client check false for every token, so the symptom would be every
+   * request returning 401 with nothing in the logs pointing at configuration.
+   */
+  @Test
+  void refusesToStartWithNoConfiguredClients() {
+    AppProperties noClients =
+        new AppProperties(
+            properties.aws(),
+            new AppProperties.Cognito(
+                properties.cognito().issuerUri(), null, List.of(), properties.cognito().region()),
+            properties.auth(),
+            properties.invitations(),
+            properties.mail(),
+            properties.media(),
+            properties.web());
+
+    assertThatThrownBy(() -> SecurityConfig.cognitoValidator(noClients))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("client-ids");
   }
 
   @Test

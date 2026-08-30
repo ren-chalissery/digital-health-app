@@ -90,9 +90,16 @@ public class SecurityConfig {
    * token — which clients pass around far more freely, and which is not meant to authorise anything
    * — is accepted as a bearer credential.
    */
-  public static OAuth2TokenValidator<Jwt> cognitoValidator(AppProperties properties) {
-    List<String> clientIds =
-        properties.cognito().clientIds() == null ? List.of() : properties.cognito().clientIds();
+  public   static OAuth2TokenValidator<Jwt> cognitoValidator(AppProperties properties) {
+    List<String> clientIds = properties.cognito().clientIds();
+    if (clientIds == null || clientIds.isEmpty()) {
+      // Refuse to start rather than reject every request. An empty list would make `contains`
+      // false for every token, so a missing COGNITO_CLIENT_IDS would present as a total outage
+      // with no obvious cause instead of a startup failure naming the setting.
+      throw new IllegalStateException(
+          "app.cognito.client-ids must list every Cognito app client the pool issues access "
+              + "tokens to. With none configured, every request would be rejected.");
+    }
 
     return new DelegatingOAuth2TokenValidator<>(
         new JwtTimestampValidator(),
