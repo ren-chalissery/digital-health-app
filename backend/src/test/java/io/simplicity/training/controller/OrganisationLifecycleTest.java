@@ -40,7 +40,7 @@ class OrganisationLifecycleTest extends AbstractIntegrationTest {
         .andExpect(status().isNoContent());
 
     mockMvc
-        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, adminBearer()))
+        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, adminBearerAfterWithdrawal()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.organisations").isEmpty());
   }
@@ -61,9 +61,12 @@ class OrganisationLifecycleTest extends AbstractIntegrationTest {
         .perform(delete("/api/v1/orgs/{orgId}", org.getId()).header(HttpHeaders.AUTHORIZATION, adminBearer()))
         .andExpect(status().isNoContent());
 
-    // A cached principal must not outlive the archive that invalidated it.
+    // A cached principal must not outlive the archive that invalidated it. Presented with a
+    // refreshed token, so this proves the membership is gone rather than that the old token was.
     mockMvc
-        .perform(get("/api/v1/orgs/{orgId}/members", org.getId()).header(HttpHeaders.AUTHORIZATION, memberBearer()))
+        .perform(
+            get("/api/v1/orgs/{orgId}/members", org.getId())
+                .header(HttpHeaders.AUTHORIZATION, memberBearerAfterWithdrawal()))
         .andExpect(status().isForbidden());
 
     assertThat(member).isNotNull();
@@ -95,7 +98,7 @@ class OrganisationLifecycleTest extends AbstractIntegrationTest {
 
     assertThat(organisations.findById(org.getId()).orElseThrow().isArchived()).isFalse();
     mockMvc
-        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, memberBearer()))
+        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, memberBearerAfterWithdrawal()))
         .andExpect(jsonPath("$.organisations").isEmpty());
   }
 
@@ -164,7 +167,7 @@ class OrganisationLifecycleTest extends AbstractIntegrationTest {
         .andExpect(status().isNoContent());
 
     mockMvc
-        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, adminBearer()))
+        .perform(get("/api/v1/me").header(HttpHeaders.AUTHORIZATION, adminBearerAfterWithdrawal()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.activeOrganisationId").value(live.getId().toString()));
   }
@@ -206,6 +209,20 @@ class OrganisationLifecycleTest extends AbstractIntegrationTest {
 
   private String memberBearer() {
     return tokens.bearerFor(MEMBER, "member@example.org");
+  }
+
+  /**
+   * What a client holds once it has refreshed after having its access withdrawn.
+   *
+   * <p>Leaving, being removed and archiving now revoke the tokens issued before them, so a check
+   * made afterwards has to present a newer one — exactly as the real clients do on a 401.
+   */
+  private String adminBearerAfterWithdrawal() {
+    return tokens.bearerIssuedAfterNow(ADMIN);
+  }
+
+  private String memberBearerAfterWithdrawal() {
+    return tokens.bearerIssuedAfterNow(MEMBER);
   }
 
   private AppUser admin(Organisation org) {

@@ -153,7 +153,10 @@ public class OrganisationService {
     orgMemberships.delete(membership);
 
     audit.record(actor.userId(), orgId, "ORG_MEMBER_REMOVED", "user", userId);
-    sessions.rolesChanged(userId);
+    // Revoked, not merely evicted: their access has been withdrawn, so the token they are holding
+    // has to stop working now rather than at expiry. Tokens issued afterwards still work, so
+    // somebody who belongs to another organisation is not locked out of it.
+    sessions.accessRevoked(userId);
   }
 
   /**
@@ -200,7 +203,8 @@ public class OrganisationService {
       // state only a database console could recover from.
       archive(actor, orgId);
     }
-    sessions.rolesChanged(actor.userId());
+    // Leaving withdraws their own access, so the same reasoning as removal applies.
+    sessions.accessRevoked(actor.userId());
   }
 
   /**
@@ -210,7 +214,10 @@ public class OrganisationService {
    */
   private void evictEveryMember(UUID orgId) {
     for (OrgMembership membership : orgMemberships.findByOrgId(orgId)) {
-      sessions.rolesChanged(membership.getUserId());
+      // Archiving withdraws everybody's access to this organisation, so their current tokens go
+      // with it. A member who belongs to another organisation gets a working token on their next
+      // sign-in, since revocation only voids tokens issued before it.
+      sessions.accessRevoked(membership.getUserId());
     }
   }
 

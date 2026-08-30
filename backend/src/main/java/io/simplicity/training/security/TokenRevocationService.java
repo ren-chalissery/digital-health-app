@@ -49,10 +49,10 @@ public class TokenRevocationService {
    * True when this token predates the revocation.
    *
    * <p>An instant rather than a flag, and the difference matters. A flag rejects every token from
-   * the subject, including one issued <em>after</em> the revocation — so removing somebody from one
-   * of the two organisations they belong to would lock them out of both, and out of signing back
-   * in, until the entry expired. Comparing against {@code iat} means the old token dies and the
-   * next one works.
+   * the subject, including one issued <em>after</em> the revocation — so removing somebody from
+   * one of the two organisations they belong to would lock them out of both, and out of signing
+   * back in, until the entry expired. Comparing against {@code iat} means the old token dies and
+   * the next one works.
    *
    * <p>A token issued in the <em>same second</em> as the revocation counts as revoked. Both are
    * whole seconds, so their order within that second is unknowable, and the safe reading is that
