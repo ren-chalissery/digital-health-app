@@ -35,6 +35,85 @@ jobs:
           name: backend-test-report
           path: backend/build/reports/tests/test
 
+  ios:
+    name: iOS build and tests
+    # Deliberately not a dependency of `deploy`. The app ships through TestFlight, not through
+    # this pipeline, so a broken iOS build must not stop the backend and web from deploying.
+    #
+    # macOS minutes are billed at ten times Linux, so this runs only when iOS or the API contract
+    # it is generated from actually changed.
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    runs-on: macos-26
+    steps:
+      # Full history: the default shallow clone has no base commit to diff against, so the change
+      # detection below would fall through and run on every push.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check what changed
+        id: changed
+        run: |
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$base" HEAD | grep -qE '^(ios/|api-contract/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Pinned rather than left on the image default. The default moves — it went from 26.5 to
+      # 26.6 in July — and a runner image update should not silently change the compiler.
+      - name: Select Xcode
+        if: steps.changed.outputs.run == 'true'
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+
+      # Not on the runner image, and pinned rather than installed from Homebrew. An unpinned
+      # linter is a build that can fail without anybody changing code: Homebrew had 0.65.1 while
+      # this repository lints with 0.63.2, and the newer one called a needed disable comment
+      # superfluous. `ios/.swiftlint-version` is the single declaration of which version applies.
+      - name: Install SwiftLint
+        if: steps.changed.outputs.run == 'true'
+        run: |
+          version=$(cat ios/.swiftlint-version)
+          curl -sSL -o /tmp/swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${version}/portable_swiftlint.zip"
+          unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+          sudo install /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          swiftlint version
+
+      - name: Package tests and lint
+        if: steps.changed.outputs.run == 'true'
+        working-directory: ios
+        run: ./test-all.sh
+
+      # Resolved at runtime rather than hard-coded: the simulators on a runner image change
+      # without notice, and a missing device name fails with a much less obvious error.
+      - name: Choose a simulator
+        if: steps.changed.outputs.run == 'true'
+        id: simulator
+        run: |
+          name=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(v['name'] for r in d.values() for v in r if v['name'].startswith('iPhone')))")
+          echo "Using $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      # -skipPackagePluginValidation is not optional: Amplify depends on smithy-swift, which ships
+      # a build plugin that xcodebuild refuses to run unvalidated from the command line.
+      - name: App build and UI smoke test
+        if: steps.changed.outputs.run == 'true'
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -workspace Simplicity.xcworkspace \
+            -scheme Simplicity_iOS \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
+
   clients:
     name: Generated clients are current
     runs-on: ubuntu-latest

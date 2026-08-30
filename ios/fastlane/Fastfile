@@ -1,0 +1,95 @@
+# Build, test and TestFlight lanes.
+#
+# Automatic signing rather than tinderbox2_ionic's manual profiles fed from Secrets Manager. That
+# arrangement serves six targets across two platforms and four configurations; this app has one of
+# each, and manual signing would be ceremony with a credential-rotation chore attached.
+#
+# Nothing here runs in CI. A build reaching TestFlight should be a deliberate act, and the runner
+# would need signing credentials it has no reason to hold.
+
+default_platform(:ios)
+
+WORKSPACE = "Simplicity.xcworkspace".freeze
+SCHEME = "Simplicity_iOS".freeze
+BUNDLE_ID = "io.simplicity.training".freeze
+TEAM_ID = "UJY6H4M6AZ".freeze
+
+# Amplify depends on smithy-swift, which ships a build plugin xcodebuild refuses to run
+# unvalidated from the command line. Trusting it in Xcode does not help; the flag does.
+PLUGIN_FLAGS = "-skipPackagePluginValidation -skipMacroValidation".freeze
+
+platform :ios do
+  desc "Run every package's tests, then the app's"
+  lane :test do
+    sh("./test-all.sh", log: false)
+
+    run_tests(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      destination: "platform=iOS Simulator,name=iPhone 17",
+      xcargs: PLUGIN_FLAGS
+    )
+  end
+
+  desc "Archive a signed build without uploading it"
+  lane :build do
+    build_app(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      export_method: "app-store",
+      xcargs: PLUGIN_FLAGS,
+      export_options: {
+        teamID: TEAM_ID,
+        signingStyle: "automatic"
+      }
+    )
+  end
+
+  desc "Archive and upload to TestFlight"
+  lane :beta do
+    ensure_credentials
+
+    # Wall-clock, so two builds in the same minute cannot collide. App Store Connect rejects a
+    # build number it has already seen, which is a slow way to discover a duplicate.
+    increment_build_number(
+      xcodeproj: "Simplicity_iOS.xcodeproj",
+      build_number: Time.now.utc.strftime("%Y%m%d%H%M")
+    )
+
+    build
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: BUNDLE_ID,
+      # Processing takes several minutes and blocking on it tells us nothing we cannot read in
+      # App Store Connect.
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  # An App Store Connect API key rather than an Apple ID and password: it survives 2FA, it is
+  # scoped, and it can be revoked without touching the account.
+  def api_key
+    app_store_connect_api_key(
+      key_id: ENV.fetch("APPLE_KEY_ID"),
+      issuer_id: ENV.fetch("APPLE_ISSUER_ID"),
+      key_filepath: File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
+    )
+  end
+
+  # Fails before a ten-minute archive rather than after it.
+  def ensure_credentials
+    missing = %w[APPLE_KEY_ID APPLE_ISSUER_ID].reject { |name| ENV[name] }
+    unless missing.empty?
+      UI.user_error!(
+        "Missing #{missing.join(' and ')}. See ios/fastlane/README.md — these come from the " \
+        "App Store Connect API key, and the .p8 can only be downloaded once."
+      )
+    end
+
+    key_path = File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
+    unless File.exist?(key_path)
+      UI.user_error!("No key at #{key_path}. See ios/fastlane/README.md.")
+    end
+  end
+end
