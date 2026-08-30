@@ -18,4 +18,8 @@ public extension Container {
     var assistantService: Factory<AssistantService> {
         self { AssistantServiceImpl() }.scope(.singleton)
     }
+
+    var organisationService: Factory<OrganisationService> {
+        self { OrganisationServiceImpl() }.scope(.singleton)
+    }
 }

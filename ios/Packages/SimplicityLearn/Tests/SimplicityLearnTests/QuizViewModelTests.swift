@@ -153,17 +153,16 @@ final class QuizViewModelTests: SimplicityTestCase {
     @Test("passing tells the reader, because only it knows the module may now be complete")
     func passingNotifiesTheReader() async {
         let (model, _) = makeSUT()
+        // Captured synchronously. Hopping through a Task made this racy: the callback runs on the
+        // main actor already, and a single yield does not reliably let a detached task finish.
         let received = Received()
-        model.onModuleChanged = { module in
-            Task { await received.set(module) }
-        }
+        model.onModuleChanged = { received.value = $0 }
         model.choose(question: Constants.questionOne, option: Constants.optionA)
         model.choose(question: Constants.questionTwo, option: Constants.optionB)
 
         await model.submit()
-        await Task.yield()
 
-        #expect(await received.value?.status == .completed)
+        #expect(received.value?.status == .completed)
     }
 
     @Test("a second press clears the marking instead of resubmitting the same answers")
@@ -216,8 +215,9 @@ final class QuizViewModelTests: SimplicityTestCase {
         #expect(model.feedback(for: UUID()) == nil)
     }
 
-    private actor Received {
-        private(set) var value: LearnerModuleResponse?
-        func set(_ module: LearnerModuleResponse) { value = module }
+    /// Main-actor confined, so no synchronisation is needed and no scheduling is involved.
+    @MainActor
+    private final class Received {
+        var value: LearnerModuleResponse?
     }
 }
