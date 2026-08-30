@@ -12,7 +12,9 @@
 
 ## Global Constraints
 
-- Java is formatted by Spotless: `./gradlew :spotlessApply` before committing.
+- There is **no** Spotless or formatter task in this repository, despite the workspace `CLAUDE.md`
+  describing one for the Moxion repos. Match the surrounding style by hand: two-space indent,
+  100-column lines, Google Java Format conventions.
 - Migrations are additive; this plan needs none.
 - Every behaviour change gets a test that fails first. Several of these assert *absence* of a lockout, which is exactly the kind of thing that passes vacuously if written after the fix.
 - `./gradlew test` must pass before each commit. Testcontainers provides Postgres and Valkey.
@@ -154,7 +156,7 @@ cd backend && ./gradlew test --tests "*TokenRevocationTest" --tests "*PrincipalC
 - [ ] **Step 6: Commit**
 
 ```bash
-cd backend && ./gradlew :spotlessApply
+
 git add backend
 git commit -m "Revocation voids tokens issued before it, rather than banning a subject"
 ```
@@ -201,7 +203,7 @@ the two are a single character apart at the call site and the difference is the 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd backend && ./gradlew :spotlessApply
+
 git add backend
 git commit -m "Revoke access when it is withdrawn, not only evict the cache"
 ```
@@ -316,7 +318,7 @@ is too strict will fail them all at once.
 - [ ] **Step 7: Commit**
 
 ```bash
-cd backend && ./gradlew :spotlessApply
+
 git add backend infra
 git commit -m "Validate the issuer, the token type and the client"
 ```
@@ -381,7 +383,7 @@ worst trade in the product.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd backend && ./gradlew :spotlessApply
+
 git add backend
 git commit -m "Rate limits that exist, and that fail the right way per feature"
 ```
