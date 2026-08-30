@@ -36,17 +36,8 @@ view, it belongs in `SimplicityDesign`.
 # One package
 cd Packages/SimplicityFoundation && swift test
 
-# Every package. The `if` matters: piping `swift test` into a filter hides its exit code, and a
-# package that fails to compile then prints nothing at all rather than failing loudly.
-for p in Packages/*/; do
-  out=$( (cd "$p" && swift test 2>&1) )
-  if echo "$out" | rg -q "Test run with .* passed"; then
-    printf "%-22s ok\n" "$(basename "$p")"
-  else
-    printf "%-22s FAILED\n" "$(basename "$p")"
-    echo "$out" | rg "error:|✘" | head -5
-  fi
-done
+# Every package, plus SwiftLint
+./test-all.sh
 
 # The app, including the UI smoke test
 xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
@@ -56,9 +47,12 @@ xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
 swiftlint --strict
 ```
 
-If a package fails with `cannot find type 'X' in scope` pointing at a file that plainly declares
-`X`, its incremental build state is stale — adding a type to a `.package(path:)` dependency does
-not always invalidate dependents. Delete that package's `.build` and run again.
+`test-all.sh` exists rather than a one-line loop because two things go wrong otherwise. Piping
+`swift test` into a filter discards its exit code, so a package that fails to *compile* prints
+nothing and reads as a pass. And adding a type to a `.package(path:)` dependency does not reliably
+invalidate its dependents' incremental state, so they fail with `cannot find type 'X' in scope`
+pointing at the file that plainly declares `X` — that has happened every time `SimplicityServices`
+gained a service. The script detects it, clears that package's `.build`, and retries once.
 
 Those two `-skip` flags are not optional. Amplify depends on smithy-swift, which ships a build
 plugin, and Xcode refuses to run an unvalidated plugin from the command line — the build fails with
