@@ -14,6 +14,7 @@ struct ApiConfigurationTests {
         let token: String?
 
         func accessToken() async -> String? { token }
+        func refreshedAccessToken() async -> String? { token }
     }
 
     @Test("points the generated client at the adapter's base URL")

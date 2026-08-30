@@ -8,4 +8,11 @@ import Foundation
 public protocol ApiAdapter: Sendable {
     var baseURL: URL { get }
     func accessToken() async -> String?
+
+    /// A token obtained by forcing a refresh, rather than whatever is cached.
+    ///
+    /// Needed because the server can now void a token before it expires — being removed from an
+    /// organisation does exactly that. The cached token would keep failing until it aged out, so a
+    /// rejected request has to be able to insist on a new one.
+    func refreshedAccessToken() async -> String?
 }

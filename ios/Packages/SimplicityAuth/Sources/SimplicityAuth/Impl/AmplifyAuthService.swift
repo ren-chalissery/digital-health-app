@@ -71,4 +71,17 @@ public final class AmplifyAuthService: AuthService {
         }
         return tokens.accessToken
     }
+
+    public func refreshedAccessToken() async -> String? {
+        guard
+            let session = try? await Amplify.Auth.fetchAuthSession(
+                options: .forceRefresh()
+            ),
+            let provider = session as? AuthCognitoTokensProvider,
+            let tokens = try? provider.getCognitoTokens().get()
+        else {
+            return nil
+        }
+        return tokens.accessToken
+    }
 }

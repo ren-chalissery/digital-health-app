@@ -14,4 +14,8 @@ struct AppApiAdapter: ApiAdapter {
     func accessToken() async -> String? {
         await Container.shared.authService().accessToken()
     }
+
+    func refreshedAccessToken() async -> String? {
+        await Container.shared.authService().refreshedAccessToken()
+    }
 }
