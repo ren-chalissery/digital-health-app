@@ -52,8 +52,14 @@ public class AssistantService {
 
   @Transactional(readOnly = true)
   public AnswerResponse ask(AppPrincipal principal, UUID orgId, String question) {
+    // Allowed through if Redis is down: refusing to answer a clinician's question about their
+    // training because a cache is unavailable costs more than the questions would.
     if (!rateLimiter.tryAcquire(
-        "assistant", principal.userId().toString(), QUESTIONS_PER_HOUR, Duration.ofHours(1))) {
+        "assistant",
+        principal.userId().toString(),
+        QUESTIONS_PER_HOUR,
+        Duration.ofHours(1),
+        RateLimiter.OnOutage.ALLOW)) {
       throw new ConflictException(
           "You have asked a lot of questions in the last hour. Try again shortly.");
     }

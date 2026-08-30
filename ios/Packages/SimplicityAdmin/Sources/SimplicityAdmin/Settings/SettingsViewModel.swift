@@ -25,6 +25,14 @@ public final class SettingsViewModel {
     /// Set when leaving succeeds, so the shell can send them back to onboarding or sign-out.
     public private(set) var didLeave = false
 
+    /// True when this person is the only administrator, in which case leaving archives the
+    /// organisation. The server does this deliberately rather than leaving it unadministered, so
+    /// the confirmation has to say so before they commit, not afterwards.
+    ///
+    /// False when it cannot be determined, which leaves the ordinary warning in place: a wrong
+    /// claim that nothing will happen is milder than a wrong claim that everything will.
+    public private(set) var willArchiveOnLeave = false
+
     public var memberships: [OrganisationMembershipResponse] {
         user?.organisations ?? []
     }
@@ -52,6 +60,7 @@ public final class SettingsViewModel {
             try? await session.refresh()
             user = await session.current
         }
+        await determineWhetherLeavingArchives()
     }
 
     public func switchTo(_ orgId: UUID) async {
@@ -82,13 +91,7 @@ public final class SettingsViewModel {
             user = try await session.refresh()
             didLeave = true
         } catch {
-            // Currently unreachable: production returns 204 even for the only administrator, so a
-            // sole admin can strand their own organisation. That looks like a server gap rather
-            // than a decision, and the branch stays so the app explains it usefully the day the
-            // guard appears — but nothing here should be read as evidence that it exists.
-            errorMessage = Self.isConflict(error)
-                ? String(localized: "settings_leave_last_admin", bundle: .module)
-                : String(localized: "settings_leave_failed", bundle: .module)
+            errorMessage = String(localized: "settings_leave_failed", bundle: .module)
         }
     }
 
@@ -98,10 +101,20 @@ public final class SettingsViewModel {
 
     // MARK: Private
 
-    /// Matches on the status code rather than the message: the generated client surfaces the
-    /// former reliably and the latter not at all.
-    private static func isConflict(_ error: Error) -> Bool {
-        guard case let ErrorResponse.error(statusCode, _, _, _) = error else { return false }
-        return statusCode == 409
+    /// Only an administrator may read the member list, and only an administrator can be the last
+    /// one, so an ordinary member never provokes the request.
+    private func determineWhetherLeavingArchives() async {
+        willArchiveOnLeave = false
+
+        guard isOrgAdmin, let orgId = user?.activeOrganisationId, let me = user?.id else { return }
+
+        guard let members = try? await organisations.members(orgId: orgId) else {
+            // Silent: this is a detail of a warning, not something they asked for, and an error
+            // banner on opening Settings would be baffling.
+            return
+        }
+
+        let administrators = members.filter { $0.orgRole == .orgAdmin }
+        willArchiveOnLeave = administrators.count == 1 && administrators.first?.userId == me
     }
 }

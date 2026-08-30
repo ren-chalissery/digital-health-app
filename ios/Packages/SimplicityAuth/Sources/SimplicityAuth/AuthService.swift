@@ -25,4 +25,11 @@ public protocol AuthService: AnyObject, Sendable {
     /// Nil rather than a throw when signed out: the caller is usually a request builder that
     /// should proceed unauthenticated, not fail.
     func accessToken() async -> String?
+
+    /// A token obtained by forcing a refresh, for a request the server has just rejected.
+    ///
+    /// Distinct from `accessToken()`, which returns whatever Amplify holds and only refreshes near
+    /// expiry. The server can void a token long before then — removal from an organisation does —
+    /// and only insisting on a new one recovers from that.
+    func refreshedAccessToken() async -> String?
 }

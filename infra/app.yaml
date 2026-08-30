@@ -274,9 +274,14 @@ Resources:
             - Name: COGNITO_USER_POOL_ID
               Value:
                 Fn::ImportValue: !Sub '${AuthStackName}-UserPoolId'
-            - Name: COGNITO_CLIENT_ID
-              Value:
-                Fn::ImportValue: !Sub '${AuthStackName}-WebClientId'
+            # Every client the pool issues access tokens to. A single value here would reject
+            # every request from the other two the moment they were validated.
+            - Name: COGNITO_CLIENT_IDS
+              Value: !Join
+                - ','
+                - - Fn::ImportValue: !Sub '${AuthStackName}-WebClientId'
+                  - Fn::ImportValue: !Sub '${AuthStackName}-IosClientId'
+                  - Fn::ImportValue: !Sub '${AuthStackName}-AndroidClientId'
             - Name: AWS_REGION
               Value: !Ref AWS::Region
             - Name: WEB_BASE_URL

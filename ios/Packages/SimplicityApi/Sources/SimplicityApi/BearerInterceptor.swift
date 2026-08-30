@@ -7,6 +7,16 @@ import Foundation
 /// partway through.
 final class BearerInterceptor: OpenAPIInterceptor {
 
+    /// Injectable so a test can observe refreshes without reaching through process-wide state,
+    /// which two suites cannot share safely.
+    private let refresh: @Sendable () async -> String?
+
+    init(refresh: @Sendable @escaping () async -> String? = {
+        await ApiConfiguration.refreshAccessToken()
+    }) {
+        self.refresh = refresh
+    }
+
     func intercept<T>(
         urlRequest: URLRequest,
         urlSession: URLSessionProtocol,
@@ -24,9 +34,15 @@ final class BearerInterceptor: OpenAPIInterceptor {
 
     // swiftlint:disable function_parameter_count
 
-    /// Never retry here. A 401 that a refreshed token would fix is already handled by asking for
-    /// the token per request; a 401 that survives that means the session is genuinely over, and
-    /// retrying would only delay signing the person out.
+    /// Retry a 401 exactly once, having forced a new token.
+    ///
+    /// This used to never retry, on the reasoning that resolving the token per request already
+    /// handled anything a refresh could fix. That held while only expiry could invalidate a token.
+    /// The server now voids tokens issued before somebody's access changed, so the first 401 is
+    /// precisely the case a refresh fixes — and for somebody who belongs to a second organisation,
+    /// not retrying means failing every request until the old token ages out.
+    ///
+    /// Once, not in a loop: a second 401 means the session really is over.
     ///
     /// The parameter count is the generated protocol's, not a choice.
     func retry<T>(
@@ -38,8 +54,46 @@ final class BearerInterceptor: OpenAPIInterceptor {
         error: Error,
         completion: @Sendable @escaping (OpenAPIInterceptorRetry) -> Void
     ) {
-        completion(.dontRetry)
+        guard (response as? HTTPURLResponse)?.statusCode == 401, refreshes.mayRefresh() else {
+            // A 403 is authorisation, not authentication; a new token says nothing new about it.
+            completion(.dontRetry)
+            return
+        }
+
+        Task {
+            guard await refresh() != nil else {
+                completion(.dontRetry)
+                return
+            }
+            completion(.retry)
+        }
     }
 
     // swiftlint:enable function_parameter_count
+
+    private let refreshes = RefreshThrottle()
+}
+
+/// Bounds how often a 401 may provoke a token refresh.
+///
+/// A latch that never reset would stop the app recovering from any later revocation, and no limit
+/// at all would let a persistently rejected token spin: 401, refresh, 401, refresh. A short window
+/// gives one refresh per burst of rejections, lets the second 401 surface as a real error, and
+/// still allows a genuine refresh half an hour later.
+private final class RefreshThrottle: @unchecked Sendable {
+
+    private let interval: TimeInterval = 10
+    private let lock = NSLock()
+    private var last: Date?
+
+    func mayRefresh() -> Bool {
+        lock.withLock {
+            let now = Date()
+            if let last, now.timeIntervalSince(last) < interval {
+                return false
+            }
+            last = now
+            return true
+        }
+    }
 }

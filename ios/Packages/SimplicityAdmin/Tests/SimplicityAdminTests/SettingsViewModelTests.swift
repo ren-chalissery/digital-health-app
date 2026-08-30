@@ -15,6 +15,8 @@ final class SettingsViewModelTests: SimplicityTestCase {
     private enum Constants {
         static let adminOrg = UUID()
         static let memberOrg = UUID()
+        /// Stable, so a member row can be recognised as the signed-in person.
+        static let userId = UUID()
     }
 
     private enum TestError: Error {
@@ -35,10 +37,24 @@ final class SettingsViewModelTests: SimplicityTestCase {
             activeOrganisationId: active,
             email: "clinician@example.com",
             fullName: "A Clinician",
-            id: UUID(),
+            id: Constants.userId,
             organisations: memberships,
             profileCompleted: true,
             status: .active
+        )
+    }
+
+    nonisolated private static func member(
+        role: OrgMemberResponse.OrgRole,
+        id: UUID
+    ) -> OrgMemberResponse {
+        OrgMemberResponse(
+            email: "colleague@example.com",
+            fullName: "A Colleague",
+            membershipStatus: .active,
+            orgRole: role,
+            userId: id,
+            userStatus: .active
         )
     }
 
@@ -56,7 +72,9 @@ final class SettingsViewModelTests: SimplicityTestCase {
     private func makeSUT(
         active: UUID? = Constants.adminOrg,
         switchFails: Bool = false,
-        leaveError: Error? = nil
+        leaveError: Error? = nil,
+        members: [OrgMemberResponse]? = nil,
+        membersError: Error? = nil
     ) -> SUT {
         let memberships = Self.bothOrganisations()
 
@@ -78,6 +96,14 @@ final class SettingsViewModelTests: SimplicityTestCase {
             given(organisations).leave(orgId: .any).willReturn(())
         }
         given(organisations).removeMember(orgId: .any, userId: .any).willReturn(())
+        if let membersError {
+            given(organisations).members(orgId: .any).willThrow(membersError)
+        } else {
+            given(organisations).members(orgId: .any).willReturn(
+                members ?? [Self.member(role: .orgAdmin, id: Constants.userId),
+                            Self.member(role: .orgMember, id: UUID())]
+            )
+        }
 
         Container.shared.sessionService.register { session }
         Container.shared.organisationService.register { organisations }
@@ -174,16 +200,49 @@ final class SettingsViewModelTests: SimplicityTestCase {
         #expect(sut.model.didLeave)
     }
 
-    @Test("a sole administrator is told why they cannot leave, not just that it failed")
-    func soleAdministratorCannotLeave() async {
-        let conflict = ErrorResponse.error(409, nil, nil, TestError.unreachable)
-        let sut = makeSUT(leaveError: conflict)
+    @Test("the only administrator is warned the organisation will be archived, before leaving")
+    func soleAdministratorIsWarnedTheOrganisationGoes() async {
+        // The app used to say leaving "would strand this organisation" and to promote somebody
+        // first. The server archives it instead, deliberately, and said so all along.
+        let sut = makeSUT(members: [Self.member(role: .orgAdmin, id: Constants.userId)])
+
         await sut.model.load()
 
-        await sut.model.leave()
+        #expect(sut.model.willArchiveOnLeave)
+    }
 
-        #expect(sut.model.didLeave == false)
-        #expect(sut.model.errorMessage?.contains("administrator") == true)
+    @Test("an administrator with a colleague to hand over to is not warned about archiving")
+    func administratorWithAnotherAdministrator() async {
+        let sut = makeSUT(
+            members: [
+                Self.member(role: .orgAdmin, id: Constants.userId),
+                Self.member(role: .orgAdmin, id: UUID())
+            ]
+        )
+
+        await sut.model.load()
+
+        #expect(sut.model.willArchiveOnLeave == false)
+    }
+
+    @Test("an ordinary member is never warned about archiving, and the list is never fetched")
+    func ordinaryMemberIsNotWarned() async {
+        let sut = makeSUT(active: Constants.memberOrg)
+
+        await sut.model.load()
+
+        #expect(sut.model.willArchiveOnLeave == false)
+        verify(sut.organisations).members(orgId: .any).called(0)
+    }
+
+    @Test("a member list that cannot be read leaves the ordinary warning in place")
+    func unreadableMemberListFallsBack() async {
+        let sut = makeSUT(membersError: TestError.unreachable)
+
+        await sut.model.load()
+
+        #expect(sut.model.willArchiveOnLeave == false)
+        #expect(sut.model.errorMessage == nil)
     }
 
     @Test("any other failure gets the ordinary message rather than the sole-admin one")

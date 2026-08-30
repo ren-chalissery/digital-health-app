@@ -8,7 +8,9 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import io.simplicity.training.config.AppProperties;
 import io.simplicity.training.security.CognitoUserDirectory;
+import io.simplicity.training.security.SecurityConfig;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -48,10 +50,19 @@ public class TestJwtConfiguration {
     }
   }
 
+  /**
+   * Locally signed, but validated exactly as production validates.
+   *
+   * <p>Only the key source differs. Skipping the validator here would let the suite pass while an
+   * ID token or an unknown client authorised requests in production, which is precisely the gap
+   * these tests exist to close.
+   */
   @Bean
   @Primary
-  JwtDecoder testJwtDecoder() throws JOSEException {
-    return NimbusJwtDecoder.withPublicKey(RSA_KEY.toRSAPublicKey()).build();
+  JwtDecoder testJwtDecoder(AppProperties properties) throws JOSEException {
+    NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(RSA_KEY.toRSAPublicKey()).build();
+    decoder.setJwtValidator(SecurityConfig.cognitoValidator(properties));
+    return decoder;
   }
 
   /**
@@ -126,7 +137,12 @@ public class TestJwtConfiguration {
     }
 
     public String accessTokenFor(String cognitoSub, Map<String, Object> extraClaims) {
-      Instant now = Instant.now();
+      return accessTokenFor(cognitoSub, extraClaims, Instant.now());
+    }
+
+    public String accessTokenFor(
+        String cognitoSub, Map<String, Object> extraClaims, Instant issuedAt) {
+      Instant now = issuedAt;
       JWTClaimsSet.Builder claims =
           new JWTClaimsSet.Builder()
               .subject(cognitoSub)
@@ -155,6 +171,17 @@ public class TestJwtConfiguration {
 
     public String bearerFor(String cognitoSub) {
       return "Bearer " + accessTokenFor(cognitoSub);
+    }
+
+    /**
+     * A token minted after a revocation, which is what a client holds once it has refreshed.
+     *
+     * <p>Needed because revocation voids tokens issued at or before the revoking instant, and both
+     * are whole seconds — so a token minted in the same second as the withdrawal is refused. A real
+     * client retries and gets one a moment later; a test has to say so explicitly.
+     */
+    public String bearerIssuedAfterNow(String cognitoSub) {
+      return "Bearer " + accessTokenFor(cognitoSub, Map.of(), Instant.now().plusSeconds(2));
     }
 
     /**

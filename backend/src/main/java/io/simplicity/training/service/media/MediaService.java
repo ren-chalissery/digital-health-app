@@ -11,6 +11,7 @@ import io.simplicity.training.model.enums.MediaStatus;
 import io.simplicity.training.repository.MediaAssetRepository;
 import io.simplicity.training.repository.ModuleSectionRepository;
 import io.simplicity.training.security.AppPrincipal;
+import io.simplicity.training.service.RateLimiter;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,10 @@ public class MediaService {
   private final ObjectStore objects;
   private final Transcoder transcoder;
   private final AppProperties properties;
+  private final RateLimiter rateLimiter;
+
+  /** What the Phase 5 iOS specification has always said this endpoint enforces. */
+  private static final int UPLOADS_PER_MINUTE = 1;
 
   /**
    * Registers the asset and hands back a URL the browser puts bytes to directly. Nothing passes
@@ -43,6 +48,18 @@ public class MediaService {
   @Transactional
   public Upload register(AppPrincipal actor, UUID orgId, String filename, String contentType, long sizeBytes) {
     requireConfigured();
+    // Refused if Redis is down: every registration is a presigned URL for a half-gigabyte object,
+    // so an unenforceable limit here is unbounded storage and transcoding spend. The iOS spec has
+    // claimed this limit existed since Phase 5; until now it did not.
+    if (!rateLimiter.tryAcquire(
+        "media-register",
+        actor.userId().toString(),
+        UPLOADS_PER_MINUTE,
+        Duration.ofMinutes(1),
+        RateLimiter.OnOutage.REFUSE)) {
+      throw new ConflictException(
+          "Only one video can be started each minute. Please wait a moment and try again.");
+    }
     if (!ACCEPTED.contains(contentType)) {
       throw new BadRequestException(
           "Videos must be MP4, QuickTime, or WebM. Received " + contentType);

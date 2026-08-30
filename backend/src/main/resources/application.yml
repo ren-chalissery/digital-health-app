@@ -44,7 +44,7 @@ app:
     # unreachable — including in tests and local development.
     issuer-uri: ${COGNITO_ISSUER_URI:}
     user-pool-id: ${COGNITO_USER_POOL_ID:}
-    client-id: ${COGNITO_CLIENT_ID:}
+    client-ids: ${COGNITO_CLIENT_IDS:}
     region: ${AWS_REGION:ap-southeast-2}
   auth:
     # Must match the Cognito app client's access token lifetime. Determines how long a denylist

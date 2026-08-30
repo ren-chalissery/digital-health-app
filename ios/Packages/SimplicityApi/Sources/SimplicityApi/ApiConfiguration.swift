@@ -25,6 +25,11 @@ public enum ApiConfiguration {
         guard let token = await stored.value?.accessToken() else { return [:] }
         return ["Authorization": "Bearer \(token)"]
     }
+
+    /// Forces a new access token, for a request the server has just rejected.
+    static func refreshAccessToken() async -> String? {
+        await stored.value?.refreshedAccessToken()
+    }
 }
 
 /// The adapter is written once at launch and read from every request, on any thread.

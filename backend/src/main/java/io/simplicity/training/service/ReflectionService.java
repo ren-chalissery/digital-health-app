@@ -5,7 +5,10 @@ import io.simplicity.training.model.entity.Reflection;
 import io.simplicity.training.model.request.ReflectionRequests.WriteReflectionRequest;
 import io.simplicity.training.model.response.ReflectionResponse;
 import io.simplicity.training.repository.ReflectionRepository;
+import io.simplicity.training.exception.ConflictException;
 import io.simplicity.training.security.AppPrincipal;
+import io.simplicity.training.service.RateLimiter;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReflectionService {
 
   private final ReflectionRepository reflections;
+  private final RateLimiter rateLimiter;
+
+  /** High enough that no clinician journalling in good faith will meet it. */
+  private static final int WRITES_PER_HOUR = 60;
 
   @Transactional(readOnly = true)
   public List<ReflectionResponse> list(AppPrincipal principal, String terms) {
@@ -40,6 +47,18 @@ public class ReflectionService {
 
   @Transactional
   public ReflectionResponse write(AppPrincipal principal, WriteReflectionRequest request) {
+    // Allowed through if Redis is down. Refusing to record a clinician's reflection because a
+    // cache is unavailable is the worst trade in the product; the limit only exists to bound
+    // storage taken by an automated writer.
+    if (!rateLimiter.tryAcquire(
+        "reflection-write",
+        principal.userId().toString(),
+        WRITES_PER_HOUR,
+        Duration.ofHours(1),
+        RateLimiter.OnOutage.ALLOW)) {
+      throw new ConflictException(
+          "You have saved a great many entries in the last hour. Please try again shortly.");
+    }
     return describe(
         reflections.save(
             Reflection.builder()
