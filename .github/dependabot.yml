@@ -1,0 +1,48 @@
+version: 2
+
+# Nothing watched the dependencies of a product handling clinical data across three ecosystems.
+# This is the cheapest meaningful control available.
+#
+# Updates are grouped and weekly. Ungrouped, four ecosystems open dozens of pull requests a week,
+# which is how a security control becomes something people mute.
+
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
+
+  # Swift Package Manager. Amplify and the generated client are the ones worth watching.
+  - package-ecosystem: swift
+    directory: /ios
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
