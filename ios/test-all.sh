@@ -51,12 +51,16 @@ done
 echo "---"
 echo "$total tests"
 
-if ! swiftlint --strict >/dev/null 2>&1; then
+# "not installed" and "found violations" are different answers, and conflating them produced a CI
+# failure that said "SwiftLint found violations" and then listed none.
+if ! command -v swiftlint >/dev/null 2>&1; then
+  echo "SwiftLint is not installed — skipping. Install it with: brew install swiftlint"
+elif swiftlint --strict >/dev/null 2>&1; then
+  echo "SwiftLint clean"
+else
   echo "SwiftLint found violations:"
   swiftlint --strict 2>&1 | grep 'error:' | sed 's|.*/ios/||' | head -20
   failed=1
-else
-  echo "SwiftLint clean"
 fi
 
 exit "$failed"

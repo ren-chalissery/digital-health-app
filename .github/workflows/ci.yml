@@ -71,7 +71,13 @@ jobs:
         if: steps.changed.outputs.run == 'true'
         run: sudo xcode-select -s /Applications/Xcode_26.3.app
 
-      - name: Package tests
+      # Not on the runner image. test-all.sh skips linting rather than failing when it is absent,
+      # so without this the job would pass while checking nothing.
+      - name: Install SwiftLint
+        if: steps.changed.outputs.run == 'true'
+        run: brew install swiftlint
+
+      - name: Package tests and lint
         if: steps.changed.outputs.run == 'true'
         working-directory: ios
         run: ./test-all.sh
