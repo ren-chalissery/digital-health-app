@@ -11,6 +11,7 @@ import io.simplicity.training.model.entity.Organisation;
 import io.simplicity.training.model.enums.OrgRole;
 import io.simplicity.training.model.enums.OrganisationType;
 import io.simplicity.training.support.AbstractIntegrationTest;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -102,7 +103,7 @@ class PrincipalCacheTest extends AbstractIntegrationTest {
         .andExpect(
             status()
                 .isUnauthorized());
-    assertThat(revocations.isRevoked(SUB)).isTrue();
+    assertThat(revocations.isRevoked(SUB, Instant.now().minusSeconds(60))).isTrue();
   }
 
   @Test

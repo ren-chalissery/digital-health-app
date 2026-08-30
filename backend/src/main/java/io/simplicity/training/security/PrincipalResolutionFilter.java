@@ -40,9 +40,13 @@ public class PrincipalResolutionFilter extends OncePerRequestFilter {
       Jwt jwt = jwtAuthentication.getToken();
       String cognitoSub = jwt.getSubject();
 
-      if (revocations.isRevoked(cognitoSub)) {
+      if (revocations.isRevoked(cognitoSub, jwt.getIssuedAt())) {
         // Cognito access tokens stay valid for up to fifteen minutes. Without this check, removing
         // somebody's access would not take effect until their current token expired.
+        //
+        // Only tokens issued before the revocation are refused. A token minted afterwards is
+        // accepted, so somebody removed from one of their organisations is not locked out of the
+        // others — or out of signing back in.
         log.info("Rejected a request from revoked subject {}", cognitoSub);
         SecurityContextHolder.clearContext();
         response.sendError(HttpStatus.UNAUTHORIZED.value(), "Session has been revoked");
