@@ -12,7 +12,10 @@ and leaving runs through exactly the same `accessRevoked` path that removal does
 Four things are checked, each corresponding to something the audit found.
 
   - Leaving stops the token being held from working immediately, rather than at expiry.
-  - A token issued afterwards still works, so nobody is locked out of the product for fifteen
+  - A token minted in the same second as the revocation is refused too. That is deliberate rather
+    than incidental: a JWT `iat` is whole seconds, so it cannot be ordered against the revocation
+    and the safe reading is that it came first.
+  - A token issued a moment later works, so nobody is locked out of the product for fifteen
     minutes over losing one organisation. A naive subject-wide ban fails this check.
   - An ID token is refused where an access token belongs. Cognito signs both with the same keys,
     so this only holds if `token_use` is genuinely validated.
@@ -20,6 +23,7 @@ Four things are checked, each corresponding to something the audit found.
 """
 
 import sys
+import time
 
 from pycognito import Cognito
 
@@ -52,9 +56,19 @@ def main() -> int:
             "stayed valid for up to fifteen minutes before this change",
         )
 
+        run.check(
+            "a token minted in the same second as the revocation is also refused",
+            run.call("GET", "/api/v1/me", bearer(email, run.password, "access_token")).status_code
+            == 401,
+            "deliberate: a JWT iat is whole seconds, so that one cannot be ordered against it",
+        )
+
+        # Past the second boundary the ambiguity is gone. Two seconds rather than one, so a clock
+        # landing near the edge cannot make this flake.
+        time.sleep(2)
         fresh = bearer(email, run.password, "access_token")
         run.check(
-            "a token issued after leaving works",
+            "a token issued a moment later works",
             run.call("GET", "/api/v1/me", fresh).status_code == 200,
             "a subject-wide ban would fail here, locking them out of everything",
         )
