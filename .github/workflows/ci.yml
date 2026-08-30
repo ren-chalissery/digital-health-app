@@ -71,11 +71,19 @@ jobs:
         if: steps.changed.outputs.run == 'true'
         run: sudo xcode-select -s /Applications/Xcode_26.3.app
 
-      # Not on the runner image. test-all.sh skips linting rather than failing when it is absent,
-      # so without this the job would pass while checking nothing.
+      # Not on the runner image, and pinned rather than installed from Homebrew. An unpinned
+      # linter is a build that can fail without anybody changing code: Homebrew had 0.65.1 while
+      # this repository lints with 0.63.2, and the newer one called a needed disable comment
+      # superfluous. `ios/.swiftlint-version` is the single declaration of which version applies.
       - name: Install SwiftLint
         if: steps.changed.outputs.run == 'true'
-        run: brew install swiftlint
+        run: |
+          version=$(cat ios/.swiftlint-version)
+          curl -sSL -o /tmp/swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${version}/portable_swiftlint.zip"
+          unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+          sudo install /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          swiftlint version
 
       - name: Package tests and lint
         if: steps.changed.outputs.run == 'true'

@@ -47,6 +47,11 @@ xcodebuild test -workspace Simplicity.xcworkspace -scheme Simplicity_iOS \
 swiftlint --strict
 ```
 
+SwiftLint's version is pinned in `.swiftlint-version`, and CI installs exactly that. Different
+versions genuinely disagree — 0.65.1 called a disable comment superfluous that 0.63.2 requires — so
+an unpinned linter is a build that can fail without anybody changing code. `test-all.sh` skips
+linting, loudly, when your local version differs rather than blocking your work on it.
+
 `test-all.sh` exists rather than a one-line loop because two things go wrong otherwise. Piping
 `swift test` into a filter discards its exit code, so a package that fails to *compile* prints
 nothing and reads as a pass. And adding a type to a `.package(path:)` dependency does not reliably

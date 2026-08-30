@@ -53,8 +53,15 @@ echo "$total tests"
 
 # "not installed" and "found violations" are different answers, and conflating them produced a CI
 # failure that said "SwiftLint found violations" and then listed none.
+expected_lint_version=$(cat .swiftlint-version)
+
 if ! command -v swiftlint >/dev/null 2>&1; then
   echo "SwiftLint is not installed — skipping. Install it with: brew install swiftlint"
+elif [ "$(swiftlint version)" != "$expected_lint_version" ]; then
+  # Not a failure — a local mismatch should not block someone's work — but loud, because the
+  # answer genuinely differs between versions and CI uses the pinned one.
+  echo "SwiftLint $(swiftlint version) differs from the pinned $expected_lint_version;" \
+       "CI will use the pinned version. Skipping."
 elif swiftlint --strict >/dev/null 2>&1; then
   echo "SwiftLint clean"
 else
