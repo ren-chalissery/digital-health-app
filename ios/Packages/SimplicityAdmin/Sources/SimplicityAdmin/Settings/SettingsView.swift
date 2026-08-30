@@ -9,6 +9,8 @@ public enum AdminDestination: Hashable {
     case modules
     case team(id: UUID, name: String)
     case module(id: UUID, title: String)
+    case quiz(moduleId: UUID)
+    case publish(moduleId: UUID)
 }
 
 public struct SettingsView: View {

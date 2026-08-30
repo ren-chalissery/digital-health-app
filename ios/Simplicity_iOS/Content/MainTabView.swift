@@ -88,7 +88,11 @@ struct MainTabView: View {
                 case let .team(id, name):
                     TeamDetailView(teamId: id, teamName: name)
                 case let .module(id, title):
-                    ModuleEditorView(moduleId: id, title: title)
+                    ModuleEditorView(moduleId: id, title: title) { settingsPath.append($0) }
+                case let .quiz(moduleId):
+                    QuizEditorView(moduleId: moduleId)
+                case let .publish(moduleId):
+                    PublishView(moduleId: moduleId)
                 }
             }
         }

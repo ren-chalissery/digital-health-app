@@ -8,12 +8,18 @@ public struct ModuleEditorView: View {
 
     @State private var model: ModuleEditorViewModel
     private let title: String
+    private let onOpen: (AdminDestination) -> Void
 
     // MARK: Init
 
-    public init(moduleId: UUID, title: String) {
+    public init(
+        moduleId: UUID,
+        title: String,
+        onOpen: @escaping (AdminDestination) -> Void
+    ) {
         self._model = State(initialValue: ModuleEditorViewModel(moduleId: moduleId))
         self.title = title
+        self.onOpen = onOpen
     }
 
     // MARK: SwiftUI
@@ -69,6 +75,26 @@ public struct ModuleEditorView: View {
                     }
                     .accessibilityIdentifier("add-section")
                 }
+            }
+
+            Section {
+                Button { onOpen(.quiz(moduleId: model.moduleId)) } label: {
+                    Label {
+                        Text("quiz_editor_title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checklist")
+                    }
+                }
+                .accessibilityIdentifier("open-quiz")
+
+                Button { onOpen(.publish(moduleId: model.moduleId)) } label: {
+                    Label {
+                        Text("publish_title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "paperplane")
+                    }
+                }
+                .accessibilityIdentifier("open-publish")
             }
         }
         .navigationTitle(title)
