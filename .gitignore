@@ -40,3 +40,8 @@ ios/**/.build/
 ios/**/.swiftpm/
 ios/**/*.xcuserdata*
 ios/DerivedData/
+
+# fastlane leaves these beside the Fastfile after a build; they are outputs, not sources.
+ios/*.ipa
+ios/*.dSYM.zip
+ios/fastlane/report.xml
