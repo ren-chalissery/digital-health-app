@@ -230,6 +230,41 @@ rather than a missing email. `bootstrap.sh` prints this on every run. The reques
 aws sesv2 get-account --query ProductionAccessEnabled
 ```
 
+## Taking it down
+
+```bash
+./infra/teardown.sh --keep-auth   # stop paying, keep the accounts
+./infra/teardown.sh               # everything except the retained resources
+./infra/teardown.sh --purge       # everything, including accounts and uploads
+```
+
+**Teardown is not reversible, and the retention policies are why.** Three resources survive a
+plain teardown, which sounds safe and is a trap:
+
+- The **Cognito user pool** is `Retain`. It stays, but nothing manages it, and a later
+  `bootstrap.sh` creates a *new* pool with new ids. Every clinician's account is orphaned — they
+  cannot sign in, and their memberships point at a pool nothing reads.
+- **Both S3 buckets** are `Retain` and named deterministically
+  (`digital-health-web-<env>-<account>`). A later `bootstrap.sh` **fails**: the bucket exists and
+  CloudFormation will not adopt it.
+- The **database** leaves a final snapshot. Restoring it is manual.
+
+So tearing down and bootstrapping again does not restore what you had. It produces a failed deploy,
+and then an empty product whose users cannot log in.
+
+`--purge` removes those three as well, which at least is honest: nothing to collide with, nothing
+to restore, no accounts.
+
+### If the goal is only to stop paying
+
+Use `--keep-auth`. Of roughly $74 a month, the load balancer, database, cache and Fargate task are
+96%, and all four live in the app and data stacks. Leaving auth and network standing keeps every
+account, so `bootstrap.sh` can rebuild the rest — though the bucket-name collision above still
+applies to the web and media stacks.
+
+Deletion order is the reverse of creation because CloudFormation refuses to delete a stack whose
+exports are still imported. That is the same rule that rolled back a cache change in August.
+
 ## Checking a change
 
 ```bash
