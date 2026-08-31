@@ -10,17 +10,41 @@ reflections.
 
 ## Status
 
-Phase 1 — foundation, identity, and teams. See
-[the Phase 1 design spec](docs/superpowers/specs/2026-08-29-digital-health-app-phase1-design.md)
-for the architecture and the reasoning behind it.
+Deployed and running. Every phase but Android has shipped, and each is verified against the
+deployed environment rather than only by the test suite — see [scripts/](scripts/).
+
+Each phase has a design specification in
+[docs/superpowers/specs/](docs/superpowers/specs/) explaining the reasoning, starting with
+[Phase 1](docs/superpowers/specs/2026-08-29-digital-health-app-phase1-design.md) for the
+architecture.
 
 | Phase | Scope | State |
 | --- | --- | --- |
-| 1 | Auth, profiles, organisations, teams, invitations, deployed AWS environment | In progress |
-| 2 | Module authoring, quizzes, Dashboard and Learn tabs | Not started |
-| 3 | Reflect journal with search | Not started |
-| 4 | AI assistant over the training content | Not started |
-| 5 | Native iOS and Android clients | Not started |
+| 1 | Auth, profiles, organisations, teams, invitations, deployed AWS environment | Shipped |
+| 2 | Module authoring, video, quizzes, Dashboard and Learn | Shipped |
+| 3 | Reflect journal with search | Shipped |
+| 4 | Assistant over the training content | Shipped |
+| 5 | Native iOS client | Shipped, TestFlight pending a bundle id |
+| 5 | Native Android client | **Not started** — needs an Android SDK |
+| — | Hardening: revocation, token validation, rate limits, alarms, dependency scanning | Shipped |
+
+### Known gaps
+
+Named here rather than left to be discovered. All but the first were deliberate:
+
+- **Android.** Committed to in Phase 1 and scoped into Phase 5, and the only item that falls short
+  of what was promised rather than what was chosen.
+- **No staging environment.** Both the Phase 1 and hardening specs call this the right next
+  infrastructure decision. Everything is verified against production, which is the condition that
+  made the Cognito cleanup incident possible.
+- **Captions play on the web but not on iOS.** `AVFoundation` cannot side-load WebVTT onto a
+  progressive MP4; it needs HLS, which is a transcode, backend, web and migration change.
+- **Valkey traffic is not encrypted in transit.** Deferred deliberately — it is four deployments
+  and a change to how the stacks reference each other, to encrypt traffic that never leaves the
+  VPC. The path is written down in
+  [the operations plan](docs/superpowers/plans/2026-08-31-hardening-2-operations.md).
+- **Authentication events are not audited.** Organisation, team and module changes are; sign-ins
+  are not.
 
 ## Layout
 
@@ -31,7 +55,9 @@ for the architecture and the reasoning behind it.
 | [infra/](infra/) | CloudFormation and SAM templates |
 | [api-contract/](api-contract/) | Generated `openapi.yaml` and client generator configuration |
 | [docs/](docs/) | Design specifications |
-| `ios/`, `android/` | Native clients, Phase 5 |
+| [ios/](ios/) | Native iOS client — SwiftUI, ten local packages, XcodeGen |
+| `android/` | Placeholder; the Android client has not been started |
+| [scripts/](scripts/) | Checks that run against a deployed environment |
 
 ## Running locally
 
