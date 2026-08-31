@@ -17,6 +17,7 @@ dependencies {
     api(project(":api-client"))
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.core)
+    api(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockk)

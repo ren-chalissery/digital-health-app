@@ -37,8 +37,10 @@ Named here rather than left to be discovered. All but the first were deliberate:
 - **No staging environment.** Both the Phase 1 and hardening specs call this the right next
   infrastructure decision. Everything is verified against production, which is the condition that
   made the Cognito cleanup incident possible.
-- **Captions play on the web but not on iOS.** `AVFoundation` cannot side-load WebVTT onto a
-  progressive MP4; it needs HLS, which is a transcode, backend, web and migration change.
+- **Captions play on the web and Android, but not on iOS.** `AVFoundation` cannot side-load WebVTT
+  onto a progressive MP4; it needs HLS, which is a transcode, backend, web and migration change.
+  Media3 attaches the track directly, so Android has them and iOS does not. If a clinician needs
+  captions, tell them to use Android or the web — that is the whole answer.
 - **Valkey traffic is not encrypted in transit.** Deferred deliberately — it is four deployments
   and a change to how the stacks reference each other, to encrypt traffic that never leaves the
   VPC. The path is written down in

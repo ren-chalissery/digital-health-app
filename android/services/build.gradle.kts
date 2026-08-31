@@ -17,6 +17,8 @@ dependencies {
     api(project(":api"))
     implementation(libs.hilt.android)
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.retrofit.kotlinx.serialization)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 }
