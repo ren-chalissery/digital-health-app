@@ -78,11 +78,16 @@ final class BearerInterceptor: OpenAPIInterceptor {
 ///
 /// A latch that never reset would stop the app recovering from any later revocation, and no limit
 /// at all would let a persistently rejected token spin: 401, refresh, 401, refresh. A short window
-/// gives one refresh per burst of rejections, lets the second 401 surface as a real error, and
-/// still allows a genuine refresh half an hour later.
+/// gives one refresh per burst of rejections and still allows a genuine refresh later.
+///
+/// Two seconds, because of a one-second window measured against production. A JWT `iat` is whole
+/// seconds, so the server cannot order a token minted in the same second as the revocation and
+/// refuses it. A token refreshed immediately therefore fails too, and only the next one succeeds —
+/// so this interval has to clear a second boundary while keeping the user waiting as briefly as
+/// possible. Every refresh also costs a round trip to Cognito, so this is nowhere near a hot loop.
 private final class RefreshThrottle: @unchecked Sendable {
 
-    private let interval: TimeInterval = 10
+    private let interval: TimeInterval = 2
     private let lock = NSLock()
     private var last: Date?
 
