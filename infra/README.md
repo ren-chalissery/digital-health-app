@@ -234,7 +234,7 @@ aws sesv2 get-account --query ProductionAccessEnabled
 
 ```bash
 ./infra/teardown.sh --dry-run     # print every destructive call, make none
-./infra/teardown.sh --keep-auth   # stop paying, keep the accounts
+./infra/teardown.sh --pause       # stop paying, keep everything that is free
 ./infra/teardown.sh               # everything except the retained resources
 ./infra/teardown.sh --purge       # everything, including accounts and uploads
 ```
@@ -247,7 +247,9 @@ plain teardown, which sounds safe and is a trap:
   cannot sign in, and their memberships point at a pool nothing reads.
 - **Both S3 buckets** are `Retain` and named deterministically
   (`digital-health-web-<env>-<account>`). A later `bootstrap.sh` **fails**: the bucket exists and
-  CloudFormation will not adopt it.
+  CloudFormation will not adopt it. Letting CloudFormation generate the names instead would fix
+  this, at the cost of replacing both buckets once; worth doing while the only contents are test
+  uploads, and much harder once they hold real video.
 - The **database** leaves a final snapshot. Restoring it is manual.
 
 So tearing down and bootstrapping again does not restore what you had. It produces a failed deploy,
@@ -258,10 +260,25 @@ to restore, no accounts.
 
 ### If the goal is only to stop paying
 
-Use `--keep-auth`. Of roughly $74 a month, the load balancer, database, cache and Fargate task are
-96%, and all four live in the app and data stacks. Leaving auth and network standing keeps every
-account, so `bootstrap.sh` can rebuild the rest — though the bucket-name collision above still
-applies to the web and media stacks.
+Use `--pause`. Of roughly $74 a month, the load balancer, database, cache and Fargate task are 96%,
+and all four live in the app and data stacks — so those are the only two `--pause` deletes. About
+$0.70 a month remains: fifty cents for the Route 53 hosted zone, twenty for the database snapshot,
+which bills on the 1.6GB used rather than the 20GB allocated.
+
+Everything else is kept because idle it is free, and deleting it would cost something real:
+
+| Kept | Idle cost | Why deleting it would hurt |
+| --- | --- | --- |
+| Cognito pool | free below 10k users | new pool means new ids, and the shipped iOS and Android builds stop working |
+| VPC and subnets | free without a NAT gateway | nothing gained |
+| Deploy role | free | it is what CI authenticates with, so a merge could not even start |
+| Web and media | S3 and CloudFront, billed per request | the DNS record and distribution take ~15 minutes to return, and the retained buckets pile up |
+| Container images | a few cents | `bootstrap.sh` needs an image to start the task; without one you need a full CI run first |
+
+**The infrastructure comes back. The data does not.** `bootstrap.sh` creates an empty database and
+never reads the snapshot, so restoring it means `aws rds restore-db-instance-from-db-snapshot` by
+hand and then repointing the app stack. That is fine while the only rows are test data, and not
+fine after launch — at which point this needs a restore path before anyone pauses anything.
 
 `--dry-run` is the only way to inspect the destructive path without a disposable environment to
 run it against. Every destructive call is routed through one `run` helper, so a deletion added
