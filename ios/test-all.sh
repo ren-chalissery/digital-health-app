@@ -21,8 +21,18 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 total=0
 failed=0
 
+# --no-parallel because the suites share one process-wide Factory container.
+#
+# Every view-model suite registers its mocks into Container.shared, and `.serialized` only orders
+# tests *within* a suite — Swift Testing still runs different suites at the same time. One suite
+# replacing another's sessionService mid-test makes the model resolve a session with no
+# organisation, so a guard returns early and the test sees nothing happen at all.
+#
+# That surfaced as InvitationsViewModelTests failing on CI while passing locally, which is the
+# shape this bug will always take: it depends on core count and interleaving. The suites run in
+# well under a second, so serialising them costs nothing worth measuring.
 run_package() {
-  (cd "$1" && swift test 2>&1)
+  (cd "$1" && swift test --no-parallel 2>&1)
 }
 
 for package in Packages/*/; do

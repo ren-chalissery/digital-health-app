@@ -26,6 +26,13 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Angular pins the compiler it will accept. @angular/compiler-cli 22.1 declares
+      # `typescript: ">=6.0 <6.1"`, and 7.0.2 failed the build outright with
+      # "Angular compilation initialization failed". TypeScript moves when Angular says so, so
+      # let the Angular upgrade carry it rather than proposing it on its own.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major, version-update:semver-minor]
 
   - package-ecosystem: github-actions
     directory: /
