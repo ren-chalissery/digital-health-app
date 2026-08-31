@@ -166,9 +166,21 @@ on storage or busy, and the cache near full.
 Alarm descriptions say what a person would notice rather than which metric moved, because the
 description is what arrives in the email at an inconvenient hour.
 
-**Set the `ALARM_EMAIL` repository variable, then confirm the subscription.** AWS sends that address
-a confirmation link and delivers nothing until somebody clicks it. The stack reports success
-regardless, so an unconfirmed subscription looks exactly like a working one:
+**Set the `ALARM_EMAIL` repository secret, then confirm the subscription.**
+
+```bash
+gh secret set ALARM_EMAIL --body 'alerts@example.com'
+```
+
+A secret and not a variable, only so it is masked. Variables are printed verbatim into the workflow
+log and this repository is public — `MailFrom` is already legible in it. An alerting inbox in a
+public log is an invitation to spam.
+
+The value only reaches AWS on the next deploy, so push something or re-run the workflow afterwards.
+
+Then **confirm the subscription**. AWS emails that address a link and delivers nothing until
+somebody clicks it. The stack reports success regardless, so an unconfirmed subscription looks
+exactly like a working one:
 
 ```bash
 aws sns list-subscriptions-by-topic --topic-arn "$(aws cloudformation describe-stacks \
