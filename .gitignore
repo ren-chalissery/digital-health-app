@@ -45,3 +45,8 @@ ios/DerivedData/
 ios/*.ipa
 ios/*.dSYM.zip
 ios/fastlane/report.xml
+
+# Android
+android/**/build/
+android/.gradle/
+android/local.properties
