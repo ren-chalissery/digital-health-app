@@ -233,6 +233,7 @@ aws sesv2 get-account --query ProductionAccessEnabled
 ## Taking it down
 
 ```bash
+./infra/teardown.sh --dry-run     # print every destructive call, make none
 ./infra/teardown.sh --keep-auth   # stop paying, keep the accounts
 ./infra/teardown.sh               # everything except the retained resources
 ./infra/teardown.sh --purge       # everything, including accounts and uploads
@@ -261,6 +262,11 @@ Use `--keep-auth`. Of roughly $74 a month, the load balancer, database, cache an
 96%, and all four live in the app and data stacks. Leaving auth and network standing keeps every
 account, so `bootstrap.sh` can rebuild the rest — though the bucket-name collision above still
 applies to the web and media stacks.
+
+`--dry-run` is the only way to inspect the destructive path without a disposable environment to
+run it against. Every destructive call is routed through one `run` helper, so a deletion added
+later has to be written as `run ...` to work at all — which is what stops the dry run quietly
+under-reporting.
 
 Deletion order is the reverse of creation because CloudFormation refuses to delete a stack whose
 exports are still imported. That is the same rule that rolled back a cache change in August.

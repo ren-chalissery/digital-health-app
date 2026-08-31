@@ -55,6 +55,7 @@ export AWS_DEFAULT_REGION="${REGION}"
 PURGE=false
 KEEP_AUTH=false
 ASSUME_YES=false
+DRY_RUN=false
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
@@ -74,6 +75,9 @@ Usage: teardown.sh [--keep-auth] [--purge] [--yes]
                bucket names.
 
   --yes        Skip the confirmation prompt. For automation only.
+
+  --dry-run    Print every destructive call without making it, and exit. The only way to inspect
+               the destructive path without a disposable environment to run it against.
 USAGE
 }
 
@@ -82,6 +86,7 @@ while [ $# -gt 0 ]; do
     --purge) PURGE=true ;;
     --keep-auth) KEEP_AUTH=true ;;
     --yes) ASSUME_YES=true ;;
+    --dry-run) DRY_RUN=true ;;
     -h|--help) usage; exit 0 ;;
     *) usage; die "Unknown argument: $1" ;;
   esac
@@ -131,11 +136,23 @@ else
   fi
 fi
 
-if [ "$ASSUME_YES" = false ]; then
+if [ "$ASSUME_YES" = false ] && [ "$DRY_RUN" = false ]; then
   printf '\nType the environment name (%s) to continue: ' "$ENVIRONMENT"
   read -r typed
   [ "$typed" = "$ENVIRONMENT" ] || die "Got '${typed}'. Nothing deleted."
 fi
+
+# Every destructive call goes through here. Routing them all through one function is what stops
+# --dry-run missing one: a new deletion added later has to be written as `run ...` to work at all.
+run() {
+  if [ "$DRY_RUN" = true ]; then
+    # To stderr, so a caller redirecting stdout to /dev/null cannot silently hide what would be
+    # destroyed. An under-reporting dry run is worse than none.
+    printf '    \033[36mwould run:\033[0m %s\n' "$*" >&2
+    return 0
+  fi
+  "$@"
+}
 
 emptyBucket() {
   local bucket="$1"
@@ -143,7 +160,8 @@ emptyBucket() {
   info "Emptying ${bucket}"
   # Versions and delete markers as well as objects: a versioned bucket is not empty just because
   # `s3 rm` finished, and the delete then fails with BucketNotEmpty.
-  aws s3 rm "s3://${bucket}" --recursive >/dev/null 2>&1 || true
+  run aws s3 rm "s3://${bucket}" --recursive || true
+  [ "$DRY_RUN" = true ] && return 0
   python3 - "$bucket" <<'PY' || true
 import json, subprocess, sys
 bucket = sys.argv[1]
@@ -169,7 +187,11 @@ PY
 deleteStack() {
   local stack="$1"
   step "Deleting ${stack}"
-  aws cloudformation delete-stack --stack-name "$stack"
+  run aws cloudformation delete-stack --stack-name "$stack"
+  if [ "$DRY_RUN" = true ]; then
+    info "would wait for ${stack} to finish deleting"
+    return 0
+  fi
   if aws cloudformation wait stack-delete-complete --stack-name "$stack" 2>/dev/null; then
     info "Gone."
   else
@@ -197,7 +219,7 @@ if [ -n "${repo:-}" ] && [ "$repo" != "None" ]; then
   step "Emptying the container repository"
   ids="$(aws ecr list-images --repository-name "$repo" --query 'imageIds[*]' --output json)"
   if [ "$ids" != "[]" ]; then
-    aws ecr batch-delete-image --repository-name "$repo" --image-ids "$ids" >/dev/null
+    run aws ecr batch-delete-image --repository-name "$repo" --image-ids "$ids"
     info "Removed the images from ${repo}"
   fi
 fi
@@ -209,12 +231,14 @@ done
 if [ "$PURGE" = true ]; then
   step "Deleting the retained buckets and user pool"
   for bucket in "digital-health-web-${ENVIRONMENT}-${account}" "digital-health-media-${ENVIRONMENT}-${account}"; do
-    aws s3api delete-bucket --bucket "$bucket" >/dev/null 2>&1 && info "Deleted ${bucket}" || true
+    if aws s3api head-bucket --bucket "$bucket" >/dev/null 2>&1 || [ "$DRY_RUN" = true ]; then
+      run aws s3api delete-bucket --bucket "$bucket" && info "Deleted ${bucket}" || true
+    fi
   done
   pool="$(aws cognito-idp list-user-pools --max-results 60 \
     --query "UserPools[?Name=='digital-health-${ENVIRONMENT}'].Id | [0]" --output text 2>/dev/null || true)"
   if [ -n "${pool:-}" ] && [ "$pool" != "None" ]; then
-    aws cognito-idp delete-user-pool --user-pool-id "$pool" && info "Deleted user pool ${pool}"
+    run aws cognito-idp delete-user-pool --user-pool-id "$pool" && info "Deleted user pool ${pool}"
   fi
 fi
 
