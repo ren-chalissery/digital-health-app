@@ -137,6 +137,48 @@ hand and step 2 happens on merge, which fixes the order rigidly: merging step 2 
 been applied by hand points a TLS client at a cache that does not accept TLS. Step 1 must be live in
 AWS *before* the step 2 commit reaches `main`.
 
+#### Attempted, and it failed. The three steps are not enough.
+
+Step 1 was applied on 31 August and CloudFormation rolled it back:
+
+```
+Update canceled. Cannot update export digital-health-data-CacheEndpoint
+as it is in use by digital-health-app.
+```
+
+Enabling transit encryption changes the cache's primary endpoint address. `data.yaml` exports that
+address and `app.yaml` imports it, and **CloudFormation refuses to change an exported value while
+another stack imports it**. The cache modification itself succeeded — sixteen minutes, in place, no
+data lost — and only then did the stack update fail and reverse it. Another sixteen minutes back.
+
+Two things worth keeping from that:
+
+- **A change set does not catch this.** It correctly reported `Modify` with `Replacement: False`,
+  which is what was checked before executing. Change sets are scoped to one stack and say nothing
+  about cross-stack imports. The check that would have caught it is
+  `aws cloudformation list-imports --export-name digital-health-data-CacheEndpoint`, before
+  touching anything that could change that value.
+- **Production was unaffected throughout.** `preferred` accepts plaintext, so the running task never
+  lost the cache, and the rollback returned it to exactly where it started.
+
+**The real sequence** has to break the export coupling first, because that coupling is what makes
+the cache endpoint effectively unchangeable:
+
+1. `app.yaml` takes the cache endpoint as a *parameter* rather than an `Fn::ImportValue`, with CI
+   resolving it from the data stack's output at deploy time. `data.yaml` keeps the output and drops
+   the `Export:`. Deploy app — nothing imports the export now.
+2. Enable `TransitEncryptionEnabled: true` / `TransitEncryptionMode: preferred` on the data stack.
+   The endpoint may change freely, because nothing imports it.
+3. Deploy app again, picking up the new endpoint and `REDIS_SSL_ENABLED: 'true'`.
+4. `TransitEncryptionMode: required` on the data stack.
+
+That is four deployments, two of them sixteen-minute cache operations, plus a structural change to
+how the two stacks reference each other. Against a benefit of encrypting traffic that already never
+leaves the VPC and is already restricted by security group, **this is worth re-deciding rather than
+pressing on** — the estimate this plan was approved against was wrong by a wide margin.
+
+The `CachePort` export has the same problem and the same fix.
+
 - [ ] **Step 1: Make the cache accept both**
 
 ```yaml

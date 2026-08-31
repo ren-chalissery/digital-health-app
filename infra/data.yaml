@@ -121,7 +121,19 @@ Resources:
       Port: 6379
       # The principal cache holds email addresses and role assignments, so encrypt the disk. In
       # transit is left off to match the task's REDIS_SSL_ENABLED, with the security group as the
-      # boundary; turning both on together is a worthwhile follow-up.
+      # boundary.
+      #
+      # Turning it on was attempted on 31 August 2026 and rolled back. Enabling transit encryption
+      # changes the primary endpoint address, and CloudFormation will not change an exported value
+      # while another stack imports it — digital-health-app imports CacheEndpoint and CachePort. The
+      # cache modification itself succeeded in place and took sixteen minutes; the export conflict
+      # then reversed it, for sixteen more. Production was unaffected.
+      #
+      # Doing it properly means breaking that export coupling first, so that the endpoint is free to
+      # change. See docs/superpowers/plans/2026-08-31-hardening-2-operations.md, task 3.
+      #
+      # Before touching anything whose value is exported:
+      #   aws cloudformation list-imports --export-name digital-health-data-CacheEndpoint
       AtRestEncryptionEnabled: true
       TransitEncryptionEnabled: false
       PreferredMaintenanceWindow: 'sun:18:30-sun:19:30'
