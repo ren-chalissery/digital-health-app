@@ -285,7 +285,10 @@ jobs:
               HostedZoneId=${{ vars.HOSTED_ZONE_ID }} \
               WebBaseUrl=${{ vars.WEB_BASE_URL }} \
               MailFrom=${{ vars.MAIL_FROM }} \
-              AlarmEmail=${{ vars.ALARM_EMAIL }} \
+              # A secret rather than a variable, only so it is masked. Variables are printed
+              # verbatim into the workflow log, and this repository is public — MailFrom above is
+              # already legible in it. An alerting inbox in a public log is an invitation to spam.
+              AlarmEmail=${{ secrets.ALARM_EMAIL }} \
               ImageTag=${{ github.sha }}
 
       - name: Deploy the web stack
