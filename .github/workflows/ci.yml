@@ -132,21 +132,32 @@ jobs:
           cache: npm
           cache-dependency-path: api-contract/package-lock.json
 
-      - name: Regenerate the Angular client
+      # All three, not just Angular. Each client is committed, so each can silently fall behind
+      # openapi.yaml — and until Android arrived only the web one was ever checked, which meant an
+      # endpoint could reach the API and the web app while leaving iOS and Android stale with
+      # nothing failing.
+      - name: Regenerate every client
         working-directory: api-contract
         run: |
           npm ci
           npm run generate:web
+          npm run generate:ios
+          npm run generate:android
 
-      # The committed client has to match what the committed document produces. Without this, an
-      # endpoint could be added to openapi.yaml and never reach the app.
-      - name: Fail if the committed client differs
+      - name: Fail if any committed client differs
         run: |
-          if ! git diff --quiet -- web/src/app/api; then
-            echo "The generated Angular client is out of date. Run 'npm run generate:web' in api-contract and commit the result."
-            git diff --stat -- web/src/app/api
-            exit 1
-          fi
+          stale=0
+          check() {
+            if ! git diff --quiet -- "$2"; then
+              echo "::error::The generated $1 client is out of date. Run 'npm run generate:$3' in api-contract and commit the result."
+              git diff --stat -- "$2"
+              stale=1
+            fi
+          }
+          check Angular web/src/app/api web
+          check Swift ios/Packages/SimplicityApi/Sources/SimplicityApi/Generated ios
+          check Kotlin android/api-client android
+          exit "$stale"
 
   web:
     name: Web build
