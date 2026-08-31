@@ -72,6 +72,32 @@ platform :ios do
     )
   end
 
+  desc "What TestFlight currently holds, and whether it is ready to install"
+  lane :builds do
+    ensure_credentials
+
+    Spaceship::ConnectAPI.auth(
+      key_id: ENV.fetch("APPLE_KEY_ID"),
+      issuer_id: ENV.fetch("APPLE_ISSUER_ID"),
+      filepath: File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
+    )
+
+    app = Spaceship::ConnectAPI::App.find(BUNDLE_ID)
+    UI.user_error!("No app record for #{BUNDLE_ID} in App Store Connect") if app.nil?
+
+    builds = app.get_builds(includes: "preReleaseVersion,buildBetaDetail")
+    UI.important("No builds yet — an upload takes a few minutes to appear.") if builds.empty?
+
+    builds.first(5).each do |build|
+      # processingState is what decides whether it can be installed yet; the beta detail carries
+      # the separate question of whether export compliance is still outstanding.
+      UI.message(
+        "#{build.app_version} (#{build.version})  #{build.processing_state}  " \
+        "expired=#{build.expired}  compliance=#{build.uses_non_exempt_encryption.inspect}"
+      )
+    end
+  end
+
   # An App Store Connect API key rather than an Apple ID and password: it survives 2FA, it is
   # scoped, and it can be revoked without touching the account.
   def api_key
