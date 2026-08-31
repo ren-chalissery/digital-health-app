@@ -178,6 +178,45 @@ jobs:
           path: web/dist/web/browser
           retention-days: 1
 
+  # Advisory, not blocking, and deliberately so.
+  #
+  # A transitive vulnerability with no published fix would otherwise block every unrelated pull
+  # request, and a check people learn to force past is worse than no check at all. Dependabot is
+  # what actually drives upgrades; this job is for seeing what is outstanding without having to ask.
+  #
+  # Worth revisiting once the noise level is known — that is a judgement this repository has no
+  # data for yet.
+  audit:
+    name: Dependency audit (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Audit web dependencies
+        working-directory: web
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Summarise
+        if: always()
+        working-directory: web
+        run: |
+          {
+            echo '## Dependency audit'
+            echo
+            echo 'Advisory only. Dependabot opens the pull requests that fix these.'
+            echo
+            echo '```'
+            npm audit --audit-level=high 2>&1 | tail -30 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: Deploy
     # arm64, to match the Graviton task definition and build the image without emulation. Standard
@@ -246,6 +285,7 @@ jobs:
               HostedZoneId=${{ vars.HOSTED_ZONE_ID }} \
               WebBaseUrl=${{ vars.WEB_BASE_URL }} \
               MailFrom=${{ vars.MAIL_FROM }} \
+              AlarmEmail=${{ vars.ALARM_EMAIL }} \
               ImageTag=${{ github.sha }}
 
       - name: Deploy the web stack

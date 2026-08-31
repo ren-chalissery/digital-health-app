@@ -124,6 +124,26 @@ class AccessWithdrawalTest extends AbstractIntegrationTest {
         .andExpect(status().isOk());
   }
 
+  /**
+   * The audit table has always had an {@code ip_address} column and never filled it, so it could
+   * say who did what but never from where.
+   */
+  @Test
+  void recordsWhereTheChangeCameFrom() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/v1/orgs/" + organisation.getId() + "/members/" + member.getId())
+                .header(HttpHeaders.AUTHORIZATION, tokens.bearerFor(ADMIN_SUB))
+                // As the load balancer presents it: the caller's claim first, the address the
+                // proxy actually saw appended last.
+                .header("X-Forwarded-For", "9.9.9.9, 203.0.113.5"))
+        .andExpect(status().isNoContent());
+
+    assertThat(auditEvents.findByOrgIdOrderByCreatedAtDesc(organisation.getId()))
+        .isNotEmpty()
+        .allSatisfy(event -> assertThat(event.getIpAddress()).isEqualTo("203.0.113.5"));
+  }
+
   private void removeTheMember() throws Exception {
     mockMvc
         .perform(

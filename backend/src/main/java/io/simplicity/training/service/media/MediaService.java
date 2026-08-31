@@ -41,6 +41,12 @@ public class MediaService {
   private static final int UPLOADS_PER_MINUTE = 1;
 
   /**
+   * Two megabytes. A WebVTT track for an hour of video is tens of kilobytes, so this bounds abuse
+   * without coming anywhere near legitimate use.
+   */
+  private static final int MAX_CAPTION_CHARACTERS = 2 * 1024 * 1024;
+
+  /**
    * Registers the asset and hands back a URL the browser puts bytes to directly. Nothing passes
    * through this task on the way in: a 500MB upload proxied through a 1GB container is how a task
    * gets killed mid-upload.
@@ -176,6 +182,14 @@ public class MediaService {
   public MediaAsset setCaptions(UUID orgId, UUID assetId, String webvtt) {
     requireConfigured();
     MediaAsset asset = require(orgId, assetId);
+
+    // Checked here rather than with @Size on the controller parameter, so it holds however the
+    // service is called and reads like every other size rule in this class. Alone among the write
+    // endpoints, this one took an unbounded body.
+    if (webvtt != null && webvtt.length() > MAX_CAPTION_CHARACTERS) {
+      throw new BadRequestException(
+          "Caption files must be under " + MAX_CAPTION_CHARACTERS / (1024 * 1024) + "MB");
+    }
 
     String trimmed = webvtt == null ? "" : webvtt.stripLeading();
     if (!trimmed.startsWith("WEBVTT")) {

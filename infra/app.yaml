@@ -41,6 +41,14 @@ Parameters:
     Type: String
     Description: Verified SES sender address for invitation emails.
 
+  AlarmEmail:
+    Type: String
+    Default: ''
+    Description: >
+      Where alarms are sent. AWS emails this address a confirmation link and delivers nothing until
+      somebody clicks it — the stack reports success either way, so an unconfirmed subscription is a
+      silent failure. Leave empty to create the alarms without a subscriber.
+
   MediaStackName:
     Type: String
     Default: ''
@@ -77,6 +85,7 @@ Conditions:
   IssueCertificate: !Equals [!Ref CertificateArn, '']
   HasMedia: !Not [!Equals [!Ref MediaStackName, '']]
   CreateDnsRecord: !Not [!Equals [!Ref HostedZoneId, '']]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, '']]
 
 Resources:
   Repository:
@@ -443,7 +452,158 @@ Resources:
         DNSName: !GetAtt LoadBalancer.DNSName
         HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
 
+  # --- Alarms -------------------------------------------------------------------------------
+  #
+  # Until these existed, the first anybody knew about an outage was a clinician saying so: the
+  # account had no alarms and no topics at all.
+  #
+  # Each description says what a person would notice rather than which metric moved, because the
+  # description is what arrives in the email at an inconvenient hour.
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'digital-health-${EnvironmentName}-alarms'
+      DisplayName: !Sub 'Digital Health ${EnvironmentName} alarms'
+
+  AlarmSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  ApiErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-api-errors'
+      AlarmDescription: >
+        The API is returning server errors. People are seeing failures they cannot work around.
+      Namespace: AWS/ApplicationELB
+      MetricName: HTTPCode_Target_5XX_Count
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !GetAtt LoadBalancer.LoadBalancerFullName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+  ApiUnavailableAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-api-unavailable'
+      AlarmDescription: >
+        No healthy task is behind the load balancer. The API is down, not merely slow.
+      Namespace: AWS/ApplicationELB
+      MetricName: HealthyHostCount
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !GetAtt LoadBalancer.LoadBalancerFullName
+        - Name: TargetGroup
+          Value: !GetAtt TargetGroup.TargetGroupFullName
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 5
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      # The one alarm where absent data is itself the alarm: nothing reporting means nothing running.
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+  ApiDegradedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-api-degraded'
+      AlarmDescription: >
+        A task is failing its health check. Deployments do this briefly; ten minutes of it does not.
+      Namespace: AWS/ApplicationELB
+      MetricName: UnHealthyHostCount
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !GetAtt LoadBalancer.LoadBalancerFullName
+        - Name: TargetGroup
+          Value: !GetAtt TargetGroup.TargetGroupFullName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 10
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  DatabaseStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-database-storage'
+      AlarmDescription: >
+        The database is nearly full. Storage autoscales to 100GB, so reaching this means autoscaling
+        has stopped working — and when it fills, every write fails, including reflections.
+      Namespace: AWS/RDS
+      MetricName: FreeStorageSpace
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub 'digital-health-${EnvironmentName}'
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 2147483648
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  DatabaseCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-database-cpu'
+      AlarmDescription: >
+        The database has been busy for fifteen minutes. Pages are slow now and will start timing out.
+      Namespace: AWS/RDS
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub 'digital-health-${EnvironmentName}'
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  CacheMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-cache-memory'
+      AlarmDescription: >
+        The cache is nearly full and will start evicting. Evicted denylist entries mean a revoked
+        session works again, which is the one thing this cache must not lose.
+      Namespace: AWS/ElastiCache
+      MetricName: DatabaseMemoryUsagePercentage
+      Dimensions:
+        # The node, not the replication group: '-001' is the id CloudWatch actually publishes under.
+        - Name: CacheClusterId
+          Value: !Sub 'digital-health-${EnvironmentName}-001'
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
 Outputs:
+  AlarmTopicArn:
+    Value: !Ref AlarmTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-AlarmTopicArn'
+
   RepositoryUri:
     Value: !GetAtt Repository.RepositoryUri
     Export:

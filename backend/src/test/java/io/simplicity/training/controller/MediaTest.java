@@ -216,6 +216,21 @@ class MediaTest extends AbstractIntegrationTest {
         .andExpect(jsonPath("$.captionUrl").exists());
   }
 
+  /** Alone among the write endpoints, this one accepted a body of any size at all. */
+  @Test
+  void refusesACaptionFileFarLargerThanAnyRealOne() throws Exception {
+    UUID assetId = uploadedAsset();
+    String enormous = "WEBVTT\n\n" + "x".repeat(3 * 1024 * 1024);
+
+    mockMvc
+        .perform(
+            put("/api/v1/orgs/{orgId}/media/{assetId}/captions", clinic.getId(), assetId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(ADMIN))
+                .contentType("text/vtt")
+                .content(enormous))
+        .andExpect(status().isBadRequest());
+  }
+
   @Test
   void refusesSomethingThatIsNotWebVtt() throws Exception {
     UUID assetId = uploadedAsset();
