@@ -104,18 +104,36 @@ Resources:
                   - cloudwatch:*
                   # The configuration set and its event destination, and nothing else. Enumerated
                   # rather than ses:* because this role deploys mail infrastructure and has no
-                  # business sending a message or altering a verified identity. The five
-                  # PutConfigurationSet*Options calls are what the resource handler makes on every
-                  # create regardless of which options the template actually sets.
+                  # business sending a message or altering a verified identity.
+                  #
+                  # This is the union of every handler's permissions for the two resource types,
+                  # taken from their registry schemas rather than from the documentation page,
+                  # which omits several. Get it from the source that CloudFormation actually
+                  # enforces:
+                  #
+                  #   aws cloudformation describe-type --type RESOURCE \
+                  #     --type-name AWS::SES::ConfigurationSet --query Schema
+                  #
+                  # Three of these look redundant and are not. DescribeConfigurationSet is the v1
+                  # action the docs say is replaced by GetConfigurationSet, but the create handler
+                  # still calls both. TagResource is needed even though the template sets no tags,
+                  # because CloudFormation propagates stack-level tags. And the Vdm and Archiving
+                  # options are called on update whether or not the template mentions them.
                   - ses:GetIdentityVerificationAttributes
                   - ses:CreateConfigurationSet
                   - ses:DeleteConfigurationSet
+                  - ses:DescribeConfigurationSet
                   - ses:GetConfigurationSet
+                  - ses:ListConfigurationSets
+                  - ses:PutConfigurationSetArchivingOptions
                   - ses:PutConfigurationSetDeliveryOptions
                   - ses:PutConfigurationSetReputationOptions
                   - ses:PutConfigurationSetSendingOptions
                   - ses:PutConfigurationSetSuppressionOptions
                   - ses:PutConfigurationSetTrackingOptions
+                  - ses:PutConfigurationSetVdmOptions
+                  - ses:TagResource
+                  - ses:UntagResource
                   - ses:CreateConfigurationSetEventDestination
                   - ses:UpdateConfigurationSetEventDestination
                   - ses:DeleteConfigurationSetEventDestination
