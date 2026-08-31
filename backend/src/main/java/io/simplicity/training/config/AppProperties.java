@@ -77,7 +77,20 @@ public record AppProperties(
    */
   public record Audit(@DefaultValue("180d") Duration ipRetention) {}
 
-  public record Mail(String from, @DefaultValue("false") boolean enabled) {}
+  /**
+   * @param configurationSet groups outgoing mail so SES reports its bounces and complaints to the
+   *     topic the infrastructure subscribes to. Empty sends outside any configuration set, which
+   *     still delivers but is invisible.
+   */
+  public record Mail(
+      String from,
+      @DefaultValue("false") boolean enabled,
+      @DefaultValue("") String configurationSet) {
+
+    public boolean hasConfigurationSet() {
+      return configurationSet != null && !configurationSet.isBlank();
+    }
+  }
 
   public record Web(String baseUrl, @DefaultValue("") List<String> corsAllowedOrigins) {}
 }
