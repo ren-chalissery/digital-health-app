@@ -85,7 +85,8 @@ class AwsContractTest {
         new AppProperties.Invitations(Duration.ofDays(7), 50),
         new AppProperties.Mail(SENDER, true),
         new AppProperties.Media("", "", "", "", Duration.ofMinutes(15), 1L),
-        new AppProperties.Web("http://localhost:4200", java.util.List.of()));
+        new AppProperties.Web("http://localhost:4200", java.util.List.of()),
+        new AppProperties.Audit(Duration.ofDays(180)));
   }
 
   @Test

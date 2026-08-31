@@ -97,6 +97,11 @@ Resources:
                   - cloudfront:*
                   - secretsmanager:*
                   - s3:*
+                  # Alarms and the topic they publish to. Added after a deploy failed on
+                  # SNS:GetTopicAttributes: the change set had been previewed under an
+                  # administrator's credentials, which say nothing about what this role may do.
+                  - sns:*
+                  - cloudwatch:*
                   - ses:GetIdentityVerificationAttributes
                 Resource: '*'
               - Effect: Allow

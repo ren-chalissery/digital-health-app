@@ -7,7 +7,6 @@ import io.simplicity.training.service.media.Transcoder;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.mediaconvert.MediaConvertClient;
@@ -22,7 +21,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  * MediaConvert has no local emulator to run the real ones against offline.
  */
 @Configuration
-@EnableScheduling
 public class MediaConfig {
 
   @Bean

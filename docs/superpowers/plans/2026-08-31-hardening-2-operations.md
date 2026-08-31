@@ -296,7 +296,7 @@ coming near legitimate use.
 | §3.3 alarms and SNS | Task 1 |
 | §3.5 dependency scanning | Task 2 |
 | §3.5 Valkey transit encryption | Task 3 — **deferred by decision**, path documented |
-| §3.5 `audit_event.ip_address` | Task 4 — filled; **a retention rule is now owed** |
+| §3.5 `audit_event.ip_address` | Task 4 — filled, and the retention rule it owed is now paid |
 | §3.5 captions size cap | Task 5 |
 | §3.5 security headers | Nothing to do; the spec was wrong and is corrected |
 

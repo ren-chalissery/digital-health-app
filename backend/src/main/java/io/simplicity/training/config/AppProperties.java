@@ -16,7 +16,8 @@ public record AppProperties(
     Invitations invitations,
     Mail mail,
     Media media,
-    Web web) {
+    Web web,
+    @DefaultValue Audit audit) {
 
   /**
    * @param uploadBucket empty until the media stack exists, which makes video unavailable and
@@ -67,6 +68,14 @@ public record AppProperties(
 
   public record Invitations(
       @DefaultValue("7d") Duration ttl, @DefaultValue("50") int maxPerHourPerOrg) {}
+
+  /**
+   * @param ipRetention how long an audit entry keeps the address it came from. The entry itself is
+   *     kept indefinitely — it is operational history, and holds no personal information beyond
+   *     user ids the system stores anyway. The address is the part that is personal information
+   *     under the Privacy Act 2020, so it is the part with an expiry.
+   */
+  public record Audit(@DefaultValue("180d") Duration ipRetention) {}
 
   public record Mail(String from, @DefaultValue("false") boolean enabled) {}
 
