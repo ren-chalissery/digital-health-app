@@ -35,6 +35,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -257,19 +259,44 @@ public class InvitationService {
    * the raw token in Redis would undo the point of hashing it in the database.
    */
   private void rememberToken(String tokenHash, UUID invitationId, Duration ttl) {
-    try {
-      redis.opsForValue().set(REDIS_KEY_PREFIX + tokenHash, invitationId.toString(), ttl);
-    } catch (DataAccessException e) {
-      log.warn("Could not index invitation {} in Redis", invitationId, e);
-    }
+    afterCommit(
+        () -> {
+          try {
+            redis.opsForValue().set(REDIS_KEY_PREFIX + tokenHash, invitationId.toString(), ttl);
+          } catch (DataAccessException e) {
+            log.warn("Could not index invitation {} in Redis", invitationId, e);
+          }
+        });
   }
 
   private void forgetToken(String tokenHash) {
-    try {
-      redis.delete(REDIS_KEY_PREFIX + tokenHash);
-    } catch (DataAccessException e) {
-      log.warn("Could not drop the Redis index for a withdrawn invitation", e);
+    afterCommit(
+        () -> {
+          try {
+            redis.delete(REDIS_KEY_PREFIX + tokenHash);
+          } catch (DataAccessException e) {
+            log.warn("Could not drop the Redis index for a withdrawn invitation", e);
+          }
+        });
+  }
+
+  /**
+   * Redis takes no part in the transaction, so an index written before a rollback would describe a
+   * row that never existed, and a key deleted before one would drop the index of an invitation
+   * still outstanding. Waiting for the commit keeps the two from disagreeing.
+   */
+  private void afterCommit(Runnable action) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      action.run();
+      return;
     }
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            action.run();
+          }
+        });
   }
 
   private String teamName(Invitation invitation) {

@@ -1,6 +1,7 @@
 package io.simplicity.training.service;
 
 import io.simplicity.training.config.AppProperties;
+import io.simplicity.training.exception.EmailDeliveryException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,7 +42,7 @@ public class SesEmailSender implements EmailSender {
               .build());
     } catch (SesV2Exception e) {
       log.error("SES rejected the message to {}", to, e);
-      throw new IllegalStateException("Could not send the invitation email", e);
+      throw new EmailDeliveryException("Could not send the invitation email", e);
     }
   }
 
