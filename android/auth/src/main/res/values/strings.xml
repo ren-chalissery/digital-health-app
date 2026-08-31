@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Word for word with ios/Packages/SimplicityAuth/.../Localizable.strings. A clinician who
+         switches phones should not be told two different things by the same product. -->
+    <string name="password_too_short">Use at least 12 characters.</string>
+    <string name="password_needs_uppercase">Include a capital letter.</string>
+    <string name="password_needs_lowercase">Include a lowercase letter.</string>
+    <string name="password_needs_number">Include a number.</string>
+
+    <string name="sign_in_missing_fields">Enter your email address and password.</string>
+    <string name="sign_in_failed">We could not sign you in. Check your email address and password and try again.</string>
+</resources>

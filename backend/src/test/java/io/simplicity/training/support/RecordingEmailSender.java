@@ -19,14 +19,24 @@ public class RecordingEmailSender implements EmailSender {
   private static final Pattern LINK = Pattern.compile("/invitations/([A-Za-z0-9_-]+)");
 
   private final List<Sent> sent = new ArrayList<>();
+  private RuntimeException failure;
 
   @Override
   public synchronized void send(String to, String subject, String htmlBody, String textBody) {
+    if (failure != null) {
+      throw failure;
+    }
     sent.add(new Sent(to, subject, htmlBody, textBody));
+  }
+
+  /** Makes every later send fail, standing in for a rejection from the provider. */
+  public synchronized void failWith(RuntimeException failure) {
+    this.failure = failure;
   }
 
   public synchronized void clear() {
     sent.clear();
+    failure = null;
   }
 
   public synchronized List<Sent> all() {

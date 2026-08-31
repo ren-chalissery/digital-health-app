@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.simplicity.training.exception.EmailDeliveryException;
 import io.simplicity.training.model.entity.AppUser;
 import io.simplicity.training.model.entity.Invitation;
 import io.simplicity.training.model.entity.OrgMembership;
@@ -398,6 +399,56 @@ class InvitationTest extends AbstractIntegrationTest {
     accept(token, INVITEE_SUB, INVITEE_EMAIL);
 
     assertThat(redis.hasKey(redisKey)).isFalse();
+  }
+
+  @Test
+  void reportsAFailedInvitationEmailRatherThanAnUnexplainedError() throws Exception {
+    mail.failWith(new EmailDeliveryException("SES said no", new RuntimeException()));
+
+    mockMvc
+        .perform(
+            post(invitationsUrl())
+                .header(HttpHeaders.AUTHORIZATION, tokens.bearerFor(ADMIN_SUB))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(INVITEE_EMAIL, OrgRole.ORG_MEMBER, null, null)))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(
+            jsonPath("$.type").value("https://digitalhealth.app/problems/email-delivery-failed"))
+        .andExpect(jsonPath("$.title").value("Email could not be sent"));
+
+    assertThat(invitations.findAll())
+        .as("an invitation nobody was told about is worse than none at all")
+        .isEmpty();
+    assertThat(redis.keys("invite:*"))
+        .as("Redis must not index a token that was rolled back")
+        .isEmpty();
+  }
+
+  @Test
+  void leavesTheOutstandingInvitationIntactWhenReissuingFailsToSend() throws Exception {
+    invite(INVITEE_EMAIL, OrgRole.ORG_MEMBER, null, null);
+    String firstToken = mail.lastToken();
+    String firstKey = "invite:" + InvitationTokens.hash(firstToken);
+
+    mail.failWith(new EmailDeliveryException("SES said no", new RuntimeException()));
+    mockMvc
+        .perform(
+            post(invitationsUrl())
+                .header(HttpHeaders.AUTHORIZATION, tokens.bearerFor(ADMIN_SUB))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body(INVITEE_EMAIL, OrgRole.ORG_ADMIN, null, null)))
+        .andExpect(status().isServiceUnavailable());
+
+    assertThat(invitations.findAll())
+        .singleElement()
+        .extracting(Invitation::getStatus)
+        .as("the failed reissue must not withdraw the link already in the recipient's inbox")
+        .isEqualTo(InvitationStatus.PENDING);
+    assertThat(redis.hasKey(firstKey)).isTrue();
+    mockMvc
+        .perform(get("/api/v1/invitations/" + firstToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.valid").value(true));
   }
 
   @Test
