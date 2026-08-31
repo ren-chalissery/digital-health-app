@@ -16,6 +16,7 @@ android {
 dependencies {
     api(project(":foundation"))
     implementation(libs.amplify.core)
+    implementation(libs.amplify.core.kotlin)
     implementation(libs.amplify.auth.cognito)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

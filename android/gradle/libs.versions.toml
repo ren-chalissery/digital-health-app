@@ -55,6 +55,9 @@ desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 
 amplify-core = { module = "com.amplifyframework:core", version.ref = "amplify" }
+# The coroutines facade. Without it every Amplify call is a callback pair, and AuthService is a
+# suspend interface because that is what the rest of the app expects.
+amplify-core-kotlin = { module = "com.amplifyframework:core-kotlin", version.ref = "amplify" }
 amplify-auth-cognito = { module = "com.amplifyframework:aws-auth-cognito", version.ref = "amplify" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

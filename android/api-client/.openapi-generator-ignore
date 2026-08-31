@@ -12,3 +12,8 @@ gradle/**
 proguard-rules.pro
 README.md
 docs/**
+
+# Generated test scaffolding: `should("test askAssistant") { TODO() }` against kotlintest, which
+# nothing depends on. They cannot pass, they break the build, and apiTests: false in the generator
+# config does not stop them being written.
+src/test/**
