@@ -67,7 +67,8 @@ class JwtValidationTest extends AbstractIntegrationTest {
             properties.invitations(),
             properties.mail(),
             properties.media(),
-            properties.web());
+            properties.web(),
+            properties.audit());
 
     assertThatThrownBy(() -> SecurityConfig.cognitoValidator(noClients))
         .isInstanceOf(IllegalStateException.class)

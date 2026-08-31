@@ -112,6 +112,27 @@ The suite substitutes Cognito and SES, which keeps it fast but leaves the reques
 `AwsContractTest` covers that gap by driving the real SDK clients against Floci: it is the test that
 fails when an SES field is wrong or the provisioning path stops matching what Cognito returns.
 
+## Personal information and how long it is kept
+
+Worth stating plainly, because a product handling clinical data should be able to answer this
+without somebody reading the schema.
+
+| What | Kept for | Why |
+| --- | --- | --- |
+| Reflections | As long as the account | They belong to the clinician, are private to them, and go when the account does |
+| Audit entries | Indefinitely | Who changed what in an organisation. Operational history, holding no personal information beyond user ids stored anyway |
+| **Source address on an audit entry** | **180 days** | The one piece of personal information the audit table adds. Long enough to investigate something noticed late, and then cleared |
+| Cached principals | 5 minutes | A cache |
+| Revoked sessions | 15 minutes | Exactly as long as a token could live |
+| Uploaded source video | 7 days | S3 lifecycle rule, after transcoding |
+
+`AuditRetentionJob` clears the address nightly. It keeps the entry: deleting whole entries would
+answer the privacy question by destroying the audit trail, which is the wrong trade. Change the
+window with `app.audit.ip-retention`.
+
+Principle 9 of the Privacy Act 2020 is the reason there is a number in that table at all — personal
+information is not to be kept longer than it is needed for, and "forever" is not a retention period.
+
 ## Requirements
 
 - Java 17 (Amazon Corretto)
