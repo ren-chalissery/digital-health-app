@@ -16,7 +16,9 @@ android {
 dependencies {
     api(project(":api-client"))
     implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 }
