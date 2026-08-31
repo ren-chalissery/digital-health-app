@@ -38,6 +38,11 @@ platform :ios do
       scheme: SCHEME,
       export_method: "app-store",
       xcargs: PLUGIN_FLAGS,
+      # The export is a second xcodebuild invocation with its own flags, and it needs permission to
+      # create the App Store distribution profile. Without this the archive succeeds and the export
+      # fails with "No profiles for 'io.simplicity.training' were found", which reads like the
+      # identifier is unregistered when it is the distribution profile that does not exist yet.
+      export_xcargs: "-allowProvisioningUpdates",
       export_options: {
         teamID: TEAM_ID,
         signingStyle: "automatic"

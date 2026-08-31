@@ -56,6 +56,21 @@ targets:
       properties:
         CFBundleDisplayName: Simplicity
         UILaunchScreen: {}
+        # All four, and Apple insists on exactly that. Declaring none is rejected outright, and
+        # declaring three is rejected too: the target is universal, so the upload is validated
+        # against iPad multitasking, which requires the full set.
+        #
+        # Upside-down is therefore not a preference. iOS ignores it on Face ID iPhones regardless,
+        # so on the devices this app will actually run on it changes nothing.
+        #
+        # Making the app iPhone-only would sidestep the rule and match what the Phase 5 spec
+        # describes, but XcodeGen writes TARGETED_DEVICE_FAMILY = "1,2" at target level for an iOS
+        # platform and overrides the same key wherever it is set, so that is a separate fight.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
         APIBaseURL: $(API_BASE_URL)
         CognitoPoolId: $(COGNITO_POOL_ID)
