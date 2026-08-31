@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/awslabs/aws-sdk-swift",
       "state" : {
-        "revision" : "59b5335952b825b480af0de32c48953f6607bb6e",
-        "version" : "1.7.53"
+        "revision" : "2c3ea4c8de728cf25516a5163557beee94a666ef",
+        "version" : "1.7.72"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kolos65/Mockable.git",
       "state" : {
-        "revision" : "1e0d218b41aef515627a0fa7c98ca2b9d2833213",
-        "version" : "0.5.0"
+        "revision" : "0b239389c5fa6666fb30dc97fbb23fc3ca851a85",
+        "version" : "0.6.4"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/smithy-lang/smithy-swift",
       "state" : {
-        "revision" : "c3ec406867e570473e097344e64c3cfbcc5d36b9",
-        "version" : "0.238.0"
+        "revision" : "e4d435944cb3985794a79514369ef5372f21267d",
+        "version" : "0.247.0"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stephencelis/SQLite.swift.git",
       "state" : {
-        "revision" : "392dd6058624d9f6c5b4c769d165ddd8c7293394",
-        "version" : "0.15.4"
+        "revision" : "964c300fb0736699ce945c9edb56ecd62eba27a3",
+        "version" : "0.16.0"
       }
     },
     {
@@ -294,8 +294,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-toolchain-sqlite",
       "state" : {
-        "revision" : "b626d3002773b1a1304166643e7f118f724b2132",
-        "version" : "1.0.4"
+        "revision" : "cc7ea00f730c2234a332cd264c6e5cdbb6c4f971",
+        "version" : "1.0.12"
       }
     },
     {
