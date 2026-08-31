@@ -125,7 +125,16 @@ level is known — that judgement needs data this repository does not have yet.
 
 ---
 
-### Task 3: Valkey stops carrying principal data in clear text
+### Task 3: Valkey stops carrying principal data in clear text — DEFERRED
+
+**Decided on 31 August 2026: not now.** Attempted, rolled back, and re-costed at four deployments
+plus a structural change to how the stacks reference each other — against a benefit of encrypting
+traffic that never leaves the VPC and is already restricted by security group. The path below is
+correct and the work is not lost; it is simply not worth its cost yet.
+
+Revisit when either the cross-stack coupling is being changed anyway, or something outside the VPC
+needs the cache.
+
 
 **Files:**
 - Modify: `infra/data.yaml`, then `infra/app.yaml`, then `infra/data.yaml` again
@@ -286,8 +295,8 @@ coming near legitimate use.
 | --- | --- |
 | §3.3 alarms and SNS | Task 1 |
 | §3.5 dependency scanning | Task 2 |
-| §3.5 Valkey transit encryption | Task 3 |
-| §3.5 `audit_event.ip_address` | Task 4 |
+| §3.5 Valkey transit encryption | Task 3 — **deferred by decision**, path documented |
+| §3.5 `audit_event.ip_address` | Task 4 — filled; **a retention rule is now owed** |
 | §3.5 captions size cap | Task 5 |
 | §3.5 security headers | Nothing to do; the spec was wrong and is corrected |
 
