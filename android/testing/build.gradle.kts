@@ -12,11 +12,7 @@ android {
     }
 }
 
-
 dependencies {
     api(project(":foundation"))
     api(libs.mockk)
-    testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinx.coroutines.test)
 }
