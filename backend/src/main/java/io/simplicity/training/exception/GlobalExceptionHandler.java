@@ -102,6 +102,19 @@ public class GlobalExceptionHandler {
         request);
   }
 
+  @ExceptionHandler(EmailDeliveryException.class)
+  public ProblemDetail handleEmailDelivery(EmailDeliveryException e, HttpServletRequest request) {
+    // The provider's own wording names addresses and identities, so it is logged rather than
+    // returned. Saying nothing was changed is what tells the caller a plain retry is safe.
+    log.error("Outgoing mail failed on {}", request.getRequestURI(), e);
+    return problem(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        "email-delivery-failed",
+        "Email could not be sent",
+        "The email could not be sent, so nothing was changed. Please try again shortly.",
+        request);
+  }
+
   @ExceptionHandler(Exception.class)
   public ProblemDetail handleUnexpected(Exception e, HttpServletRequest request) {
     log.error("Unhandled exception on {}", request.getRequestURI(), e);
