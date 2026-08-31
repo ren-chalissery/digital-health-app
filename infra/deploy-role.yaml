@@ -102,7 +102,24 @@ Resources:
                   # administrator's credentials, which say nothing about what this role may do.
                   - sns:*
                   - cloudwatch:*
+                  # The configuration set and its event destination, and nothing else. Enumerated
+                  # rather than ses:* because this role deploys mail infrastructure and has no
+                  # business sending a message or altering a verified identity. The five
+                  # PutConfigurationSet*Options calls are what the resource handler makes on every
+                  # create regardless of which options the template actually sets.
                   - ses:GetIdentityVerificationAttributes
+                  - ses:CreateConfigurationSet
+                  - ses:DeleteConfigurationSet
+                  - ses:GetConfigurationSet
+                  - ses:PutConfigurationSetDeliveryOptions
+                  - ses:PutConfigurationSetReputationOptions
+                  - ses:PutConfigurationSetSendingOptions
+                  - ses:PutConfigurationSetSuppressionOptions
+                  - ses:PutConfigurationSetTrackingOptions
+                  - ses:CreateConfigurationSetEventDestination
+                  - ses:UpdateConfigurationSetEventDestination
+                  - ses:DeleteConfigurationSetEventDestination
+                  - ses:GetConfigurationSetEventDestinations
                 Resource: '*'
               - Effect: Allow
                 Action:
