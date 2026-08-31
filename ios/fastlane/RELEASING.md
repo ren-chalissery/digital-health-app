@@ -89,6 +89,35 @@ something generated — a 1024×1024 PNG with **no alpha channel** dropped into
 Whatever the mark is, shrink it to 40 pixels before committing to it. That is the size it is
 actually seen at, and it is where thin strokes and fine detail disappear.
 
+## Getting a build onto a phone
+
+Once `beta` has uploaded, the build still has to be handed to someone.
+
+**Adding testers to the internal group is not sufficient.** App Store Connect keeps a separate
+*individual testers* list, and on 31 August 2026 a build sat invisible in TestFlight with all of
+this already true:
+
+```
+build     VALID   internal=IN_BETA_TESTING   minOs="17.0"
+group     Simplicity (internal=true), 3 testers
+tester    renchalissery1994@gmail.com  (also ACCOUNT_HOLDER, active)
+test info feedbackEmail set, description set
+```
+
+Adding the same people as individual testers is what made it appear. Nothing in the API state
+distinguishes the two, which is why `fastlane ios builds` cannot tell you this and the App Store
+Connect UI says only "no builds available".
+
+Two other things that hide a build, both silent:
+
+- **TestFlight uses the App Store account, not iCloud.** Settings → your name → Media & Purchases.
+  A tester added under the wrong address sees nothing and is told nothing.
+- **The device must meet `minOs`,** currently 17.0. An older phone is simply not offered the build.
+
+`fastlane ios builds` reports the processing state, the internal build state, the beta groups, the
+test information and the App Store Connect users, which covers everything except the individual
+tester list.
+
 ## Then
 
 ```bash

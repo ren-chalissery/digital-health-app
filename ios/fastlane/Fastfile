@@ -89,12 +89,52 @@ platform :ios do
     UI.important("No builds yet — an upload takes a few minutes to appear.") if builds.empty?
 
     builds.first(5).each do |build|
-      # processingState is what decides whether it can be installed yet; the beta detail carries
-      # the separate question of whether export compliance is still outstanding.
+      detail = build.build_beta_detail
+      # internalBuildState is the field that decides whether a build can be handed to internal
+      # testers. It is separate from processingState, which only says the binary was accepted —
+      # a build can be VALID there and still be unavailable to add to a group.
       UI.message(
-        "#{build.app_version} (#{build.version})  #{build.processing_state}  " \
-        "expired=#{build.expired}  compliance=#{build.uses_non_exempt_encryption.inspect}"
+        "#{build.app_version} (#{build.version})  processing=#{build.processing_state}  " \
+        "internal=#{detail&.internal_build_state}  external=#{detail&.external_build_state}  " \
+        "expired=#{build.expired}  encryption=#{build.uses_non_exempt_encryption.inspect}  minOs=#{build.min_os_version.inspect}"
       )
+    end
+
+    groups = app.get_beta_groups
+    if groups.empty?
+      UI.important("No beta groups. Internal testers are added to a group, not to the app.")
+    else
+      UI.message("groups: " + groups.map { |g| "#{g.name} (internal=#{g.is_internal_group})" }.join(", "))
+    end
+
+    # The three things App Store Connect calls "Test Information". A build can be VALID and
+    # IN_BETA_TESTING and still refuse to appear when adding testers if any of these is unset,
+    # which it reports as ITC.apps.tf.build.test.info.missing.feedback rather than saying so.
+    app.get_beta_app_localizations.each do |loc|
+      UI.message(
+        "test info [#{loc.locale}] feedbackEmail=#{loc.feedback_email.inspect} " \
+        "description=#{loc.description.nil? ? 'nil' : 'set'} " \
+        "marketingUrl=#{loc.marketing_url.inspect}"
+      )
+    end
+
+    begin
+      Spaceship::ConnectAPI::User.all.each do |u|
+        UI.message("asc user #{u.username} roles=#{u.roles.inspect} provisioning=#{u.provisioning_allowed.inspect}")
+      end
+      Spaceship::ConnectAPI::UserInvitation.all.each do |i|
+        UI.important("asc invitation PENDING for #{i.email} roles=#{i.roles.inspect}")
+      end
+    rescue StandardError => e
+      UI.important("could not read App Store Connect users: #{e.message}")
+    end
+
+    groups.each do |group|
+      testers = Spaceship::ConnectAPI::BetaTester.all(filter: { betaGroups: group.id })
+      UI.message("group #{group.name}: #{testers.count} tester(s)")
+      testers.each do |t|
+        UI.message("  #{t.email} invite=#{t.invite_type.inspect} first=#{t.first_name.inspect} state=#{(t.respond_to?(:state) ? t.state : "n/a").inspect}")
+      end
     end
   end
 
