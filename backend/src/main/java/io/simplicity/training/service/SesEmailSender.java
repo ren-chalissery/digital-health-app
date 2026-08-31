@@ -26,20 +26,27 @@ public class SesEmailSender implements EmailSender {
 
   @Override
   public void send(String to, String subject, String htmlBody, String textBody) {
+    SendEmailRequest.Builder request =
+        SendEmailRequest.builder()
+            .fromEmailAddress(properties.mail().from())
+            .destination(Destination.builder().toAddresses(to).build())
+            .content(
+                EmailContent.builder()
+                    .simple(
+                        Message.builder()
+                            .subject(utf8(subject))
+                            .body(Body.builder().html(utf8(htmlBody)).text(utf8(textBody)).build())
+                            .build())
+                    .build());
+
+    // Sending outside the configuration set still delivers, so this is left optional rather than
+    // required — but then nothing reports the bounce, which is the whole point of having one.
+    if (properties.mail().hasConfigurationSet()) {
+      request.configurationSetName(properties.mail().configurationSet());
+    }
+
     try {
-      ses.sendEmail(
-          SendEmailRequest.builder()
-              .fromEmailAddress(properties.mail().from())
-              .destination(Destination.builder().toAddresses(to).build())
-              .content(
-                  EmailContent.builder()
-                      .simple(
-                          Message.builder()
-                              .subject(utf8(subject))
-                              .body(Body.builder().html(utf8(htmlBody)).text(utf8(textBody)).build())
-                              .build())
-                      .build())
-              .build());
+      ses.sendEmail(request.build());
     } catch (SesV2Exception e) {
       log.error("SES rejected the message to {}", to, e);
       throw new EmailDeliveryException("Could not send the invitation email", e);

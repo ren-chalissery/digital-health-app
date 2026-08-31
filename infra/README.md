@@ -159,9 +159,9 @@ clinician's credentials or their reflections.
 
 ## Alarms
 
-The app stack raises a `digital-health-<env>-alarms` SNS topic and six CloudWatch alarms: the API
+The app stack raises a `digital-health-<env>-alarms` SNS topic and eight CloudWatch alarms: the API
 returning 5xx, having no healthy target, having an unhealthy one for ten minutes, the database low
-on storage or busy, and the cache near full.
+on storage or busy, the cache near full, and invitation mail bouncing or drawing complaints.
 
 Alarm descriptions say what a person would notice rather than which metric moved, because the
 description is what arrives in the email at an inconvenient hour.
@@ -199,6 +199,35 @@ To prove the path end to end without waiting for an outage:
 ```bash
 aws cloudwatch set-alarm-state --alarm-name digital-health-prod-api-errors \
   --state-value ALARM --state-reason "testing the notification path"
+```
+
+## Mail
+
+Invitations are the only email this system sends. They go through SES from
+`no-reply@simplicityhelp.com`, under a configuration set named `digital-health-<env>` that the app
+stack creates and passes to the task as `MAIL_CONFIGURATION_SET`.
+
+The configuration set is what makes failures visible. Bounces, complaints, rejections and rendering
+failures are published to a `digital-health-<env>-mail-events` SNS topic, subscribed by the same
+`ALARM_EMAIL` address and needing the same confirmation click. Deliveries and opens are deliberately
+not published: every invitation would generate one and bury the events that need a person.
+
+Two alarms watch the account's reputation, because these are the numbers AWS acts on. A bounce rate
+above 5 per cent gets a sender reviewed and above 10 per cent suspended; for complaints the
+tolerance is 0.1 per cent. The alarms fire below those, at 5 per cent and 0.1 per cent respectively,
+so there is warning before AWS intervenes.
+
+Sending outside a configuration set still delivers, so `MAIL_CONFIGURATION_SET` is optional and
+empty locally. But then nothing reports a bounce, and the topic and both alarms stay silent no
+matter how much mail fails.
+
+**The account is still in the SES sandbox.** Until production access is granted, invitations only
+reach addresses verified by hand, and never a real clinician — which surfaces as a failed invitation
+rather than a missing email. `bootstrap.sh` prints this on every run. The request is drafted in
+[ses-production-access.md](ses-production-access.md).
+
+```bash
+aws sesv2 get-account --query ProductionAccessEnabled
 ```
 
 ## Checking a change

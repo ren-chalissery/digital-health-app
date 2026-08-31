@@ -78,12 +78,17 @@ class AwsContractTest {
   }
 
   private static AppProperties propertiesFor(String issuerUri, java.util.List<String> clientIds) {
+    return propertiesFor(issuerUri, clientIds, "");
+  }
+
+  private static AppProperties propertiesFor(
+      String issuerUri, java.util.List<String> clientIds, String configurationSet) {
     return new AppProperties(
         new AppProperties.Aws(endpoint()),
         new AppProperties.Cognito(issuerUri, null, clientIds, "us-east-1"),
         new AppProperties.Auth(Duration.ofMinutes(15), Duration.ofMinutes(5)),
         new AppProperties.Invitations(Duration.ofDays(7), 50),
-        new AppProperties.Mail(SENDER, true),
+        new AppProperties.Mail(SENDER, true, configurationSet),
         new AppProperties.Media("", "", "", "", Duration.ofMinutes(15), 1L),
         new AppProperties.Web("http://localhost:4200", java.util.List.of()),
         new AppProperties.Audit(Duration.ofDays(180)));
