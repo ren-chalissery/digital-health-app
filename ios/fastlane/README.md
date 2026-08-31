@@ -39,6 +39,14 @@ Archive a signed build without uploading it
 
 Archive and upload to TestFlight
 
+### ios builds
+
+```sh
+[bundle exec] fastlane ios builds
+```
+
+What TestFlight currently holds, and whether it is ready to install
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

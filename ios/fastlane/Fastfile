@@ -113,14 +113,14 @@ platform :ios do
     missing = %w[APPLE_KEY_ID APPLE_ISSUER_ID].reject { |name| ENV[name] }
     unless missing.empty?
       UI.user_error!(
-        "Missing #{missing.join(' and ')}. See ios/fastlane/README.md — these come from the " \
+        "Missing #{missing.join(' and ')}. See ios/fastlane/RELEASING.md — these come from the " \
         "App Store Connect API key, and the .p8 can only be downloaded once."
       )
     end
 
     key_path = File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
     unless File.exist?(key_path)
-      UI.user_error!("No key at #{key_path}. See ios/fastlane/README.md.")
+      UI.user_error!("No key at #{key_path}. See ios/fastlane/RELEASING.md.")
     end
   end
 end
