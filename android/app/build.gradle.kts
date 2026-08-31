@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.hilt.android)

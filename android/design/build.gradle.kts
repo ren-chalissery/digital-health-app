@@ -1,10 +1,12 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "io.simplicity.training.design"
     compileSdk = 37
+    buildFeatures { compose = true }
     defaultConfig { minSdk = 26 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

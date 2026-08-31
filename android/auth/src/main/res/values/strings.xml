@@ -6,4 +6,7 @@
     <string name="password_needs_uppercase">Include a capital letter.</string>
     <string name="password_needs_lowercase">Include a lowercase letter.</string>
     <string name="password_needs_number">Include a number.</string>
+
+    <string name="sign_in_missing_fields">Enter your email address and password.</string>
+    <string name="sign_in_failed">We could not sign you in. Check your email address and password and try again.</string>
 </resources>

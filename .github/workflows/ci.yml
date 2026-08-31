@@ -189,6 +189,38 @@ jobs:
           path: web/dist/web/browser
           retention-days: 1
 
+  # ubuntu-latest, not macos. The iOS job pays ten times the rate on macos-26 and takes twenty
+  # minutes, which is why it is path-filtered; this one is standard rate and can run on every push.
+  android:
+    name: Android build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        working-directory: android
+        run: ./gradlew test
+
+      - name: Assemble
+        working-directory: android
+        run: ./gradlew :app:assembleDebug
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: android-test-report
+          path: android/**/build/reports/tests
+          retention-days: 3
+
   # Advisory, not blocking, and deliberately so.
   #
   # A transitive vulnerability with no published fix would otherwise block every unrelated pull
