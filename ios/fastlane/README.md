@@ -1,7 +1,7 @@
 # Releasing to TestFlight
 
-Four things have to exist before any of this works. Two are done; the rest are Apple account and
-brand steps behind a login only you have.
+Five things have to exist before any of this works, and only signing is done. The rest are Apple
+account and brand steps behind a login only you have.
 
 ## 0. fastlane itself
 
@@ -20,14 +20,35 @@ TeamIdentifier = UJY6H4M6AZ
 Authority      = Apple Development: Ren Chalissery (U8F22V4YCJ)
 ```
 
-## 2. The bundle identifier registered — **done**
+## 2. The bundle identifier registered **explicitly**
 
-Automatic signing registered `io.simplicity.training` and issued
-`iOS Team Provisioning Profile: *` for the team during that archive.
+Automatic signing does **not** do this, whatever a successful archive suggests. It reaches for the
+team's wildcard App ID instead, and the profile name says so:
 
-From the command line this needs `-allowProvisioningUpdates`, without which it fails with
-`No profiles for 'io.simplicity.training' were found ... Automatic signing is disabled`. Xcode
-passes it for you; `xcodebuild` does not.
+```
+iOS Team Provisioning Profile: *   ->   UJY6H4M6AZ.*
+```
+
+A wildcard signs a development build perfectly well, so the archive succeeds and nothing looks
+wrong. But an App Store Connect app record can only be created against an **explicit** App ID, so
+`io.simplicity.training` never appears in the bundle-id dropdown and TestFlight is unreachable.
+
+Register it by hand at
+[Certificates, Identifiers & Profiles → Identifiers](https://developer.apple.com/account/resources/identifiers/list):
+**+** → App IDs → App → **Explicit** → `io.simplicity.training`. No capabilities are needed.
+
+Separately, from the command line, signing needs `-allowProvisioningUpdates`, without which it
+fails with `No profiles for 'io.simplicity.training' were found ... Automatic signing is disabled`.
+Xcode passes it for you; `xcodebuild` does not.
+
+## 2b. The app record in App Store Connect
+
+Also not automatic, and distinct from the App ID above.
+[App Store Connect → Apps](https://appstoreconnect.apple.com/apps) → **+** → New App, selecting the
+explicit bundle id from the dropdown.
+
+App names are unique across the whole store, so "Simplicity" is likely taken. The store name is
+independent of `CFBundleDisplayName`, which stays "Simplicity" on the home screen.
 
 ## 3. An App Store Connect API key
 
