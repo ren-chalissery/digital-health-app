@@ -38,6 +38,8 @@ fi
 aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "${REGISTRY%%/*}"
 
+# Idempotent: a partial first-boot deploy and a Run Command deploy can both reach this point.
+docker compose down --remove-orphans 2>/dev/null || true
 docker compose pull
 docker compose up -d --remove-orphans
 

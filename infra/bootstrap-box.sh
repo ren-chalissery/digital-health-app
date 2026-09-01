@@ -176,16 +176,37 @@ fi
 # ---------------------------------------------------------------------------------------------
 step "Deploy"
 
-info "waiting for the instance to register with Systems Manager"
-for _ in $(seq 1 60); do
-  state="$(aws ssm describe-instance-information \
+info "waiting for the instance to finish first-boot setup"
+bootstrapped=false
+for _ in $(seq 1 90); do
+  ping="$(aws ssm describe-instance-information \
     --filters "Key=InstanceIds,Values=${instanceId}" \
     --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null || true)"
-  [[ "${state}" == "Online" ]] && break
+  [[ "${ping}" == "Online" ]] || { sleep 10; continue; }
+
+  probeId="$(aws ssm send-command \
+    --instance-ids "${instanceId}" \
+    --document-name AWS-RunShellScript \
+    --comment "bootstrap-box probe" \
+    --parameters 'commands=["if test -f /opt/box/.bootstrap-complete; then echo ready; elif test -x /opt/box/deploy.sh && test -f /opt/box/.env; then echo ready; else echo waiting; fi"]' \
+    --timeout-seconds 30 \
+    --query 'Command.CommandId' --output text)"
+  for _ in $(seq 1 12); do
+    probeStatus="$(aws ssm get-command-invocation --command-id "${probeId}" \
+      --instance-id "${instanceId}" --query Status --output text 2>/dev/null || echo Pending)"
+    [[ "${probeStatus}" == "InProgress" || "${probeStatus}" == "Pending" ]] && { sleep 2; continue; }
+    break
+  done
+  probeOut="$(aws ssm get-command-invocation --command-id "${probeId}" \
+    --instance-id "${instanceId}" --query StandardOutputContent --output text 2>/dev/null || true)"
+  if [[ "${probeOut}" == *ready* ]]; then
+    bootstrapped=true
+    break
+  fi
   sleep 10
 done
-[[ "${state:-}" == "Online" ]] \
-  || die "Instance never came online in Systems Manager. Check /var/log/box-bootstrap.log via the console."
+[[ "${bootstrapped}" == true ]] \
+  || die "First-boot setup did not finish. Check /var/log/box-bootstrap.log via Session Manager."
 
 info "running deploy.sh on the instance"
 commandId="$(aws ssm send-command \
