@@ -391,6 +391,10 @@ Resources:
             # and there is nothing in it yet. bootstrap-box.sh pushes an image and runs this again
             # over Run Command, which is the same path the pipeline uses for every later deploy.
             /opt/box/deploy.sh || echo "No image to run yet. Waiting for a deploy."
+
+            # bootstrap-box.sh waits on this before calling deploy.sh. SSM comes online while Docker
+            # is still installing, so PingStatus alone is not enough.
+            touch /opt/box/.bootstrap-complete
           - RegistryUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}'
             # Separate from RegistryUri because the shell expansion that would strip the path,
             # ${RegistryUri%%/*}, is itself Fn::Sub syntax and fails to resolve.
