@@ -139,6 +139,20 @@ Resources:
                   - ses:DeleteConfigurationSetEventDestination
                   - ses:GetConfigurationSetEventDestinations
                 Resource: '*'
+              # The single-instance topology. SendCommand is how a deploy reaches the box at all,
+              # standing in for the ECS service update, and the parameter actions cover both the
+              # AMI lookup the box template resolves at deploy time and the pending image tag a
+              # deploy leaves behind when the instance is stopped.
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                  - ssm:GetCommandInvocation
+                  - ssm:ListCommandInvocations
+                  - ssm:DescribeInstanceInformation
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:PutParameter
+                Resource: '*'
               - Effect: Allow
                 Action:
                   - iam:CreateRole
@@ -156,6 +170,19 @@ Resources:
                   - iam:UpdateAssumeRolePolicy
                 Resource:
                   - !Sub 'arn:aws:iam::${AWS::AccountId}:role/digital-health-*'
+              # An EC2 instance takes its role through an instance profile, which is a separate
+              # resource type with its own actions. CloudFormation names it after the stack, so the
+              # wildcard is the same shape as the one above.
+              - Effect: Allow
+                Action:
+                  - iam:CreateInstanceProfile
+                  - iam:DeleteInstanceProfile
+                  - iam:GetInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:TagInstanceProfile
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:instance-profile/digital-health-*'
               # Creating the RDS instance and the ECS service needs their service-linked roles the
               # first time, and CloudFormation makes them on the caller's behalf.
               - Effect: Allow

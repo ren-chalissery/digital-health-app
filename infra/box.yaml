@@ -1,0 +1,448 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Single-instance topology for the Digital Health API. Runs the application, Postgres, Valkey and
+  TLS termination as four containers on one Graviton EC2 instance, in place of the load balancer,
+  Fargate service, RDS instance and ElastiCache cluster.
+
+# Why this exists
+#
+# The full topology is about $82 a month, and four fifths of that is availability nobody is using:
+# a load balancer in two zones, a managed database, a managed cache and a Fargate task, all sized
+# for a product that currently has a handful of testers. This runs the same image against the same
+# Cognito pool and the same S3 buckets for about $23, or about $8 if the instance is stopped
+# between demonstrations.
+#
+# The trade is real and worth stating plainly: one instance, one local database, no failover and no
+# point-in-time recovery. Data survives a reboot and does not survive the instance being replaced,
+# which is what the nightly dump in box/backup.sh is for. Fine for a demonstration environment.
+# Not fine once real clinicians have written anything.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  NetworkStackName:
+    Type: String
+
+  AuthStackName:
+    Type: String
+
+  MediaStackName:
+    Type: String
+    Default: ''
+    Description: >
+      Name of the deployed media stack. Left empty before that stack exists, in which case video is
+      simply unavailable and the rest of the application is unaffected.
+
+  ApiDomainName:
+    Type: String
+    Description: >
+      Fully qualified name for the API. Caddy gets a certificate for exactly this name from Let's
+      Encrypt on first boot, so it must already resolve to this instance — which is why the A record
+      below is part of this stack rather than something done afterwards.
+
+  HostedZoneId:
+    Type: String
+    Description: Route 53 zone holding ApiDomainName.
+
+  WebBaseUrl:
+    Type: String
+    Description: Origin of the web client. Used for CORS and for links in invitation emails.
+
+  MailFrom:
+    Type: String
+    Description: Verified SES sender address for invitation emails.
+
+  MailConfigurationSet:
+    Type: String
+    Default: ''
+    Description: >
+      SES configuration set for bounce and complaint tracking. Owned by the app stack; leave empty
+      when running this topology on its own, in which case mail still sends and bounces are simply
+      not tracked.
+
+  ImageTag:
+    Type: String
+    Default: latest
+    Description: Image tag to run. The pipeline passes the commit sha so a rollback is a redeploy.
+
+  InstanceType:
+    Type: String
+    Default: t4g.small
+    AllowedValues: [t4g.small, t4g.medium, t4g.large]
+    Description: >
+      t4g.small is the floor. The budget is roughly 675MB of heap, 400MB of Postgres, 80MB of
+      Valkey, 30MB of Caddy and 200MB of operating system, which is about 1.6GB of the 2GB it
+      provides. t4g.micro is half the price and cannot hold all four.
+
+  VolumeSize:
+    Type: Number
+    Default: 30
+    MinValue: 20
+    Description: Root volume in GB, holding the images, the database and the transcode scratch space.
+
+  ConfigBucket:
+    Type: String
+    Description: >
+      Bucket holding the compose file and helper scripts, which bootstrap-box.sh uploads under
+      box/. Passed rather than imported so this stack does not depend on the media stack existing.
+
+Conditions:
+  HasMedia: !Not [!Equals [!Ref MediaStackName, '']]
+
+Resources:
+  # Only 80 and 443. There is deliberately no SSH rule: shell access is via Session Manager, which
+  # goes out over the instance's existing outbound connection and needs no inbound port at all.
+  # Port 80 cannot be dropped, because it is how Let's Encrypt answers the HTTP-01 challenge.
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'digital-health-${EnvironmentName} single instance'
+      VpcId:
+        Fn::ImportValue: !Sub '${NetworkStackName}-VpcId'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP, redirected to HTTPS and used for the ACME challenge
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS
+      Tags:
+        - Key: Name
+          Value: !Sub 'digital-health-${EnvironmentName}-box'
+
+  # The box owns its registry. The app stack owns one too, and it is deleted along with that stack,
+  # so a box-only estate would otherwise have nothing to pull from the moment the expensive
+  # topology was paused.
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub 'digital-health-${EnvironmentName}-box'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep the 10 most recent images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # Session Manager for shell access, and Run Command, which is how the pipeline deploys.
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: pull-image
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # GetAuthorizationToken is account-wide by design; it takes no resource.
+              - Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchCheckLayerAvailability
+                Resource: !GetAtt Repository.Arn
+
+        - PolicyName: read-configuration
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::${ConfigBucket}/box/*'
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub 'arn:aws:s3:::${ConfigBucket}'
+                Condition:
+                  StringLike:
+                    's3:prefix': 'box/*'
+
+        # The database password is generated on the instance and kept here, so that replacing the
+        # instance against an existing volume finds the same password rather than locking itself
+        # out of its own database. Standard parameters are free, which is the whole reason this is
+        # not Secrets Manager.
+        - PolicyName: database-password
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/digital-health/${EnvironmentName}/box/*'
+              # Required to read the SecureString back. Scoped by ViaService so this cannot decrypt
+              # anything that did not come through Parameter Store.
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'kms:ViaService': !Sub 'ssm.${AWS::Region}.amazonaws.com'
+
+        - PolicyName: send-invitation-email
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ses:SendEmail
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ses:FromAddress: !Ref MailFrom
+
+        - PolicyName: assistant
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Same two models as the Fargate task role, and for the same reason: the au. profile
+              # is the one that keeps content in Australia.
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0'
+                  - !Sub 'arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/au.anthropic.claude-haiku-4-5-20251001-v1:0'
+                  - 'arn:aws:bedrock:ap-southeast-2::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0'
+                  - 'arn:aws:bedrock:ap-southeast-4::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0'
+
+        - !If
+          - HasMedia
+          - PolicyName: media
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - !Sub
+                      - 'arn:aws:s3:::${Bucket}/*'
+                      - Bucket: !ImportValue
+                          Fn::Sub: '${MediaStackName}-UploadBucketName'
+                    - !Sub
+                      - 'arn:aws:s3:::${Bucket}/*'
+                      - Bucket: !ImportValue
+                          Fn::Sub: '${MediaStackName}-AssetBucketName'
+                - Effect: Allow
+                  Action:
+                    - mediaconvert:CreateJob
+                    - mediaconvert:GetJob
+                    - mediaconvert:DescribeEndpoints
+                  Resource: '*'
+                - Effect: Allow
+                  Action: iam:PassRole
+                  Resource: !ImportValue
+                    Fn::Sub: '${MediaStackName}-TranscodeRoleArn'
+          - !Ref AWS::NoValue
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  # Allocated separately from the instance so the address, and therefore the DNS record and the
+  # Let's Encrypt registration, survives the instance being stopped. A stopped instance loses an
+  # automatically assigned public address; that would break the A record every time the box was
+  # paused, which is the thing this topology is meant to make routine.
+  Address:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'digital-health-${EnvironmentName}-box'
+
+  AddressAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt Address.AllocationId
+      InstanceId: !Ref Instance
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !Ref Address
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      # Amazon Linux 2023 on arm64, resolved at deploy time. The pipeline builds linux/arm64
+      # already, so the image that runs here is the one that ran on Fargate.
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}}'
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !Select
+        - 0
+        - !Split
+          - ','
+          - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetIds'
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'digital-health-${EnvironmentName}-box'
+      UserData:
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            set -euo pipefail
+            exec > >(tee /var/log/box-bootstrap.log | logger -t box -s 2>/dev/console) 2>&1
+
+            dnf -y install docker
+            systemctl enable --now docker
+
+            # The compose plugin is not packaged for AL2023, so it is installed by hand. Pinned:
+            # an unpinned latest would change the deployment underneath us on any replacement.
+            install -d /usr/local/lib/docker/cli-plugins
+            curl -fsSL --proto '=https' --tlsv1.2 \
+              "https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-aarch64" \
+              -o /usr/local/lib/docker/cli-plugins/docker-compose
+            chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+            install -d /opt/box
+            aws s3 cp --recursive "s3://${ConfigBucket}/box/" /opt/box/
+            chmod +x /opt/box/*.sh
+
+            # Generated once and kept in Parameter Store, so that a replacement instance meeting an
+            # existing database uses the password that database was created with.
+            PARAM="/digital-health/${EnvironmentName}/box/db-password"
+            PASSWORD="$(aws ssm get-parameter --name "$PARAM" --with-decryption \
+              --query Parameter.Value --output text 2>/dev/null || true)"
+            if [ -z "$PASSWORD" ] || [ "$PASSWORD" = "None" ]; then
+              PASSWORD="$(openssl rand -hex 24)"
+              aws ssm put-parameter --name "$PARAM" --value "$PASSWORD" \
+                --type SecureString --overwrite >/dev/null
+            fi
+
+            cat > /opt/box/.env <<ENVFILE
+            REGISTRY=${RegistryUri}
+            IMAGE_TAG=${ImageTag}
+            ENVIRONMENT=${EnvironmentName}
+            API_DOMAIN=${ApiDomainName}
+            DB_PASSWORD=$PASSWORD
+            AWS_REGION=${AWS::Region}
+            COGNITO_ISSUER_URI=${IssuerUri}
+            COGNITO_USER_POOL_ID=${UserPoolId}
+            COGNITO_CLIENT_IDS=${WebClientId},${IosClientId},${AndroidClientId}
+            WEB_BASE_URL=${WebBaseUrl}
+            MAIL_FROM=${MailFrom}
+            MAIL_CONFIGURATION_SET=${MailConfigurationSet}
+            MEDIA_UPLOAD_BUCKET=${UploadBucket}
+            MEDIA_ASSET_BUCKET=${AssetBucket}
+            MEDIA_TRANSCODE_QUEUE_ARN=${TranscodeQueue}
+            MEDIA_TRANSCODE_ROLE_ARN=${TranscodeRole}
+            BACKUP_BUCKET=${ConfigBucket}
+            ENVFILE
+            chmod 600 /opt/box/.env
+
+            # Nightly dump to S3. The instance is disposable; this is what makes that true.
+            install -m 644 /opt/box/backup.service /etc/systemd/system/box-backup.service
+            install -m 644 /opt/box/backup.timer /etc/systemd/system/box-backup.timer
+            systemctl daemon-reload
+            systemctl enable --now box-backup.timer
+
+            # Tolerated, because on the very first deploy this stack has just created the registry
+            # and there is nothing in it yet. bootstrap-box.sh pushes an image and runs this again
+            # over Run Command, which is the same path the pipeline uses for every later deploy.
+            /opt/box/deploy.sh || echo "No image to run yet. Waiting for a deploy."
+          - RegistryUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}'
+            # Separate from RegistryUri because the shell expansion that would strip the path,
+            # ${RegistryUri%%/*}, is itself Fn::Sub syntax and fails to resolve.
+            RegistryHost: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
+            IssuerUri:
+              Fn::ImportValue: !Sub '${AuthStackName}-IssuerUri'
+            UserPoolId:
+              Fn::ImportValue: !Sub '${AuthStackName}-UserPoolId'
+            WebClientId:
+              Fn::ImportValue: !Sub '${AuthStackName}-WebClientId'
+            IosClientId:
+              Fn::ImportValue: !Sub '${AuthStackName}-IosClientId'
+            AndroidClientId:
+              Fn::ImportValue: !Sub '${AuthStackName}-AndroidClientId'
+            UploadBucket: !If
+              - HasMedia
+              - !ImportValue
+                Fn::Sub: '${MediaStackName}-UploadBucketName'
+              - ''
+            AssetBucket: !If
+              - HasMedia
+              - !ImportValue
+                Fn::Sub: '${MediaStackName}-AssetBucketName'
+              - ''
+            TranscodeQueue: !If
+              - HasMedia
+              - !ImportValue
+                Fn::Sub: '${MediaStackName}-TranscodeQueueArn'
+              - ''
+            TranscodeRole: !If
+              - HasMedia
+              - !ImportValue
+                Fn::Sub: '${MediaStackName}-TranscodeRoleArn'
+              - ''
+
+Outputs:
+  InstanceId:
+    Value: !Ref Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceId'
+
+  PublicIp:
+    Value: !Ref Address
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicIp'
+
+  RepositoryUri:
+    Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}'
+    Export:
+      Name: !Sub '${AWS::StackName}-RepositoryUri'
+
+  ApiUrl:
+    Value: !Sub 'https://${ApiDomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'

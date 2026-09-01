@@ -1,0 +1,124 @@
+# Four containers standing in for a load balancer, a Fargate task, an RDS instance and an
+# ElastiCache cluster. Values come from /opt/box/.env, written by the instance at first boot.
+#
+# Memory limits are not tuning, they are the reason this fits. The image sets
+# -XX:MaxRAMPercentage=75, which without a limit is read against the whole machine: the JVM would
+# size its heap at 1.5GB of a 2GB box and leave nothing for Postgres. The limit below is what makes
+# that 75% mean 675MB.
+
+name: digital-health
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here. Losing this volume means re-issuing on next boot, and Let's Encrypt
+      # rate-limits five failures per hostname per hour, so a crash loop without it locks the
+      # domain out for an hour.
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 64m
+    depends_on:
+      - app
+
+  app:
+    image: ${REGISTRY}:${IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      # Loopback only. Caddy reaches the application over the compose network, so this exists
+      # solely so deploy.sh can poll the readiness endpoint from the host. Binding it to 0.0.0.0
+      # would publish the API on port 8080 without TLS, and the security group would not stop it:
+      # Docker writes its own iptables rules ahead of the ones the group produces.
+      - '127.0.0.1:8080:8080'
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/digitalhealth
+      DB_USERNAME: digitalhealth
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: valkey
+      REDIS_PORT: '6379'
+      REDIS_SSL_ENABLED: 'false'
+      COGNITO_ISSUER_URI: ${COGNITO_ISSUER_URI}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_IDS: ${COGNITO_CLIENT_IDS}
+      AWS_REGION: ${AWS_REGION}
+      WEB_BASE_URL: ${WEB_BASE_URL}
+      CORS_ALLOWED_ORIGINS: ${WEB_BASE_URL}
+      MAIL_ENABLED: 'true'
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_CONFIGURATION_SET: ${MAIL_CONFIGURATION_SET}
+      MEDIA_UPLOAD_BUCKET: ${MEDIA_UPLOAD_BUCKET}
+      MEDIA_ASSET_BUCKET: ${MEDIA_ASSET_BUCKET}
+      MEDIA_TRANSCODE_QUEUE_ARN: ${MEDIA_TRANSCODE_QUEUE_ARN}
+      MEDIA_TRANSCODE_ROLE_ARN: ${MEDIA_TRANSCODE_ROLE_ARN}
+    mem_limit: 900m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    logging: &journal
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  postgres:
+    # Not the stock postgres image. V8__assistant.sql opens with CREATE EXTENSION vector and the
+    # assistant stores 1024-dimension embeddings with an HNSW index over them, which RDS provides
+    # and plain postgres:17 does not: Flyway fails on the first migration and the application
+    # restart-loops. This is the same upstream image with pgvector compiled in.
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: digitalhealth
+      POSTGRES_USER: digitalhealth
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # Checksums cost a little write throughput and turn silent corruption on a single unreplicated
+      # disk into a loud error, which is the better failure on a box with no standby.
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=50
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # The app runs Flyway at startup, so starting it against a database still initialising fails
+      # the migration rather than waiting.
+      test: ['CMD-SHELL', 'pg_isready -U digitalhealth -d digitalhealth']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 512m
+    logging: *journal
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command:
+      - valkey-server
+      - --maxmemory
+      - 64mb
+      # Everything here is a rate-limit counter, a revocation instant or a cached principal. All of
+      # it is reconstructible, none of it is worth a disk write, and evicting the coldest key under
+      # pressure beats refusing writes.
+      - --maxmemory-policy
+      - allkeys-lru
+      - --save
+      - ''
+    mem_limit: 96m
+    logging: *journal
+
+volumes:
+  pgdata:
+  caddy-data:
+  caddy-config:

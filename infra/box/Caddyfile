@@ -1,0 +1,40 @@
+# Terminates TLS and proxies to the application, in place of the load balancer.
+#
+# Certificates come from Let's Encrypt over the HTTP-01 challenge on first request, which is why
+# port 80 is open and why the A record is created by the same stack that allocates the address: the
+# name has to resolve here before the challenge can succeed. Caddy retries with backoff, so an
+# instance that boots before DNS has propagated recovers on its own.
+
+{
+	# Failures are answered from here rather than by a stack trace from the application.
+	email admin@{$API_DOMAIN}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# The load balancer added these and the application reads them. X-Forwarded-For matters
+	# beyond logging: ClientAddress takes the last entry to find the real caller, and rate
+	# limiting and audit records are both derived from it.
+	reverse_proxy app:8080 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+
+		# Matches the load balancer's 60 second idle timeout, so behaviour under a slow
+		# request is the same in both topologies.
+		transport http {
+			read_timeout 60s
+		}
+	}
+
+	# Video uploads go straight to S3 with a presigned URL, so nothing large passes through
+	# here. This is only a guard against an accidental unbounded body.
+	request_body {
+		max_size 10MB
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

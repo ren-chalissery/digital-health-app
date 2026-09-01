@@ -1,0 +1,12 @@
+[Unit]
+Description=Dump the Digital Health database to S3
+# Nothing to dump before the containers are up, and a failure here on boot would be reported as a
+# backup failure rather than what it is.
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/box/backup.sh
+# A dump that hangs must not sit holding a connection until the next one starts.
+TimeoutStartSec=30m
