@@ -136,7 +136,13 @@ deployStack "${ROLE_STACK}" deploy-role.yaml \
 
 deployStack "${NETWORK_STACK}" network.yaml
 
-deployStack "${DATA_STACK}" data.yaml "NetworkStackName=${NETWORK_STACK}"
+dataParams=("NetworkStackName=${NETWORK_STACK}")
+if [[ -n "${DB_MASTER_PASSWORD:-}" ]]; then
+  dataParams+=("DatabaseMasterPassword=${DB_MASTER_PASSWORD}")
+elif ! aws cloudformation describe-stacks --stack-name "${DATA_STACK}" >/dev/null 2>&1; then
+  die "Set DB_MASTER_PASSWORD before the first data-stack deploy."
+fi
+deployStack "${DATA_STACK}" data.yaml "${dataParams[@]}"
 deployStack "${AUTH_STACK}" auth.yaml "WebBaseUrl=https://${WEB_HOST}"
 
 # web before app: app needs the web origin for CORS and for the links in invitation emails.

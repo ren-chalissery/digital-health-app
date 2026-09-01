@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  PostgreSQL and Valkey for the Digital Health App. The database password is generated and rotated
-  by RDS into Secrets Manager, so no credential appears in this template, in the pipeline, or in
-  any parameter.
+  PostgreSQL and Valkey for the Digital Health App. The master password is a fixed value stored in
+  Secrets Manager (not rotated by RDS), so a snapshot restore can reuse the same secret without a
+  password-sync step.
 
 Parameters:
   EnvironmentName:
@@ -21,7 +21,16 @@ Parameters:
   DatabaseUsername:
     Type: String
     Default: dhapp
-    Description: Master user. Its password is managed by RDS, not set here.
+    Description: Master user. Its password lives in Secrets Manager, not in this template.
+
+  DatabaseMasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: >
+      Master password written into Secrets Manager on first deploy. Pass it once via
+      DB_MASTER_PASSWORD when running bootstrap.sh; later deploys omit it and CloudFormation keeps
+      the previous value. Never commit this.
 
   DatabaseInstanceClass:
     Type: String
@@ -42,6 +51,18 @@ Parameters:
     MinValue: 1
 
 Resources:
+  DatabaseCredentialsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'digital-health/${EnvironmentName}/database'
+      Description: >
+        Fixed RDS master credentials. The app stack reads this by name, not by export, so the
+        secret can be recreated without touching the app stack.
+      SecretString: !Sub
+        - '{"username":"${Username}","password":"${Password}"}'
+        - Username: !Ref DatabaseUsername
+          Password: !Ref DatabaseMasterPassword
+
   DbSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -66,8 +87,7 @@ Resources:
       StorageEncrypted: true
       DBName: !Ref DatabaseName
       MasterUsername: !Ref DatabaseUsername
-      # RDS generates the password straight into Secrets Manager. Nothing else ever sees it.
-      ManageMasterUserPassword: true
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DatabaseCredentialsSecret}:SecretString:password}}'
       DBSubnetGroupName: !Ref DbSubnetGroup
       VPCSecurityGroups:
         - Fn::ImportValue: !Sub '${NetworkStackName}-DataSecurityGroupId'
@@ -161,9 +181,9 @@ Outputs:
 
   DatabaseSecretArn:
     Description: >
-      Secrets Manager secret holding {"username","password"}. The app stack injects the two keys
-      as separate ECS task secrets.
-    Value: !GetAtt Database.MasterUserSecret.SecretArn
+      Secrets Manager secret holding {"username","password"}. Scripts may read this ARN; the app
+      stack resolves the secret by name so this export can change without a coupled deploy.
+    Value: !Ref DatabaseCredentialsSecret
     Export:
       Name: !Sub '${AWS::StackName}-DatabaseSecretArn'
 
