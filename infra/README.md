@@ -27,7 +27,7 @@ same DNS record.
 | Database | RDS, automated backups | Postgres container, nightly dump to S3 |
 | Cache | ElastiCache Valkey | Valkey container |
 | TLS | ACM on the load balancer | Caddy, via Let's Encrypt |
-| Cost | ~$82/month | ~$23/month, or ~$8 stopped between demos |
+| Cost | ~$82/month | ~$23/month running; ~$1–2 when torn down |
 | Survives an instance failure | Yes | No |
 
 The managed topology is the default and the one to use for anything real. The box exists so a
@@ -306,7 +306,7 @@ flowchart LR
 | 30 GB gp3 | $2.88 |
 | Route 53, ECR, S3, CloudFront, Cognito, SES | ~$1.00 |
 | **Running continuously** | **~$23** |
-| **Stopped between demonstrations** | **~$8** |
+| **Torn down** (`teardown.sh`) | **~$1–2** (shared stacks only) |
 
 Against ~$82 for the managed topology. The largest single saving is not the compute: it is the four
 public IPv4 addresses the load balancer and Fargate tasks hold, which cost $14.60 a month between
@@ -315,29 +315,19 @@ them, more than the instance that replaces the lot.
 `t4g.micro` is half the price and will not work. The budget is about 675 MB of heap, 400 MB of
 Postgres, 80 MB of Valkey, 30 MB of Caddy and 200 MB of operating system.
 
-### Removing it completely
+### Taking it down
 
 ```bash
 ./infra/box/teardown.sh
 ```
 
-Deletes the CloudFormation stack, the configuration bucket and the deploy tag. Shared stacks —
-network, auth, web, media and mail — are untouched.
+Deletes the CloudFormation stack, the configuration bucket, database backups, and Parameter Store
+entries. Shared stacks — network, auth, web, media and mail — are untouched. Bring it back with
+`./infra/box/bootstrap.sh`, which creates a fresh Elastic IP, gp3 volume, instance, and empty
+database.
 
-### Stopping and starting
-
-This is the point of the topology. The address, the disk and the data all survive.
-
-```bash
-instance="$(aws cloudformation describe-stacks --stack-name digital-health-box \
-  --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)"
-
-aws ec2 stop-instances  --instance-ids "$instance"
-aws ec2 start-instances --instance-ids "$instance"
-```
-
-A merge that lands while the box is stopped is not a failed deploy. CI records the image tag in
-Parameter Store and `deploy.sh` picks it up on next boot.
+To stop paying without deleting, `ec2 stop-instances` still bills for the Elastic IP and gp3 root
+volume (~$8/month). Teardown is the intended way to idle the box cheaply.
 
 ### Operating it
 
