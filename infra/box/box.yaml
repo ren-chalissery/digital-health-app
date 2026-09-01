@@ -85,7 +85,7 @@ Parameters:
   ConfigBucket:
     Type: String
     Description: >
-      Bucket holding the compose file and helper scripts, which bootstrap-box.sh uploads under
+      Bucket holding the compose file and helper scripts, which box/bootstrap.sh uploads under
       box/. Passed rather than imported so this stack does not depend on the media stack existing.
 
 Conditions:
@@ -387,11 +387,11 @@ Resources:
             systemctl enable --now box-backup.timer
 
             # Tolerated, because on the very first deploy this stack has just created the registry
-            # and there is nothing in it yet. bootstrap-box.sh pushes an image and runs this again
+            # and there is nothing in it yet. box/bootstrap.sh pushes an image and runs this again
             # over Run Command, which is the same path the pipeline uses for every later deploy.
             /opt/box/deploy.sh || echo "No image to run yet. Waiting for a deploy."
 
-            # bootstrap-box.sh waits on this before calling deploy.sh. SSM comes online while Docker
+            # box/bootstrap.sh waits on this before calling deploy.sh. SSM comes online while Docker
             # is still installing, so PingStatus alone is not enough.
             touch /opt/box/.bootstrap-complete
           - RegistryUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}'

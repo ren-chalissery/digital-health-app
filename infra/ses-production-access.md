@@ -19,7 +19,7 @@ with DKIM signing enabled.
 
 Deploy the bounce and complaint handling first. The question below about handling bounces is the one
 these requests are most often rejected on, and the answer should describe what is running rather
-than what is planned. Run `./infra/bootstrap-mail.sh` to stand up the configuration set, the
+than what is planned. Run `./infra/bootstrap.sh` to stand up the configuration set, the
 `mail-events` topic and the two reputation alarms. This stack survives pausing the managed app
 stack or switching to the box topology; both topologies send through the same configuration set.
 

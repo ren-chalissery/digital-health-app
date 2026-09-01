@@ -20,6 +20,8 @@ readonly DOMAIN="${DOMAIN:-simplicityhelp.com}"
 readonly WEB_HOST="${WEB_HOST:-app.${DOMAIN}}"
 readonly API_HOST="${API_HOST:-api.${DOMAIN}}"
 readonly MAIL_FROM="${MAIL_FROM:-no-reply@${DOMAIN}}"
+readonly ENVIRONMENT="${ENVIRONMENT:-prod}"
+readonly ALARM_EMAIL="${ALARM_EMAIL:-ren.chalissery@gmail.com}"
 readonly GITHUB_REPO="${GITHUB_REPO:-ren-chalissery/digital-health-app}"
 
 readonly NETWORK_STACK=digital-health-network
@@ -40,6 +42,7 @@ export AWS_DEFAULT_REGION="${REGION}"
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
+warn() { printf '\033[33m    %s\033[0m\n' "$*"; }
 die() { printf '\n\033[31mError: %s\033[0m\n' "$*" >&2; exit 1; }
 
 output() {
@@ -166,11 +169,16 @@ deployStack "${MEDIA_STACK}" media.yaml "WebOrigin=https://${WEB_HOST}"
 # ---------------------------------------------------------------------------------------------
 step "Mail stack"
 
-# Owned outside the app stack so bounce monitoring survives pausing managed compute.
-"${HERE}/bootstrap-mail.sh"
+# Owned outside the app stack so bounce monitoring survives pausing managed compute or running
+# the box topology instead.
+deployStack "${MAIL_STACK}" mail.yaml \
+  "EnvironmentName=${ENVIRONMENT}" "AlarmEmail=${ALARM_EMAIL}"
 
 mailConfigurationSet="$(output "${MAIL_STACK}" MailConfigurationSetName)"
 alarmTopicArn="$(output "${MAIL_STACK}" AlarmTopicArn)"
+info "configuration set ${mailConfigurationSet}"
+warn "AWS sends confirmation links to ${ALARM_EMAIL} for two SNS subscriptions."
+warn "Mail is not monitored until both links are clicked."
 
 # ---------------------------------------------------------------------------------------------
 step "Application stack and its first image"
