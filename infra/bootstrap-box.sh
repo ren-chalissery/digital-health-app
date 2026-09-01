@@ -78,15 +78,14 @@ else
   warn "No media stack. Video will be unavailable; everything else works."
 fi
 
-# The configuration set lives in the mail stack so it survives app-stack pause.
-mailConfigurationSet=''
-if stackExists "digital-health-mail"; then
-  mailConfigurationSet="$(output "digital-health-mail" MailConfigurationSetName)"
-  [[ "${mailConfigurationSet}" == "None" ]] && mailConfigurationSet=''
-elif stackExists "${APP_STACK}"; then
-  mailConfigurationSet="$(output "${APP_STACK}" MailConfigurationSetName)"
-  [[ "${mailConfigurationSet}" == "None" ]] && mailConfigurationSet=''
+# The configuration set lives in the mail stack so it survives switching topologies.
+if ! stackExists "digital-health-mail"; then
+  info "mail stack missing, deploying it"
+  "${HERE}/bootstrap-mail.sh"
 fi
+mailConfigurationSet="$(output "digital-health-mail" MailConfigurationSetName)"
+[[ "${mailConfigurationSet}" == "None" || -z "${mailConfigurationSet}" ]] \
+  && die "digital-health-mail is missing MailConfigurationSetName. Run ./infra/bootstrap-mail.sh."
 
 zoneId="$(aws route53 list-hosted-zones-by-name --dns-name "${DOMAIN}." \
   --query "HostedZones[?Name=='${DOMAIN}.'].Id | [0]" --output text | sed 's|/hostedzone/||')"

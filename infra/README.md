@@ -1,13 +1,15 @@
 # Infrastructure
 
-Five CloudFormation stacks plus a one-off deploy role. Everything is plain CloudFormation — no SAM,
-because there are no Lambda functions to package.
+Five CloudFormation stacks plus a one-off deploy role, and a sixth stack for mail monitoring that
+survives switching topologies. Everything is plain CloudFormation — no SAM, because there are no
+Lambda functions to package.
 
 | Stack | Template | Holds |
 | --- | --- | --- |
 | `digital-health-network` | [network.yaml](network.yaml) | VPC, two public subnets, the three security groups |
 | `digital-health-data` | [data.yaml](data.yaml) | RDS PostgreSQL, ElastiCache Valkey, the database secret |
 | `digital-health-auth` | [auth.yaml](auth.yaml) | Cognito user pool and one app client per platform |
+| `digital-health-mail` | [mail.yaml](mail.yaml) | SES configuration set, mail-event SNS topic, reputation alarms, shared alarm topic |
 | `digital-health-app` | [app.yaml](app.yaml) | ECR, ECS Fargate service, ALB, ACM certificate, logs |
 | `digital-health-web` | [web.yaml](web.yaml) | S3 bucket, CloudFront distribution |
 | `digital-health-deploy-role` | [deploy-role.yaml](deploy-role.yaml) | The role GitHub Actions assumes |
@@ -32,12 +34,14 @@ The managed topology is the default and the one to use for anything real. The bo
 demonstration environment does not cost eighty dollars a month, and it is explained in full under
 [The single-box topology](#the-single-box-topology).
 
-Both share `network`, `auth`, `media` and `web`, which are free or near-free at idle. Switching
-from managed to box is `./infra/teardown.sh --pause` followed by `./infra/bootstrap-box.sh`.
+Both share `network`, `auth`, `media`, `web` and `mail`, which are free or near-free at idle.
+Switching from managed to box is `./infra/teardown.sh --pause` followed by
+`./infra/bootstrap-box.sh`. The mail stack is not deleted on pause, so bounce monitoring and SNS
+subscriptions survive the switch in both directions.
 
 ## Order
 
-`network` → `data` and `auth` (either order) → `web` → `app`.
+`network` → `data` and `auth` (either order) → `web` → `mail` → `app`.
 
 `app` needs `web`'s URL for CORS and for the links in invitation emails, and `web` needs nothing
 from `app`, so `web` goes first. Stacks are wired by export name, and each consumer takes its
@@ -191,9 +195,10 @@ clinician's credentials or their reflections.
 
 ## Alarms
 
-The app stack raises a `digital-health-<env>-alarms` SNS topic and eight CloudWatch alarms: the API
-returning 5xx, having no healthy target, having an unhealthy one for ten minutes, the database low
-on storage or busy, the cache near full, and invitation mail bouncing or drawing complaints.
+The mail stack raises a `digital-health-<env>-alarms` SNS topic. The app stack publishes six
+infrastructure alarms to it — the API returning 5xx, having no healthy target, having an unhealthy
+one for ten minutes, the database low on storage or busy, and the cache near full — and the mail
+stack publishes two reputation alarms for bounces and complaints.
 
 Alarm descriptions say what a person would notice rather than which metric moved, because the
 description is what arrives in the email at an inconvenient hour.
@@ -212,11 +217,12 @@ The value only reaches AWS on the next deploy, so push something or re-run the w
 
 Then **confirm the subscription**. AWS emails that address a link and delivers nothing until
 somebody clicks it. The stack reports success regardless, so an unconfirmed subscription looks
-exactly like a working one:
+exactly like a working one. There are two subscriptions — one on the alarm topic and one on the
+mail-events topic:
 
 ```bash
 aws sns list-subscriptions-by-topic --topic-arn "$(aws cloudformation describe-stacks \
-  --stack-name digital-health-app-prod \
+  --stack-name digital-health-mail \
   --query "Stacks[0].Outputs[?OutputKey=='AlarmTopicArn'].OutputValue" --output text)" \
   --query 'Subscriptions[*].SubscriptionArn' --output text
 ```
@@ -236,8 +242,8 @@ aws cloudwatch set-alarm-state --alarm-name digital-health-prod-api-errors \
 ## Mail
 
 Invitations are the only email this system sends. They go through SES from
-`no-reply@simplicityhelp.com`, under a configuration set named `digital-health-<env>` that the app
-stack creates and passes to the task as `MAIL_CONFIGURATION_SET`.
+`no-reply@simplicityhelp.com`, under a configuration set named `digital-health-<env>` that the mail
+stack creates and both topologies pass to the API as `MAIL_CONFIGURATION_SET`.
 
 The configuration set is what makes failures visible. Bounces, complaints, rejections and rendering
 failures are published to a `digital-health-<env>-mail-events` SNS topic, subscribed by the same
@@ -252,6 +258,9 @@ so there is warning before AWS intervenes.
 Sending outside a configuration set still delivers, so `MAIL_CONFIGURATION_SET` is optional and
 empty locally. But then nothing reports a bounce, and the topic and both alarms stay silent no
 matter how much mail fails.
+
+Deploy the mail stack once with [bootstrap-mail.sh](bootstrap-mail.sh), or let [bootstrap.sh](bootstrap.sh)
+or the pipeline do it. It is never deleted by [teardown.sh](teardown.sh) `--pause`.
 
 **The account is still in the SES sandbox.** Until production access is granted, invitations only
 reach addresses verified by hand, and never a real clinician — which surfaces as a failed invitation
