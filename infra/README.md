@@ -74,8 +74,13 @@ domain after fifteen days.
 ### Then everything else
 
 ```bash
+export DB_MASTER_PASSWORD='your-fixed-password'   # required on first deploy only
 ./infra/bootstrap.sh
 ```
+
+`DB_MASTER_PASSWORD` is written once into Secrets Manager (`digital-health/prod/database`) and reused on
+every snapshot restore, so you never need a post-restore password sync. Omit it on later runs;
+CloudFormation keeps the previous value. Never commit it.
 
 That covers the whole sequence: it refuses to run against the wrong account, issues the CloudFront
 certificate in `us-east-1` and validates it through Route 53, deploys the six stacks in order,
@@ -104,7 +109,8 @@ aws cloudformation deploy --template-file network.yaml \
 
 aws cloudformation deploy --template-file data.yaml \
   --stack-name digital-health-data --capabilities CAPABILITY_IAM \
-  --parameter-overrides NetworkStackName=digital-health-network
+  --parameter-overrides NetworkStackName=digital-health-network \
+    DatabaseMasterPassword="$DB_MASTER_PASSWORD"
 
 aws cloudformation deploy --template-file auth.yaml \
   --stack-name digital-health-auth --capabilities CAPABILITY_IAM \
@@ -168,9 +174,12 @@ third of the pilot's whole infrastructure budget. The Fargate tasks are unreacha
 security group admits nothing but the load balancer, not because of where they sit. Revisit before
 this service holds anything more sensitive than de-identified reflections.
 
-**Nothing holds a password.** RDS generates the master password directly into Secrets Manager and
-the ECS task definition references the two JSON keys. No credential appears in a template, a
-parameter, or the pipeline.
+**Fixed database password in Secrets Manager.** The master password is set once via
+`DB_MASTER_PASSWORD` when standing the data stack up, stored at
+`digital-health/<env>/database`, and injected into ECS by secret name. RDS does not rotate it,
+which means a snapshot restore can reuse the same credentials without a sync step. The password
+never appears in git or the pipeline; only in Secrets Manager and in your shell when you pass
+`DB_MASTER_PASSWORD`.
 
 **CloudFront certificates must be in us-east-1**, whichever region the rest of this is deployed to.
 The `web` stack takes the ARN as a parameter rather than issuing one, because a stack cannot create
@@ -390,9 +399,34 @@ Everything else is kept because idle it is free, and deleting it would cost some
 | Container images | a few cents | `bootstrap.sh` needs an image to start the task; without one you need a full CI run first |
 
 **The infrastructure comes back. The data does not.** `bootstrap.sh` creates an empty database and
-never reads the snapshot, so restoring it means `aws rds restore-db-instance-from-db-snapshot` by
-hand and then repointing the app stack. That is fine while the only rows are test data, and not
-fine after launch — at which point this needs a restore path before anyone pauses anything.
+never reads the snapshot. Once the data stack uses a fixed password in Secrets Manager, restore
+pre-pause data with:
+
+```bash
+./infra/restore-rds.sh --latest-pause-snapshot
+# or: ./infra/restore-rds.sh --snapshot digital-health-data-snapshot-database-...
+```
+
+That stops the API, replaces the RDS instance from the snapshot with the password already in
+Secrets Manager, and starts the API again. Use `--dry-run` to print the steps first.
+
+**Migrating from RDS-managed passwords.** If the data stack still uses `ManageMasterUserPassword`
+(an `rds!db-…` secret), redeploy in this order:
+
+```bash
+export DB_MASTER_PASSWORD='your-fixed-password'
+aws cloudformation deploy --template-file infra/data.yaml \
+  --stack-name digital-health-data --capabilities CAPABILITY_IAM \
+  --parameter-overrides NetworkStackName=digital-health-network \
+    DatabaseMasterPassword="$DB_MASTER_PASSWORD"
+aws cloudformation deploy --template-file infra/app.yaml \
+  --stack-name digital-health-app --capabilities CAPABILITY_IAM \
+  --parameter-overrides ...   # same overrides as bootstrap.sh / the pipeline
+```
+
+The app stack now reads the secret by name (`digital-health/prod/database`), not by CloudFormation
+export, so the secret can be recreated without a coupled two-stack change. RDS is modified in place
+to the fixed password; the old `rds!db-…` secret can be deleted afterwards.
 
 `--dry-run` is the only way to inspect the destructive path without a disposable environment to
 run it against. Every destructive call is routed through one `run` helper, so a deletion added
