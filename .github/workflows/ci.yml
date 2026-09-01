@@ -10,8 +10,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changed.outputs.backend }}
+      web: ${{ steps.changed.outputs.web }}
+      android: ${{ steps.changed.outputs.android }}
+      ios: ${{ steps.changed.outputs.ios }}
+      deploy: ${{ steps.changed.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Full history: the default shallow clone has no base commit to diff against, so every job
+      # would run on every push.
+      - name: Check what changed
+        id: changed
+        run: |
+          backend=false
+          web=false
+          android=false
+          ios=false
+          deploy=false
+
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            backend=true
+            web=true
+            android=true
+            ios=true
+            deploy=true
+          else
+            files="$(git diff --name-only "$base" HEAD)"
+            echo "$files"
+            if echo "$files" | grep -qE '^(backend/|api-contract/)'; then backend=true; fi
+            if echo "$files" | grep -qE '^web/'; then web=true; fi
+            if echo "$files" | grep -qE '^(android/|api-contract/)'; then android=true; fi
+            if echo "$files" | grep -qE '^(ios/|api-contract/)'; then ios=true; fi
+            if echo "$files" | grep -qE '^(backend/|web/|infra/app\.yaml|infra/web\.yaml|infra/box\.yaml|infra/box/|\.github/workflows/ci\.yml)'; then
+              deploy=true
+            fi
+          fi
+
+          {
+            echo "backend=$backend"
+            echo "web=$web"
+            echo "android=$android"
+            echo "ios=$ios"
+            echo "deploy=$deploy"
+          } >> "$GITHUB_OUTPUT"
+
   backend:
     name: Backend tests and API drift check
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -42,33 +96,17 @@ jobs:
     #
     # macOS minutes are billed at ten times Linux, so this runs only when iOS or the API contract
     # it is generated from actually changed.
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    needs: changes
+    if: |
+      needs.changes.outputs.ios == 'true' &&
+      (github.event_name == 'push' || github.event.pull_request.draft == false)
     runs-on: macos-26
     steps:
-      # Full history: the default shallow clone has no base commit to diff against, so the change
-      # detection below would fall through and run on every push.
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Check what changed
-        id: changed
-        run: |
-          base="${{ github.event.pull_request.base.sha || github.event.before }}"
-          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if git diff --name-only "$base" HEAD | grep -qE '^(ios/|api-contract/)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       # Pinned rather than left on the image default. The default moves — it went from 26.5 to
       # 26.6 in July — and a runner image update should not silently change the compiler.
+      - uses: actions/checkout@v7
+
       - name: Select Xcode
-        if: steps.changed.outputs.run == 'true'
         run: sudo xcode-select -s /Applications/Xcode_26.3.app
 
       # Not on the runner image, and pinned rather than installed from Homebrew. An unpinned
@@ -76,7 +114,6 @@ jobs:
       # this repository lints with 0.63.2, and the newer one called a needed disable comment
       # superfluous. `ios/.swiftlint-version` is the single declaration of which version applies.
       - name: Install SwiftLint
-        if: steps.changed.outputs.run == 'true'
         run: |
           version=$(cat ios/.swiftlint-version)
           curl -sSL -o /tmp/swiftlint.zip \
@@ -86,14 +123,12 @@ jobs:
           swiftlint version
 
       - name: Package tests and lint
-        if: steps.changed.outputs.run == 'true'
         working-directory: ios
         run: ./test-all.sh
 
       # Resolved at runtime rather than hard-coded: the simulators on a runner image change
       # without notice, and a missing device name fails with a much less obvious error.
       - name: Choose a simulator
-        if: steps.changed.outputs.run == 'true'
         id: simulator
         run: |
           name=$(xcrun simctl list devices available --json \
@@ -104,7 +139,6 @@ jobs:
       # -skipPackagePluginValidation is not optional: Amplify depends on smithy-swift, which ships
       # a build plugin that xcodebuild refuses to run unvalidated from the command line.
       - name: App build and UI smoke test
-        if: steps.changed.outputs.run == 'true'
         working-directory: ios
         run: |
           xcodebuild test \
@@ -117,7 +151,8 @@ jobs:
   clients:
     name: Generated clients are current
     runs-on: ubuntu-latest
-    needs: backend
+    needs: [changes, backend]
+    if: needs.changes.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v7
 
@@ -161,6 +196,9 @@ jobs:
 
   web:
     name: Web build
+    needs: changes
+    # Deploy always uploads the web bundle, so build it even when only the backend changed.
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -193,6 +231,8 @@ jobs:
   # minutes, which is why it is path-filtered; this one is standard rate and can run on every push.
   android:
     name: Android build and tests
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -265,8 +305,15 @@ jobs:
     # arm64, to match the Graviton task definition and build the image without emulation. Standard
     # runner, same size and same free-minute allocation as the x86 one.
     runs-on: ubuntu-24.04-arm
-    needs: [backend, clients, web]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [changes, backend, clients, web]
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.changes.outputs.deploy == 'true' &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
+      (needs.clients.result == 'success' || needs.clients.result == 'skipped') &&
+      needs.web.result == 'success'
     environment: production
     concurrency:
       group: deploy-production
