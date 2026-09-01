@@ -328,6 +328,7 @@ jobs:
       WEB_STACK: digital-health-web
       AUTH_STACK: digital-health-auth
       MEDIA_STACK: digital-health-media
+      MAIL_STACK: digital-health-mail
       BOX_STACK: digital-health-box
     steps:
       - uses: actions/checkout@v7
@@ -339,6 +340,17 @@ jobs:
 
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
+
+      # The mail stack is shared by both topologies and is never deleted on pause.
+      - name: Deploy the mail stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/mail.yaml \
+            --stack-name "$MAIL_STACK" \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              EnvironmentName=prod \
+              AlarmEmail=${{ secrets.ALARM_EMAIL }}
 
       # There are two topologies and only one of them is ever deployed: the load balancer and
       # Fargate service, or the single instance that replaces them. Both cannot own the API's DNS
@@ -387,16 +399,18 @@ jobs:
       # CloudFormation trying to delete a certificate its own listener still references. Parameters
       # not named here keep their existing values.
       #
-      # AlarmEmail is a secret rather than a variable only so it is masked: variables are printed
-      # verbatim into the workflow log and this repository is public.
-      #
-      # Do not put a comment between the continued lines below. A '#' after a trailing backslash
-      # ends the command at that point, and the shell reads the remaining assignments as a separate
-      # no-op statement. Doing exactly that silently dropped both AlarmEmail and ImageTag, so a
-      # deploy reported success while shipping no new image at all.
+      # MailConfigurationSet and AlarmTopicArn come from the mail stack, which survives pausing
+      # this one. Do not put a comment between the continued lines below. A '#' after a trailing
+      # backslash ends the command at that point, and the shell reads the remaining assignments as
+      # a separate no-op statement. Doing exactly that silently dropped ImageTag, so a deploy
+      # reported success while shipping no new image at all.
       - name: Deploy the app stack
         if: steps.topology.outputs.name == 'ecs'
         run: |
+          mailConfigurationSet="$(aws cloudformation describe-stacks --stack-name "$MAIL_STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='MailConfigurationSetName'].OutputValue" --output text)"
+          alarmTopicArn="$(aws cloudformation describe-stacks --stack-name "$MAIL_STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='AlarmTopicArn'].OutputValue" --output text)"
           aws cloudformation deploy \
             --template-file infra/app.yaml \
             --stack-name "$APP_STACK" \
@@ -411,7 +425,8 @@ jobs:
               HostedZoneId=${{ vars.HOSTED_ZONE_ID }} \
               WebBaseUrl=${{ vars.WEB_BASE_URL }} \
               MailFrom=${{ vars.MAIL_FROM }} \
-              AlarmEmail=${{ secrets.ALARM_EMAIL }} \
+              MailConfigurationSet="${mailConfigurationSet}" \
+              AlarmTopicArn="${alarmTopicArn}" \
               ImageTag=${{ github.sha }}
 
       - name: Deploy the web stack

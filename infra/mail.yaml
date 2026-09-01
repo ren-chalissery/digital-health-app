@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  SES configuration set, mail-event notifications and reputation alarms for the Digital Health App.
-  Standalone so bounce monitoring survives when the managed app stack is paused and the box topology
-  is running instead.
+  SES configuration set, mail-event notifications, reputation alarms, and the shared infrastructure
+  alarm topic for the Digital Health App. Standalone so mail monitoring survives pausing the managed
+  app stack or switching to the box topology.
 
 Parameters:
   EnvironmentName:

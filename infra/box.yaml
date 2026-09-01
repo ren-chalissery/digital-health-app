@@ -59,9 +59,8 @@ Parameters:
     Type: String
     Default: ''
     Description: >
-      SES configuration set for bounce and complaint tracking. Owned by the app stack; leave empty
-      when running this topology on its own, in which case mail still sends and bounces are simply
-      not tracked.
+      SES configuration set from the mail stack. Invitations must send through it so bounces are
+      tracked; leave empty only in local development.
 
   ImageTag:
     Type: String

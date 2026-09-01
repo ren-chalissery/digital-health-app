@@ -41,13 +41,18 @@ Parameters:
     Type: String
     Description: Verified SES sender address for invitation emails.
 
-  AlarmEmail:
+  MailConfigurationSet:
     Type: String
     Default: ''
     Description: >
-      Where alarms are sent. AWS emails this address a confirmation link and delivers nothing until
-      somebody clicks it — the stack reports success either way, so an unconfirmed subscription is a
-      silent failure. Leave empty to create the alarms without a subscriber.
+      SES configuration set from the mail stack. Invitations must send through it so bounces are
+      tracked; leave empty only in local development.
+
+  AlarmTopicArn:
+    Type: String
+    Description: >
+      SNS topic from the mail stack. Infrastructure alarms publish here alongside mail reputation
+      alarms, so the mail stack survives pausing this one.
 
   MediaStackName:
     Type: String
@@ -85,7 +90,6 @@ Conditions:
   IssueCertificate: !Equals [!Ref CertificateArn, '']
   HasMedia: !Not [!Equals [!Ref MediaStackName, '']]
   CreateDnsRecord: !Not [!Equals [!Ref HostedZoneId, '']]
-  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, '']]
 
 Resources:
   Repository:
@@ -449,112 +453,6 @@ Resources:
         DNSName: !GetAtt LoadBalancer.DNSName
         HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
 
-  # --- Mail ---------------------------------------------------------------------------------
-  #
-  # SES judges the account on how it treats the addresses it sends to, and a sender that never
-  # looks at its bounces eventually stops being allowed to send at all. Nothing here changes what
-  # is sent; it is what makes the consequences visible.
-
-  MailEventsTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub 'digital-health-${EnvironmentName}-mail-events'
-      DisplayName: !Sub 'Digital Health ${EnvironmentName} mail events'
-
-  # SES publishes as a service principal, so the topic has to say so. SourceAccount keeps it to
-  # this account's SES rather than anybody's.
-  MailEventsTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref MailEventsTopic
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ses.amazonaws.com
-            Action: sns:Publish
-            Resource: !Ref MailEventsTopic
-            Condition:
-              StringEquals:
-                AWS:SourceAccount: !Ref AWS::AccountId
-
-  MailEventsSubscription:
-    Type: AWS::SNS::Subscription
-    Condition: HasAlarmEmail
-    Properties:
-      TopicArn: !Ref MailEventsTopic
-      Protocol: email
-      Endpoint: !Ref AlarmEmail
-
-  MailConfigurationSet:
-    Type: AWS::SES::ConfigurationSet
-    Properties:
-      Name: !Sub 'digital-health-${EnvironmentName}'
-      # Publishes bounce and complaint rates broken down by configuration set. The alarms below
-      # deliberately watch the account-wide figures instead, since those are the ones AWS suspends
-      # on; this is for telling afterwards which mail caused it.
-      ReputationOptions:
-        ReputationMetricsEnabled: true
-
-  MailEventDestination:
-    Type: AWS::SES::ConfigurationSetEventDestination
-    Properties:
-      ConfigurationSetName: !Ref MailConfigurationSet
-      EventDestination:
-        Name: bounces-and-complaints
-        Enabled: true
-        # Deliveries and opens are deliberately absent. Every invitation would publish one, which
-        # buries the four events that mean somebody has to do something.
-        MatchingEventTypes:
-          - bounce
-          - complaint
-          - reject
-          - renderingFailure
-        SnsDestination:
-          TopicARN: !Ref MailEventsTopic
-
-  MailBounceRateAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub 'digital-health-${EnvironmentName}-mail-bounce-rate'
-      AlarmDescription: >
-        Too much invitation mail is bouncing. AWS reviews a sender above 5 per cent and suspends one
-        above 10, so this is the warning before invitations stop reaching anybody.
-      Namespace: AWS/SES
-      # No dimension, so this is the account-wide rate — the figure AWS actually acts on, and one
-      # SES publishes whether or not any configuration set exists.
-      MetricName: Reputation.BounceRate
-      Statistic: Average
-      # Reputation is published hourly, so a shorter period would mostly evaluate nothing.
-      Period: 3600
-      EvaluationPeriods: 1
-      Threshold: 0.05
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
-      OKActions: [!Ref AlarmTopic]
-
-  MailComplaintRateAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub 'digital-health-${EnvironmentName}-mail-complaint-rate'
-      AlarmDescription: >
-        Recipients are marking invitations as spam. The tolerance here is far tighter than for
-        bounces — AWS reviews above 0.1 per cent — and it usually means somebody is inviting people
-        who did not expect it.
-      Namespace: AWS/SES
-      MetricName: Reputation.ComplaintRate
-      Statistic: Average
-      Period: 3600
-      EvaluationPeriods: 1
-      Threshold: 0.001
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
-      OKActions: [!Ref AlarmTopic]
-
   # --- Alarms -------------------------------------------------------------------------------
   #
   # Until these existed, the first anybody knew about an outage was a clinician saying so: the
@@ -562,20 +460,6 @@ Resources:
   #
   # Each description says what a person would notice rather than which metric moved, because the
   # description is what arrives in the email at an inconvenient hour.
-
-  AlarmTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub 'digital-health-${EnvironmentName}-alarms'
-      DisplayName: !Sub 'Digital Health ${EnvironmentName} alarms'
-
-  AlarmSubscription:
-    Type: AWS::SNS::Subscription
-    Condition: HasAlarmEmail
-    Properties:
-      TopicArn: !Ref AlarmTopic
-      Protocol: email
-      Endpoint: !Ref AlarmEmail
 
   ApiErrorsAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -594,8 +478,8 @@ Resources:
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
-      OKActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
+      OKActions: [!Ref AlarmTopicArn]
 
   ApiUnavailableAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -617,8 +501,8 @@ Resources:
       ComparisonOperator: LessThanThreshold
       # The one alarm where absent data is itself the alarm: nothing reporting means nothing running.
       TreatMissingData: breaching
-      AlarmActions: [!Ref AlarmTopic]
-      OKActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
+      OKActions: [!Ref AlarmTopicArn]
 
   ApiDegradedAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -639,7 +523,7 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
 
   DatabaseStorageAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -659,7 +543,7 @@ Resources:
       Threshold: 2147483648
       ComparisonOperator: LessThanThreshold
       TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
 
   DatabaseCpuAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -678,7 +562,7 @@ Resources:
       Threshold: 80
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
 
   CacheMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -699,25 +583,9 @@ Resources:
       Threshold: 80
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
-      AlarmActions: [!Ref AlarmTopic]
+      AlarmActions: [!Ref AlarmTopicArn]
 
 Outputs:
-  AlarmTopicArn:
-    Value: !Ref AlarmTopic
-    Export:
-      Name: !Sub '${AWS::StackName}-AlarmTopicArn'
-
-  MailEventsTopicArn:
-    Description: Where SES reports bounces and complaints.
-    Value: !Ref MailEventsTopic
-    Export:
-      Name: !Sub '${AWS::StackName}-MailEventsTopicArn'
-
-  MailConfigurationSetName:
-    Value: !Ref MailConfigurationSet
-    Export:
-      Name: !Sub '${AWS::StackName}-MailConfigurationSetName'
-
   RepositoryUri:
     Value: !GetAtt Repository.RepositoryUri
     Export:

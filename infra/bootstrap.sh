@@ -28,6 +28,7 @@ readonly AUTH_STACK=digital-health-auth
 readonly WEB_STACK=digital-health-web
 readonly APP_STACK=digital-health-app
 readonly MEDIA_STACK=digital-health-media
+readonly MAIL_STACK=digital-health-mail
 readonly ROLE_STACK=digital-health-deploy-role
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -163,6 +164,15 @@ deployStack "${WEB_STACK}" web.yaml \
 deployStack "${MEDIA_STACK}" media.yaml "WebOrigin=https://${WEB_HOST}"
 
 # ---------------------------------------------------------------------------------------------
+step "Mail stack"
+
+# Owned outside the app stack so bounce monitoring survives pausing managed compute.
+"${HERE}/bootstrap-mail.sh"
+
+mailConfigurationSet="$(output "${MAIL_STACK}" MailConfigurationSetName)"
+alarmTopicArn="$(output "${MAIL_STACK}" AlarmTopicArn)"
+
+# ---------------------------------------------------------------------------------------------
 step "Application stack and its first image"
 
 appParams=(
@@ -174,6 +184,8 @@ appParams=(
   "HostedZoneId=${zoneId}"
   "WebBaseUrl=https://${WEB_HOST}"
   "MailFrom=${MAIL_FROM}"
+  "MailConfigurationSet=${mailConfigurationSet}"
+  "AlarmTopicArn=${alarmTopicArn}"
 )
 
 # The repository has to exist before anything can be pushed to it, and the service cannot reach a
