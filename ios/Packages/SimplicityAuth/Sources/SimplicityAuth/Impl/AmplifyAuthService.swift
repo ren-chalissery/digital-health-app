@@ -36,7 +36,12 @@ public final class AmplifyAuthService: AuthService {
     }
 
     public func signIn(email: String, password: String) async throws -> Bool {
-        try await Amplify.Auth.signIn(username: email, password: password).isSignedIn
+        // Amplify refuses a second signIn while a session remains in the Keychain — common after
+        // an infra pause when Cognito survived but the app signed the user out of our API only.
+        if await isSignedIn() {
+            await signOut()
+        }
+        return try await Amplify.Auth.signIn(username: email, password: password).isSignedIn
     }
 
     public func signOut() async {

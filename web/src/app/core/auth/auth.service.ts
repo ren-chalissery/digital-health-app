@@ -40,6 +40,11 @@ export class AuthService {
    * address, or a challenge. The caller routes on that rather than treating it as an error.
    */
   async signIn(email: string, password: string): Promise<boolean> {
+    // Amplify refuses a second signIn while a session remains in local storage — common after an
+    // infra pause when Cognito survived but the app signed the user out of our API only.
+    if (await this.isSignedIn()) {
+      await signOut();
+    }
     const result = await signIn({ username: email, password });
     return result.isSignedIn;
   }
