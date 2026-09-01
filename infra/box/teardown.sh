@@ -17,6 +17,7 @@ readonly ENVIRONMENT="${ENVIRONMENT:-prod}"
 readonly DOMAIN="${DOMAIN:-simplicityhelp.com}"
 readonly BOX_STACK=digital-health-box
 readonly IMAGE_TAG_PARAMETER="/digital-health/${ENVIRONMENT}/box/image-tag"
+readonly DB_PASSWORD_PARAMETER="/digital-health/${ENVIRONMENT}/box/db-password"
 
 export AWS_REGION="${REGION}"
 export AWS_DEFAULT_REGION="${REGION}"
@@ -117,7 +118,8 @@ readonly CONFIG_BUCKET="digital-health-box-${ENVIRONMENT}-${account}"
 
 if ! stackExists "${BOX_STACK}" \
   && ! aws s3api head-bucket --bucket "${CONFIG_BUCKET}" >/dev/null 2>&1 \
-  && ! aws ssm get-parameter --name "${IMAGE_TAG_PARAMETER}" >/dev/null 2>&1; then
+  && ! aws ssm get-parameter --name "${IMAGE_TAG_PARAMETER}" >/dev/null 2>&1 \
+  && ! aws ssm get-parameter --name "${DB_PASSWORD_PARAMETER}" >/dev/null 2>&1; then
   step "Nothing to do"
   info "The box stack, configuration bucket and deploy tag are all absent."
   exit 0
@@ -126,7 +128,7 @@ fi
 step "This will delete"
 stackExists "${BOX_STACK}" && info "- CloudFormation stack ${BOX_STACK}"
 info "- Configuration bucket ${CONFIG_BUCKET} (compose files and database backups)"
-info "- Parameter Store ${IMAGE_TAG_PARAMETER}"
+info "- Parameter Store ${IMAGE_TAG_PARAMETER} and ${DB_PASSWORD_PARAMETER}"
 
 step "What survives"
 info "- network, auth, web, media and mail stacks"
@@ -177,9 +179,12 @@ if aws s3api head-bucket --bucket "${CONFIG_BUCKET}" >/dev/null 2>&1 || [ "$DRY_
   run aws s3api delete-bucket --bucket "${CONFIG_BUCKET}" && info "Deleted ${CONFIG_BUCKET}" || true
 fi
 
-step "Deleting the deploy tag"
+step "Deleting Parameter Store entries"
 if aws ssm get-parameter --name "${IMAGE_TAG_PARAMETER}" >/dev/null 2>&1 || [ "$DRY_RUN" = true ]; then
   run aws ssm delete-parameter --name "${IMAGE_TAG_PARAMETER}" && info "Deleted ${IMAGE_TAG_PARAMETER}" || true
+fi
+if aws ssm get-parameter --name "${DB_PASSWORD_PARAMETER}" >/dev/null 2>&1 || [ "$DRY_RUN" = true ]; then
+  run aws ssm delete-parameter --name "${DB_PASSWORD_PARAMETER}" && info "Deleted ${DB_PASSWORD_PARAMETER}" || true
 fi
 
 step "Done"
