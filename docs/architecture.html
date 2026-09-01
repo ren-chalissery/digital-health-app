@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simplicity — Architecture Reference</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+
+  <style>
+    /* ─── Tokens ─────────────────────────────────────────────────────────────── */
+    :root {
+      --bg:            #f7f8fa;
+      --surface:       #ffffff;
+      --sidebar-bg:    #0f1923;
+      --sidebar-text:  #a8b8c8;
+      --sidebar-hi:    #ffffff;
+      --sidebar-link:  #38bdf8;
+      --accent:        #0ea5e9;
+      --accent-soft:   #e0f2fe;
+      --accent-dark:   #0369a1;
+      --danger:        #ef4444;
+      --warning:       #f59e0b;
+      --success:       #22c55e;
+      --text:          #1e293b;
+      --muted:         #64748b;
+      --border:        #e2e8f0;
+      --code-bg:       #f1f5f9;
+      --radius:        8px;
+      --font:          'Inter', system-ui, -apple-system, sans-serif;
+      --mono:          'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --sidebar-w:     260px;
+      --content-max:   860px;
+    }
+
+    /* ─── Reset ──────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar ────────────────────────────────────────────────────────────── */
+    #sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--sidebar-bg);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-track { background: transparent; }
+    #sidebar::-webkit-scrollbar-thumb { background: #2d3f50; border-radius: 2px; }
+
+    .sidebar-brand {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid #1e2f3f;
+    }
+    .sidebar-brand .product {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--sidebar-hi);
+      letter-spacing: -0.3px;
+    }
+    .sidebar-brand .subtitle {
+      font-size: 11px;
+      color: var(--sidebar-text);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .sidebar-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 10px;
+      padding: 3px 9px;
+      background: #1a3a52;
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .sidebar-badge::before {
+      content: '';
+      display: block;
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    nav { padding: 16px 0 32px; }
+    nav .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #3d5468;
+      padding: 12px 20px 4px;
+    }
+    nav a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 20px;
+      font-size: 13px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+      border-left: 2px solid transparent;
+    }
+    nav a:hover {
+      color: var(--sidebar-hi);
+      background: #1a2b38;
+      border-left-color: #2d5070;
+    }
+    nav a.active {
+      color: var(--sidebar-link);
+      background: #0d2133;
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+    nav a .icon { font-size: 15px; width: 18px; text-align: center; opacity: 0.8; }
+
+    /* ─── Main content ───────────────────────────────────────────────────────── */
+    #main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 48px 40px 80px;
+    }
+    #content {
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+
+    /* ─── Hero ───────────────────────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0c2340 60%, #0a3a5c 100%);
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin-bottom: 40px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .hero h1 span { color: #38bdf8; }
+    .hero p { color: #94a3b8; font-size: 15px; line-height: 1.6; max-width: 580px; }
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.08);
+      color: #cbd5e1;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .tag.accent { background: rgba(14,165,233,0.2); color: #38bdf8; border-color: rgba(14,165,233,0.3); }
+
+    /* ─── Sections ───────────────────────────────────────────────────────────── */
+    section { margin-bottom: 56px; scroll-margin-top: 24px; }
+    section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    section h2 .h2-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 28px 0 10px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+    p { margin-bottom: 14px; font-size: 15px; }
+
+    /* ─── Tables ─────────────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 16px 0 24px; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead tr { background: var(--sidebar-bg); }
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #94a3b8;
+    }
+    tbody tr { border-top: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 9px 14px; vertical-align: top; }
+    tbody td:first-child { font-weight: 500; }
+
+    /* method badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .badge-get    { background: #dcfce7; color: #166534; }
+    .badge-post   { background: #dbeafe; color: #1e40af; }
+    .badge-put    { background: #fef9c3; color: #854d0e; }
+    .badge-patch  { background: #fce7f3; color: #9d174d; }
+    .badge-delete { background: #fee2e2; color: #991b1b; }
+    .badge-pub    { background: #e0f2fe; color: #0369a1; }
+
+    /* status indicators */
+    .status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+    .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-shipped::before  { background: var(--success); }
+    .status-partial::before  { background: var(--warning); }
+    .status-pending::before  { background: var(--danger); }
+    .status-shipped  { color: #15803d; }
+    .status-partial  { color: #b45309; }
+    .status-pending  { color: #b91c1c; }
+
+    /* ─── Code ───────────────────────────────────────────────────────────────── */
+    pre {
+      background: #0f172a;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 16px 0 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #e2e8f0;
+      border: 1px solid #1e2d3d;
+    }
+    code {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      background: var(--code-bg);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: #0369a1;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+
+    /* ─── Callouts ───────────────────────────────────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+    .callout-icon { font-size: 18px; flex-shrink: 0; }
+    .callout-info    { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+    .callout-warning { background: #fffbeb; border-left: 3px solid var(--warning); }
+    .callout-danger  { background: #fef2f2; border-left: 3px solid var(--danger); }
+
+    /* ─── Package tree ───────────────────────────────────────────────────────── */
+    .pkg-tree {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.9;
+      margin: 14px 0 24px;
+    }
+    .pkg-name  { color: #0369a1; font-weight: 600; }
+    .pkg-desc  { color: var(--muted); font-size: 12px; margin-left: 8px; }
+
+    /* ─── Quick ref cards ────────────────────────────────────────────────────── */
+    .ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .ref-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .ref-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 600; }
+    .ref-card .value { font-family: var(--mono); font-size: 13px; color: var(--accent-dark); margin-top: 4px; word-break: break-all; }
+
+    /* ─── Mermaid ────────────────────────────────────────────────────────────── */
+    .mermaid {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 16px 0 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ─── Cost cards ─────────────────────────────────────────────────────────── */
+    .cost-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 14px 0 24px;
+    }
+    .cost-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+    }
+    .cost-card .tier  { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .cost-card .price { font-size: 26px; font-weight: 700; color: var(--text); margin: 6px 0 2px; }
+    .cost-card .price span { font-size: 13px; font-weight: 400; color: var(--muted); }
+    .cost-card .desc  { font-size: 12px; color: var(--muted); }
+
+    /* ─── Infra stack ────────────────────────────────────────────────────────── */
+    .infra-flow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0 24px;
+      font-size: 13px;
+      font-family: var(--mono);
+    }
+    .infra-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+    }
+    .infra-arrow { color: var(--muted); font-size: 16px; }
+    .infra-parallel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* ─── Scrollspy active link ──────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+      #sidebar { display: none; }
+      #main { margin-left: 0; padding: 24px 20px 60px; }
+    }
+
+    /* ─── Print ──────────────────────────────────────────────────────────────── */
+    @media print {
+      #sidebar { display: none; }
+      #main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════════════════╗ -->
+<!-- ║  SIDEBAR                                                 ║ -->
+<!-- ╚══════════════════════════════════════════════════════════╝ -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <div class="product">Simplicity</div>
+    <div class="subtitle">Architecture Reference</div>
+    <div class="sidebar-badge">ap-southeast-2</div>
+  </div>
+  <nav>
+    <div class="section-label">Overview</div>
+    <a href="#overview"       class="active"><span class="icon">🗺</span> Overview</a>
+    <a href="#topology">      <span class="icon">🔗</span> Runtime Topology</a>
+    <a href="#request-path">  <span class="icon">🔐</span> Request Path</a>
+
+    <div class="section-label">Backend</div>
+    <a href="#backend">       <span class="icon">⚙️</span> Stack &amp; Packages</a>
+    <a href="#api">           <span class="icon">📡</span> API Surface</a>
+    <a href="#module-lifecycle"><span class="icon">🔄</span> Module Lifecycle</a>
+    <a href="#video">         <span class="icon">🎥</span> Video Pipeline</a>
+    <a href="#assistant">     <span class="icon">🤖</span> Assistant (RAG)</a>
+    <a href="#jobs">          <span class="icon">⏱</span> Scheduled Jobs</a>
+
+    <div class="section-label">Data</div>
+    <a href="#datamodel">     <span class="icon">🗄</span> Data Model</a>
+    <a href="#retention">     <span class="icon">🗑</span> Retention</a>
+
+    <div class="section-label">Security</div>
+    <a href="#identity">      <span class="icon">🪪</span> Identity</a>
+    <a href="#authz">         <span class="icon">🛡</span> Authorisation</a>
+    <a href="#redis">         <span class="icon">⚡️</span> Redis Keys</a>
+    <a href="#ratelimits">    <span class="icon">🚦</span> Rate Limits</a>
+
+    <div class="section-label">Clients</div>
+    <a href="#contract">      <span class="icon">📜</span> Contract Generation</a>
+    <a href="#web">           <span class="icon">🌐</span> Web (Angular)</a>
+    <a href="#ios">           <span class="icon">📱</span> iOS (SwiftUI)</a>
+    <a href="#android">       <span class="icon">🤖</span> Android (Kotlin)</a>
+
+    <div class="section-label">Infrastructure</div>
+    <a href="#infra">         <span class="icon">☁️</span> CloudFormation Stacks</a>
+    <a href="#cost">          <span class="icon">💰</span> Cost &amp; Deviations</a>
+    <a href="#cicd">          <span class="icon">🚀</span> CI/CD</a>
+    <a href="#local">         <span class="icon">🏠</span> Local Dev</a>
+
+    <div class="section-label">Reference</div>
+    <a href="#decisions">     <span class="icon">⚖️</span> Decisions</a>
+    <a href="#gaps">          <span class="icon">🕳</span> Known Gaps</a>
+    <a href="#quickref">      <span class="icon">📋</span> Quick Reference</a>
+  </nav>
+</aside>
+
+<!-- ╔══════════════════════════════════════════════════════════╗ -->
+<!-- ║  MAIN                                                    ║ -->
+<!-- ╚══════════════════════════════════════════════════════════╝ -->
+<main id="main">
+<div id="content">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1><span>Simplicity</span> — Digital Health Platform</h1>
+    <p>Clinical training platform certifying mental health clinicians to safely deliver a digital
+       therapeutic to people living with schizophrenia and psychosis.</p>
+    <div class="hero-tags">
+      <span class="tag accent">Spring Boot 4.1</span>
+      <span class="tag accent">Angular 22</span>
+      <span class="tag accent">SwiftUI iOS 17+</span>
+      <span class="tag accent">Kotlin Compose</span>
+      <span class="tag">AWS ap-southeast-2</span>
+      <span class="tag">ECS Fargate</span>
+      <span class="tag">RDS PostgreSQL 17</span>
+      <span class="tag">Bedrock Claude Haiku</span>
+    </div>
+  </div>
+
+  <!-- ── 1. Overview ─────────────────────────────────────────────────────── -->
+  <section id="overview">
+    <h2><span class="h2-num">1</span> Overview</h2>
+
+    <p><strong>Simplicity</strong> certifies mental health clinicians to safely deliver a digital
+    therapeutic to people living with schizophrenia and psychosis. Training content is
+    <strong>not shipped with the product</strong> — each organisation's administrators author
+    modules (markdown sections, optional video, quiz), assign them to teams, and a clinician
+    completes a module by reading every section and passing the quiz.</p>
+
+    <h3>App tabs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tab</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td>Next outstanding module</td></tr>
+          <tr><td>Learn</td><td>Assigned modules, section reader, video, quiz, assistant ask box</td></tr>
+          <tr><td>Reflect</td><td>Private journal with full-text search</td></tr>
+          <tr><td>Settings</td><td>Profile; org admin (members, teams, invitations, module authoring)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Repository layout (monorepo)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Directory</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td><code>backend/</code></td><td>Spring Boot 4.1.1 API — Java 17, Gradle, ~140 classes</td></tr>
+          <tr><td><code>web/</code></td><td>Angular 22 SPA</td></tr>
+          <tr><td><code>ios/</code></td><td>SwiftUI client — 10 local SPM packages</td></tr>
+          <tr><td><code>android/</code></td><td>Kotlin Compose — 12 Gradle modules</td></tr>
+          <tr><td><code>api-contract/</code></td><td>Generated <code>openapi.yaml</code> + OpenAPI Generator config</td></tr>
+          <tr><td><code>infra/</code></td><td>CloudFormation templates, bootstrap/teardown scripts</td></tr>
+          <tr><td><code>scripts/</code></td><td>Production verification suites (Python)</td></tr>
+          <tr><td><code>local/</code></td><td>Floci provisioning for local Cognito/SES</td></tr>
+          <tr><td><code>docs/</code></td><td>Design specifications and this document</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <div>A <strong>monorepo</strong> so one pull request can change the API contract and every consumer together. CI
+      regenerates Angular, Swift, and Kotlin clients and fails on drift.</div>
+    </div>
+  </section>
+
+  <!-- ── Topology ────────────────────────────────────────────────────────── -->
+  <section id="topology">
+    <h2>Runtime Topology</h2>
+    <div class="mermaid">
+graph TB
+    Browser["Angular SPA"] --> CF["CloudFront + S3"]
+    Browser --> ALB["Application Load Balancer"]
+    Browser -. "auth" .-> Cognito["Cognito User Pool"]
+    iOS["iOS SwiftUI"] --> ALB
+    iOS -. "auth" .-> Cognito
+    Android["Android Kotlin"] --> ALB
+    Android -. "auth" .-> Cognito
+    ALB --> ECS["ECS Fargate: Spring Boot API"]
+    ECS --> RDS[("RDS PostgreSQL 17")]
+    ECS --> Redis[("ElastiCache Valkey 8")]
+    ECS -. "JWKS / GetUser" .-> Cognito
+    ECS --> SES["Amazon SES"]
+    ECS --> S3["S3 upload + asset"]
+    ECS --> MC["MediaConvert"]
+    ECS --> Bedrock["Bedrock: Titan Embed + Claude Haiku"]
+    ECS --> SM["Secrets Manager"]
+    </div>
+    <p>Clients sign in against Cognito directly (SRP). The API never sees a password.</p>
+  </section>
+
+  <!-- ── Request Path ────────────────────────────────────────────────────── -->
+  <section id="request-path">
+    <h2>Authenticated Request Path</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Step</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>Authorization: Bearer &lt;access token&gt;</code></td><td>Client (15 min Cognito access token)</td></tr>
+          <tr><td>2</td><td>ALB terminates TLS, forwards to 8080</td><td>ALB</td></tr>
+          <tr><td>3</td><td>JWT verified: signature, <code>exp</code>, <code>iss</code>, <code>token_use == "access"</code>, <code>client_id</code> in allowlist</td><td><code>SecurityConfig</code></td></tr>
+          <tr><td>4</td><td>Denylist check: reject if token <code>iat</code> precedes revocation instant</td><td><code>TokenRevocationService</code> / Redis</td></tr>
+          <tr><td>5</td><td>Principal resolved (user id, org roles, team roles)</td><td><code>CachingPrincipalService</code> → Redis <code>principal:{sub}</code>, 5 min TTL</td></tr>
+          <tr><td>5a</td><td>First request: JIT provision <code>app_user</code> via Cognito <code>GetUser</code></td><td><code>UserProvisioningService</code></td></tr>
+          <tr><td>6</td><td><code>@PreAuthorize("@authz.…")</code></td><td><code>AuthorizationService</code></td></tr>
+          <tr><td>7</td><td>Business rules, audit, rate limits</td><td><code>service/</code></td></tr>
+          <tr><td>8</td><td>Response or RFC 9457 <code>application/problem+json</code></td><td><code>GlobalExceptionHandler</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 2. Backend ──────────────────────────────────────────────────────── -->
+  <section id="backend">
+    <h2><span class="h2-num">2</span> Backend</h2>
+
+    <p><strong>Entry:</strong> <code>io.simplicity.training.TrainingApplication</code><br>
+    <strong>Stack:</strong> Spring Boot 4.1.1, Java 17, Gradle — single deployable module (~140 Java classes)</p>
+
+    <h3>Package layout</h3>
+    <div class="pkg-tree">
+      <div><span class="pkg-name">controller/</span><span class="pkg-desc">9 @RestController classes — thin, @PreAuthorize here</span></div>
+      <div><span class="pkg-name">service/</span><span class="pkg-desc">Business logic, transactions, audit, rate limits; assistant/, media/ sub-packages</span></div>
+      <div><span class="pkg-name">repository/</span><span class="pkg-desc">19 Spring Data JpaRepository interfaces; native SQL for tsvector/pgvector</span></div>
+      <div><span class="pkg-name">security/</span><span class="pkg-desc">Filter chain, AppPrincipal, cache, revocation, @authz, Cognito directory</span></div>
+      <div><span class="pkg-name">model/</span><span class="pkg-desc">18 @Entity classes, enums, request/response DTO records</span></div>
+      <div><span class="pkg-name">config/</span><span class="pkg-desc">AppProperties, AWS SDK clients, scheduling</span></div>
+      <div><span class="pkg-name">exception/</span><span class="pkg-desc">5 runtime exceptions + @RestControllerAdvice</span></div>
+    </div>
+    <p>Domain boundaries live in URLs: <code>/api/v1/orgs/{orgId}/…</code></p>
+  </section>
+
+  <!-- ── API Surface ─────────────────────────────────────────────────────── -->
+  <section id="api">
+    <h2>API Surface</h2>
+
+    <h3>CurrentUserController — <code>/api/v1/me</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Auth</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/me</code></td><td>Authenticated — provisions on first call</td></tr>
+          <tr><td><span class="badge badge-put">PUT</span></td><td><code>/me/profile</code></td><td>Authenticated</td></tr>
+          <tr><td><span class="badge badge-put">PUT</span></td><td><code>/me/active-organisation</code></td><td>Authenticated</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>OrganisationController — <code>/api/v1/organisations</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Auth</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/organisations</code></td><td>Any authenticated user; creator → ORG_ADMIN</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/orgs/{orgId}</code></td><td>Org member</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/orgs/{orgId}/members</code></td><td>Org member</td></tr>
+          <tr><td><span class="badge badge-patch">PATCH</span></td><td><code>/orgs/{orgId}/members/{userId}</code></td><td>Org admin</td></tr>
+          <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/orgs/{orgId}/members/me</code></td><td>Org member (leave)</td></tr>
+          <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/orgs/{orgId}/members/{userId}</code></td><td>Org admin (refuses last admin)</td></tr>
+          <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/orgs/{orgId}</code></td><td>Org admin (archive)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>InvitationController</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Auth</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/orgs/{orgId}/invitations</code></td><td>Org admin</td></tr>
+          <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/orgs/{orgId}/invitations/{id}</code></td><td>Org admin</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/invitations/{token}</code></td><td><strong>Public</strong> preview</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/invitations/{token}/accept</code></td><td>Authenticated</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Raw invitation token emailed once; only SHA-256 hash stored. Redis index <code>invite:{tokenHash}</code>.</p>
+
+    <h3>Other controllers</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Controller</th><th>Auth guard</th><th>Summary</th></tr></thead>
+        <tbody>
+          <tr><td><code>TeamController</code></td><td>isOrgMember / isTeamAdmin</td><td>CRUD teams; list/add/remove members</td></tr>
+          <tr><td><code>ModuleController</code></td><td>isOrgAdmin</td><td>Create / patch / publish / archive modules; assign teams</td></tr>
+          <tr><td><code>LearningController</code></td><td>isOrgMember + team assignment</td><td>Read module; submit quiz; section progress; presigned playback URL (15 min)</td></tr>
+          <tr><td><code>MediaController</code></td><td>isOrgAdmin</td><td>Register upload → presigned PUT → MediaConvert; captions</td></tr>
+          <tr><td><code>ReflectionController</code></td><td>Owner only</td><td>CRUD + <code>?q=</code> full-text search; no <code>org_id</code>; other users → 404</td></tr>
+          <tr><td><code>AssistantController</code></td><td>isOrgMember</td><td>Single-turn RAG over published org content</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Error responses (RFC 9457)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Exception</th><th>HTTP</th></tr></thead>
+        <tbody>
+          <tr><td><code>BadRequestException</code></td><td>400</td></tr>
+          <tr><td><code>ForbiddenException</code> / <code>AccessDeniedException</code></td><td>403</td></tr>
+          <tr><td><code>NotFoundException</code></td><td>404</td></tr>
+          <tr><td><code>ConflictException</code></td><td>409</td></tr>
+          <tr><td><code>EmailDeliveryException</code></td><td>503</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tests</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Suite</th><th>What it covers</th></tr></thead>
+        <tbody>
+          <tr><td><code>AbstractIntegrationTest</code></td><td>Full app + Testcontainers <code>pgvector/pgvector:pg17</code> + Valkey; locally signed JWTs with production-identical validator</td></tr>
+          <tr><td><code>AwsContractTest</code></td><td>Real SDK against Floci (Cognito/SES contract)</td></tr>
+          <tr><td><code>OpenApiSpecTest</code></td><td>Committed <code>openapi.yaml</code> drift check</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Module lifecycle ────────────────────────────────────────────────── -->
+  <section id="module-lifecycle">
+    <h2>Module Lifecycle</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>State</th><th>Visible to learners</th></tr></thead>
+        <tbody>
+          <tr><td>Create</td><td><code>module</code> row, no version</td><td>No</td></tr>
+          <tr><td>Open draft</td><td><code>module_version</code> DRAFT (one per module)</td><td>No</td></tr>
+          <tr><td>Publish</td><td><code>module_version</code> PUBLISHED (immutable)</td><td>Yes, if team-assigned</td></tr>
+          <tr><td>Republish + <code>supersedesCompletions</code></td><td>New published version</td><td>Prior completions → NEEDS_REDOING</td></tr>
+          <tr><td>Archive</td><td><code>module.archived_at</code> set</td><td>Hidden</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Video pipeline ─────────────────────────────────────────────────── -->
+  <section id="video">
+    <h2>Video Pipeline</h2>
+    <ol style="padding-left:20px; font-size:15px; line-height:2.1;">
+      <li>Admin registers asset (<code>MediaService.register</code>, rate limit 1/user/minute)</li>
+      <li>Presigned PUT to upload bucket; client uploads directly (max 500 MB)</li>
+      <li>Client calls <code>/uploaded</code> → MediaConvert job (720p H.264/AAC)</li>
+      <li><code>MediaConvertPoller</code> every 30 s advances <code>PROCESSING → READY / FAILED</code></li>
+      <li>Source object expires after 7 days (S3 lifecycle)</li>
+      <li>Learner gets presigned GET from asset bucket (15 min TTL)</li>
+    </ol>
+  </section>
+
+  <!-- ── Assistant ──────────────────────────────────────────────────────── -->
+  <section id="assistant">
+    <h2>Assistant (RAG)</h2>
+    <ol style="padding-left:20px; font-size:15px; line-height:2.1;">
+      <li><code>ModuleIndexer</code> every 60 s embeds published versions missing <code>indexed_at</code> — Titan Embed v2, 1024-d</li>
+      <li>Question embedded; 6 nearest chunks within org (pgvector HNSW, cosine distance)</li>
+      <li>If nearest distance &gt; <strong>0.55</strong> → <code>answered: false</code>, <strong>no model call</strong></li>
+      <li>Else Claude Haiku 4.5 via <code>au.</code> inference profile (Australian regions only)</li>
+      <li>Citations include whether module is assigned to caller</li>
+    </ol>
+    <div class="callout callout-danger">
+      <span class="callout-icon">🔒</span>
+      <div><strong>Privacy:</strong> No code path from reflections to assistant. iOS/Android enforce package/module boundary.
+      The assistant only reads published module content — never journal entries.</div>
+    </div>
+  </section>
+
+  <!-- ── Scheduled jobs ─────────────────────────────────────────────────── -->
+  <section id="jobs">
+    <h2>Scheduled Jobs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Job</th><th>Schedule</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>MediaConvertPoller</code></td><td><code>fixedDelay = PT30S</code></td><td>Advance transcode status</td></tr>
+          <tr><td><code>ModuleIndexer</code></td><td><code>fixedDelay = PT60S</code></td><td>Embed new published versions (~1 min staleness)</td></tr>
+          <tr><td><code>AuditRetentionJob</code></td><td><code>cron = 0 15 3 * * *</code></td><td>Null <code>audit_event.ip_address</code> after 180 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-warning">
+      <span class="callout-icon">⚠️</span>
+      <div>No <code>@Async</code>, no SQS — all jobs run in the API container. Scaling out requires advisory locks for pollers to avoid duplicate processing.</div>
+    </div>
+  </section>
+
+  <!-- ── 3. Data Model ───────────────────────────────────────────────────── -->
+  <section id="datamodel">
+    <h2><span class="h2-num">3</span> Data Model</h2>
+    <p>Flyway owns schema (<code>ddl-auto: none</code>). Eight migrations:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Version</th><th>Adds</th></tr></thead>
+        <tbody>
+          <tr><td>V1</td><td><code>citext</code>; org, user, membership, team, invitation, audit</td></tr>
+          <tr><td>V2</td><td>Org archiving; <code>app_user.active_org_id</code></td></tr>
+          <tr><td>V3</td><td>Modules, versions, sections, assignments, progress</td></tr>
+          <tr><td>V4</td><td>Quiz questions, options, attempts</td></tr>
+          <tr><td>V5</td><td><code>media_asset</code>; section <code>media_asset_id</code></td></tr>
+          <tr><td>V6</td><td><code>media_asset.caption_key</code></td></tr>
+          <tr><td>V7</td><td><code>reflection</code> + generated TSVECTOR + GIN index</td></tr>
+          <tr><td>V8</td><td><code>vector</code> extension; <code>module_chunk</code>; <code>module_version.indexed_at</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Key relationships</h3>
+    <pre>organisation ──&lt; org_membership &gt;── app_user
+organisation ──&lt; team ──&lt; team_member &gt;── app_user
+organisation ──&lt; module ──&lt; module_version ──&lt; module_section, quiz_question ──&lt; quiz_option
+module ──&lt; team_module_assignment &gt;── team
+app_user ──&lt; user_section_progress, user_module_completion, quiz_attempt, reflection
+organisation ──&lt; module_chunk (VECTOR(1024))
+organisation ──&lt; audit_event</pre>
+
+    <h3>Postgres features</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Feature</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td><code>citext</code></td><td>Case-insensitive unique email (+ app-level lowercasing for Hibernate lookups)</td></tr>
+          <tr><td><code>tsvector</code> + GIN</td><td>Reflection search</td></tr>
+          <tr><td><code>pgvector</code> + HNSW</td><td>Assistant retrieval (vs Neptune at $200–700/mo)</td></tr>
+          <tr><td><code>jsonb</code></td><td><code>audit_event.metadata</code></td></tr>
+          <tr><td>Partial unique indexes</td><td>One pending invitation per (org, email); one DRAFT per module</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Retention ──────────────────────────────────────────────────────── -->
+  <section id="retention">
+    <h2>Retention</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>What</th><th>Kept for</th></tr></thead>
+        <tbody>
+          <tr><td>Reflections</td><td>Life of account</td></tr>
+          <tr><td>Audit entries</td><td>Indefinitely (operational history)</td></tr>
+          <tr><td>Audit IP address</td><td><strong>180 days</strong> (<code>app.audit.ip-retention</code>)</td></tr>
+          <tr><td>Principal cache</td><td>5 minutes</td></tr>
+          <tr><td>Revoked sessions</td><td>15 minutes (access token lifetime)</td></tr>
+          <tr><td>Uploaded source video</td><td>7 days (S3 lifecycle)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 4. Identity & Security ─────────────────────────────────────────── -->
+  <section id="identity">
+    <h2><span class="h2-num">4</span> Identity &amp; Security</h2>
+
+    <h3>Cognito vs application DB</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cognito</th><th>Application DB</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Passwords, verification, reset, (future) MFA</td>
+            <td>Profile, memberships, roles</td>
+          </tr>
+          <tr>
+            <td>Issues access tokens (15 min) and refresh tokens</td>
+            <td><code>app_user.cognito_sub</code> links accounts</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Custom sign-in screens on every client — not Cognito Hosted UI.</p>
+
+    <h3>JWT validation</h3>
+    <p>Beyond signature/expiry the filter checks:</p>
+    <ul style="padding-left:20px; font-size:15px; line-height:2.1;">
+      <li><code>iss</code> — correct pool</li>
+      <li><code>token_use == "access"</code> — reject ID tokens</li>
+      <li><code>client_id</code> ∈ <strong><code>app.cognito.client-ids</code></strong> (web, iOS, Android — list, not single value)</li>
+    </ul>
+    <p>Email resolved via Cognito <code>GetUser</code>, not JWT claims (production pools differ from local Floci).</p>
+  </section>
+
+  <section id="authz">
+    <h2>Authorisation</h2>
+
+    <h3>Tiers</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tier</th><th>Storage</th><th>Values</th></tr></thead>
+        <tbody>
+          <tr><td>Platform</td><td><code>app_user.platform_role</code></td><td><code>SUPER_ADMIN</code>, <code>STANDARD</code></td></tr>
+          <tr><td>Organisation</td><td><code>org_membership.org_role</code></td><td><code>ORG_ADMIN</code>, <code>ORG_MEMBER</code></td></tr>
+          <tr><td>Team</td><td><code>team_member.team_role</code></td><td><code>TEAM_ADMIN</code>, <code>TEAM_MEMBER</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Two layers: <code>@PreAuthorize</code> on controllers + <code>org_id</code> filter in every org-scoped repository query.</p>
+
+    <h3>Revocation</h3>
+    <p>Denylist stores <strong>revocation instant</strong>; filter rejects tokens with earlier <code>iat</code>. A boolean ban would lock out multi-org clinicians from all orgs.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>Cache evicted</th><th>Denylist written</th></tr></thead>
+        <tbody>
+          <tr><td>Remove member, leave, archive org, deactivate</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Role change (admin → member)</td><td>Yes</td><td>No (intentional)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Client token storage</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Storage</th></tr></thead>
+        <tbody>
+          <tr><td>Web</td><td><code>sessionStorage</code> (tab close = session end)</td></tr>
+          <tr><td>iOS / Android</td><td>Amplify SDK → Keychain / Keystore</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="redis">
+    <h2>Redis (Valkey) Keys</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Key pattern</th><th>Purpose</th><th>TTL</th></tr></thead>
+        <tbody>
+          <tr><td><code>principal:{sub}</code></td><td>Serialised <code>AppPrincipal</code></td><td>5 min</td></tr>
+          <tr><td><code>denylist:{sub}</code></td><td>Revocation epoch</td><td>15 min</td></tr>
+          <tr><td><code>invite:{tokenHash}</code></td><td>Invitation UUID</td><td>7 days</td></tr>
+          <tr><td><code>ratelimit:{scope}:{key}</code></td><td>Fixed-window counter</td><td>Window duration</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ratelimits">
+    <h2>Rate Limits</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Scope</th><th>Limit</th><th>Window</th><th>Redis down</th></tr></thead>
+        <tbody>
+          <tr><td><code>invite</code></td><td>50/org</td><td>1 hour</td><td><strong>REFUSE</strong></td></tr>
+          <tr><td><code>assistant</code></td><td>30/user</td><td>1 hour</td><td>ALLOW</td></tr>
+          <tr><td><code>reflection-write</code></td><td>60/user</td><td>1 hour</td><td>ALLOW</td></tr>
+          <tr><td><code>media-register</code></td><td>1/user</td><td>1 minute</td><td><strong>REFUSE</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 5. Clients ─────────────────────────────────────────────────────── -->
+  <section id="contract">
+    <h2><span class="h2-num">5</span> Clients — Contract Generation</h2>
+    <pre>cd backend && ./gradlew generateOpenApiSpec   # → api-contract/openapi.yaml
+cd api-contract && npm run generate:web       # → web/src/app/api/
+cd api-contract && npm run generate:ios       # → ios/Packages/SimplicityApi/.../Generated/
+cd api-contract && npm run generate:android   # → android/api-client/</pre>
+    <p>OpenAPI Generator <strong>7.25.0</strong>. CI <code>clients</code> job fails on any drift.</p>
+  </section>
+
+  <section id="web">
+    <h2>Web — Angular 22</h2>
+    <ul style="padding-left:20px; font-size:15px; line-height:2.1;">
+      <li>Standalone components, signals + RxJS at HTTP boundary, Vitest</li>
+      <li><code>main.ts</code> fetches <code>config.json</code> before bootstrap (not <code>APP_INITIALIZER</code>)</li>
+      <li><code>SessionService</code> caches <code>GET /me</code>; guards enforce server-authoritative onboarding</li>
+      <li><code>authInterceptor</code>: Bearer token; 401 → sign out; skips auth on public invitation preview</li>
+      <li>Video: native <code>&lt;video&gt;</code> + WebVTT <code>&lt;track&gt;</code>; section-level progress only</li>
+      <li>Assistant: ask box on Learn tab (not a fifth tab)</li>
+    </ul>
+    <h3>Routes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Prefix</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td><code>/sign-in</code>, <code>/sign-up</code>, …</td><td>Auth screens</td></tr>
+          <tr><td><code>/welcome/*</code></td><td>Onboarding wizard</td></tr>
+          <tr><td><code>/dashboard</code></td><td>Next module</td></tr>
+          <tr><td><code>/learn</code></td><td>Module list, section reader, quiz, assistant</td></tr>
+          <tr><td><code>/reflect</code></td><td>Journal</td></tr>
+          <tr><td><code>/settings/*</code></td><td>Profile + org admin (guarded by <code>orgAdminGuard</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ios">
+    <h2>iOS — SwiftUI (iOS 17+)</h2>
+    <p>Ten SPM packages; app target is thin (<code>Simplicity_iOS/</code>):</p>
+    <div class="pkg-tree">
+      Foundation, Design, Api → Services → Auth, Learn, Reflect, Assistant, Admin
+    </div>
+    <p>Feature packages <strong>never depend on each other</strong> (Reflect ↔ Assistant isolation enforced by module boundary test).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Aspect</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>DI</td><td>Factory</td></tr>
+          <tr><td>ViewModels</td><td><code>@Observable @MainActor</code></td></tr>
+          <tr><td>Navigation</td><td><code>AppRouter</code> state machine → <code>MainTabView</code> (4 tabs); assistant as sheet from Learn</td></tr>
+          <tr><td>API</td><td>Generated client + <code>BearerInterceptor</code> (401 retry, 2 s throttle)</td></tr>
+          <tr><td>Config</td><td>Build-time xcconfig (<code>APIBaseURL</code>, Cognito ids) — not runtime</td></tr>
+          <tr><td>Captions</td><td>AVFoundation cannot side-load WebVTT on progressive MP4; points user to web/Android</td></tr>
+          <tr><td>Tests</td><td>Swift Testing per package; <code>test-all.sh</code>; UI smoke + optional live Cognito test</td></tr>
+          <tr><td>Release</td><td>fastlane TestFlight (pending explicit bundle id registration)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="android">
+    <h2>Android — Kotlin Compose</h2>
+    <p>Twelve Gradle modules — more complete than the root README suggests:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td><code>api-client</code>, <code>api</code>, <code>foundation</code>, <code>design</code>, <code>testing</code></td><td><span class="status status-shipped">Complete</span></td></tr>
+          <tr><td><code>services</code></td><td><span class="status status-partial">6 services — no SessionService yet</span></td></tr>
+          <tr><td><code>auth</code></td><td><span class="status status-partial">Sign-in screen + Amplify; no sign-up/wizards</span></td></tr>
+          <tr><td><code>learn</code>, <code>reflect</code>, <code>assistant</code>, <code>admin</code></td><td><span class="status status-pending">ViewModels + tests only; no Compose screens</span></td></tr>
+          <tr><td><code>app</code></td><td><span class="status status-pending">MainActivity shows sign-in only; feature modules not wired</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Aspect</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>DI</td><td>Hilt (only <code>AuthModule</code> so far)</td></tr>
+          <tr><td>Video</td><td>Media3 ExoPlayer with WebVTT captions in <code>VideoSection</code></td></tr>
+          <tr><td>Safety</td><td><code>ModuleBoundaryTest</code> asserts assistant does not depend on reflect</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 6. Infrastructure ───────────────────────────────────────────────── -->
+  <section id="infra">
+    <h2><span class="h2-num">6</span> Infrastructure</h2>
+    <p><strong>Region:</strong> <code>ap-southeast-2</code> &nbsp;·&nbsp; <strong>Domain:</strong> <code>simplicityhelp.com</code><br>
+    <strong>Endpoints:</strong> <code>app.simplicityhelp.com</code> (web), <code>api.simplicityhelp.com</code> (API)</p>
+
+    <h3>CloudFormation stack dependency order</h3>
+    <div class="infra-flow">
+      <span class="infra-node">deploy-role</span>
+      <span class="infra-arrow">→</span>
+      <span class="infra-node">network</span>
+      <span class="infra-arrow">→</span>
+      <div class="infra-parallel">
+        <span class="infra-node">data</span>
+        <span class="infra-node">auth</span>
+      </div>
+      <span class="infra-arrow">→</span>
+      <div class="infra-parallel">
+        <span class="infra-node">web</span>
+        <span class="infra-node">media</span>
+      </div>
+      <span class="infra-arrow">→</span>
+      <span class="infra-node">app</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stack</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td><code>network</code></td><td>VPC <code>10.20.0.0/16</code>, public subnets, SG chain: internet → ALB → app:8080 → data:5432/6379</td></tr>
+          <tr><td><code>data</code></td><td>RDS Postgres 17.7 <code>db.t4g.micro</code>, Valkey 8 <code>cache.t4g.micro</code>, Secrets Manager</td></tr>
+          <tr><td><code>auth</code></td><td>Cognito pool (Retain), 3 app clients, no hosted UI</td></tr>
+          <tr><td><code>web</code></td><td>S3 + CloudFront OAC, SPA fallback, security headers</td></tr>
+          <tr><td><code>media</code></td><td>Upload bucket (7-day expiry), asset bucket (Retain), MediaConvert queue + role</td></tr>
+          <tr><td><code>app</code></td><td>ECR, ECS Fargate ARM64 (0.5 vCPU / 1 GB), ALB, SES config set, SNS alarms</td></tr>
+          <tr><td><code>deploy-role</code></td><td>GitHub OIDC → IAM deploy role</td></tr>
+          <tr><td><code>box</code> (optional)</td><td>Single <code>t4g.small</code> EC2 with Docker Compose (Caddy + app + Postgres + Valkey), nightly <code>pg_dump</code> to S3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="cost">
+    <h2>Cost &amp; Deliberate Deviations</h2>
+    <div class="cost-grid">
+      <div class="cost-card">
+        <div class="tier">Full</div>
+        <div class="price">$70–85<span>/mo</span></div>
+        <div class="desc">Fargate + ALB + RDS + Valkey</div>
+      </div>
+      <div class="cost-card">
+        <div class="tier">Box (demo)</div>
+        <div class="price">$23<span>/mo</span></div>
+        <div class="desc">Single t4g.small EC2</div>
+      </div>
+      <div class="cost-card">
+        <div class="tier">Paused</div>
+        <div class="price">$0.70<span>/mo</span></div>
+        <div class="desc"><code>teardown.sh --pause</code></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Deviation</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td>Public subnets, no NAT</td><td>~$32/mo saved; SG restricts app to ALB only</td></tr>
+          <tr><td>No staging environment</td><td>Everything verified against production</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="cicd">
+    <h2>CI/CD</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Job</th><th>Trigger</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>backend</code></td><td>Always</td><td><code>./gradlew test</code></td></tr>
+          <tr><td><code>clients</code></td><td>After backend</td><td>Regenerate all clients; fail on diff</td></tr>
+          <tr><td><code>web</code></td><td>Always</td><td>Build + Vitest</td></tr>
+          <tr><td><code>ios</code></td><td>Path filter</td><td>SwiftLint, <code>test-all.sh</code>, UI smoke</td></tr>
+          <tr><td><code>android</code></td><td>Always</td><td><code>./gradlew test</code>, <code>:app:assembleDebug</code></td></tr>
+          <tr><td><code>deploy</code></td><td>Push to <code>main</code></td><td>OIDC, ARM64 image, deploy <code>app</code> + <code>web</code>, smoke check</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Only <strong><code>app</code></strong> and <strong><code>web</code></strong> redeploy on CI — infra stacks are bootstrap-time.</p>
+
+    <h3>Production verification (<code>scripts/</code>)</h3>
+    <p>Python suites using real Cognito (<code>verification.py</code> harness): hardening, iOS sign-in, learn, authoring, org admin, reflect/assistant. Creates <code>verify-*@simplicityhelp.com</code> accounts; cleanup tracks only what it created (never lists the pool).</p>
+  </section>
+
+  <section id="local">
+    <h2>Local Development</h2>
+    <pre>docker compose up -d    # Postgres 5432, Valkey 6379, Floci 4566 (Cognito + SES only)
+./local/bootstrap.sh    # → backend/.env.local, web/public/config.json</pre>
+    <p>Re-run bootstrap after <code>docker compose down</code> (Floci state is in-memory).</p>
+    <div class="callout callout-warning">
+      <span class="callout-icon">⚠️</span>
+      <div><strong>Floci gotchas:</strong> tokens carry <code>email</code> claim; <code>GetUser</code> omits <code>email_verified</code> — tests must not relax checks that production requires.</div>
+    </div>
+  </section>
+
+  <!-- ── 7. Decisions & Gaps ─────────────────────────────────────────────── -->
+  <section id="decisions">
+    <h2><span class="h2-num">7</span> Architectural Decisions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Rationale</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>Cognito for auth</td><td>Avoid password reset/MFA × 3 clients</td><td>Lock-in; only <code>cognito_sub</code> couples schema</td></tr>
+          <tr><td>Custom sign-in UI</td><td>Clinical trust / brand</td><td>More client code</td></tr>
+          <tr><td>Monorepo</td><td>Contract + consumers move together</td><td>Single CI</td></tr>
+          <tr><td>Org membership as join table</td><td>Multi-org clinicians (locums)</td><td>Active-org concept everywhere</td></tr>
+          <tr><td>pgvector not Neptune</td><td>Cost at this scale</td><td>Testcontainers use pgvector image</td></tr>
+          <tr><td>Assistant threshold before LLM</td><td>Safety in mental health context</td><td>Unanswerable questions cost nothing</td></tr>
+          <tr><td>Async indexing</td><td>Publish must not depend on Bedrock</td><td>~1 min staleness</td></tr>
+          <tr><td>Last admin leave archives org</td><td>No orphaned admin-less org</td><td>Surprising UX; corrected in iOS warning</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="gaps">
+    <h2>Phase Status &amp; Known Gaps</h2>
+
+    <h3>Phase status</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phase</th><th>Scope</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Auth, orgs, teams, invitations, AWS</td><td><span class="status status-shipped">Shipped</span></td></tr>
+          <tr><td>2</td><td>Modules, video, quizzes, Learn</td><td><span class="status status-shipped">Shipped</span></td></tr>
+          <tr><td>3</td><td>Reflect journal</td><td><span class="status status-shipped">Shipped</span></td></tr>
+          <tr><td>4</td><td>Assistant (RAG)</td><td><span class="status status-shipped">Shipped</span></td></tr>
+          <tr><td>5 iOS</td><td>Native client</td><td><span class="status status-partial">Shipped; TestFlight pending bundle id</span></td></tr>
+          <tr><td>5 Android</td><td>Native client</td><td><span class="status status-pending">Partial — logic/tests exist, no app shell</span></td></tr>
+          <tr><td>—</td><td>Hardening</td><td><span class="status status-shipped">Shipped</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Known gaps</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Gap</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Android shell</strong></td><td>Only item falling short of Phase 1 promise</td></tr>
+          <tr><td><strong>No staging</strong></td><td>Right next infra decision per specs</td></tr>
+          <tr><td><strong>iOS captions</strong></td><td>Needs HLS transcode; web/Android work today</td></tr>
+          <tr><td><strong>Valkey TLS in transit</strong></td><td>Deferred; traffic stays in VPC</td></tr>
+          <tr><td><strong>Auth events not audited</strong></td><td>Org/team/module changes are</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Compliance posture</h3>
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div>Reflections are de-identified by design (clinician practice notes, no patient identifiers) — outside HIPAA/HISO territory.
+      Groundwork: encryption at rest/transit, audit on membership mutations, least-privilege IAM.
+      If de-identification constraint relaxes, reassess <strong>before</strong> adding features like "help me reflect on this" — that would break the promise that reflections are never read by the server or sent to Bedrock.</div>
+    </div>
+  </section>
+
+  <!-- ── Quick Reference ────────────────────────────────────────────────── -->
+  <section id="quickref">
+    <h2>Quick Reference</h2>
+    <div class="ref-grid">
+      <div class="ref-card"><div class="label">API (prod)</div><div class="value">api.simplicityhelp.com</div></div>
+      <div class="ref-card"><div class="label">Web (prod)</div><div class="value">app.simplicityhelp.com</div></div>
+      <div class="ref-card"><div class="label">Local API</div><div class="value">localhost:8080</div></div>
+      <div class="ref-card"><div class="label">Local web</div><div class="value">localhost:4200</div></div>
+      <div class="ref-card"><div class="label">Postgres</div><div class="value">localhost:5432</div></div>
+      <div class="ref-card"><div class="label">Valkey</div><div class="value">localhost:6379</div></div>
+      <div class="ref-card"><div class="label">Floci</div><div class="value">localhost:4566</div></div>
+      <div class="ref-card"><div class="label">Node</div><div class="value">24.20.0 (.nvmrc)</div></div>
+      <div class="ref-card"><div class="label">Java</div><div class="value">17 (Amazon Corretto)</div></div>
+      <div class="ref-card"><div class="label">Region</div><div class="value">ap-southeast-2</div></div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+  // ── Mermaid init ──────────────────────────────────────────────────────────
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral',
+    themeVariables: {
+      primaryColor: '#0ea5e9',
+      primaryTextColor: '#1e293b',
+      primaryBorderColor: '#0284c7',
+      lineColor: '#64748b',
+      secondaryColor: '#f0f9ff',
+      tertiaryColor: '#f8fafc',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+  });
+
+  // ── Scrollspy ─────────────────────────────────────────────────────────────
+  const links = document.querySelectorAll('#sidebar nav a');
+  const sections = Array.from(document.querySelectorAll('section[id], div[id="topology"], div[id="request-path"]'));
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#sidebar nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

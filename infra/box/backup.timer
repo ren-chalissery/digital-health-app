@@ -1,0 +1,13 @@
+[Unit]
+Description=Nightly Digital Health database dump
+
+[Timer]
+# 14:30 UTC is half past midnight in Sydney, outside any plausible demonstration.
+OnCalendar=*-*-* 14:30:00
+# The instance is stopped between demonstrations, so a fixed time alone would mean a box that is
+# only ever up during the day is never backed up at all.
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

@@ -11,6 +11,29 @@ because there are no Lambda functions to package.
 | `digital-health-app` | [app.yaml](app.yaml) | ECR, ECS Fargate service, ALB, ACM certificate, logs |
 | `digital-health-web` | [web.yaml](web.yaml) | S3 bucket, CloudFront distribution |
 | `digital-health-deploy-role` | [deploy-role.yaml](deploy-role.yaml) | The role GitHub Actions assumes |
+| `digital-health-box` | [box.yaml](box.yaml) | Optional. One EC2 instance replacing `app` and `data` |
+
+## Two topologies
+
+There are two ways to run this, and only one of them can be live at a time, because both want the
+same DNS record.
+
+| | Managed | Single box |
+| --- | --- | --- |
+| Stands up with | [bootstrap.sh](bootstrap.sh) | [bootstrap-box.sh](bootstrap-box.sh) |
+| Runs the API on | Fargate behind an ALB | Containers on one `t4g.small` |
+| Database | RDS, automated backups | Postgres container, nightly dump to S3 |
+| Cache | ElastiCache Valkey | Valkey container |
+| TLS | ACM on the load balancer | Caddy, via Let's Encrypt |
+| Cost | ~$82/month | ~$23/month, or ~$8 stopped between demos |
+| Survives an instance failure | Yes | No |
+
+The managed topology is the default and the one to use for anything real. The box exists so a
+demonstration environment does not cost eighty dollars a month, and it is explained in full under
+[The single-box topology](#the-single-box-topology).
+
+Both share `network`, `auth`, `media` and `web`, which are free or near-free at idle. Switching
+from managed to box is `./infra/teardown.sh --pause` followed by `./infra/bootstrap-box.sh`.
 
 ## Order
 
@@ -229,6 +252,97 @@ rather than a missing email. `bootstrap.sh` prints this on every run. The reques
 ```bash
 aws sesv2 get-account --query ProductionAccessEnabled
 ```
+
+## The single-box topology
+
+```bash
+./infra/teardown.sh --pause    # remove the load balancer, Fargate, RDS and ElastiCache
+./infra/bootstrap-box.sh       # stand up the instance that replaces them
+```
+
+One `t4g.small` in the existing public subnet running four containers — the API, Postgres, Valkey
+and Caddy — against the same Cognito pool, the same buckets and the same image. The pipeline builds
+`linux/arm64` already, so nothing about the artefact changes.
+
+```mermaid
+flowchart LR
+  phone["iOS / Android"] --> caddy
+  browser["Browser"] --> cf["CloudFront and S3, unchanged"]
+  browser --> caddy
+
+  subgraph box ["t4g.small"]
+    caddy["Caddy, TLS from Let's Encrypt"] --> app["API"]
+    app --> pg[("Postgres with pgvector")]
+    app --> valkey[("Valkey")]
+  end
+
+  app --> aws["Cognito, S3, SES, MediaConvert, Bedrock"]
+```
+
+### What it costs
+
+| | Monthly |
+| --- | --- |
+| `t4g.small` | $15.48 |
+| One public IPv4 address | $3.65 |
+| 30 GB gp3 | $2.88 |
+| Route 53, ECR, S3, CloudFront, Cognito, SES | ~$1.00 |
+| **Running continuously** | **~$23** |
+| **Stopped between demonstrations** | **~$8** |
+
+Against ~$82 for the managed topology. The largest single saving is not the compute: it is the four
+public IPv4 addresses the load balancer and Fargate tasks hold, which cost $14.60 a month between
+them, more than the instance that replaces the lot.
+
+`t4g.micro` is half the price and will not work. The budget is about 675 MB of heap, 400 MB of
+Postgres, 80 MB of Valkey, 30 MB of Caddy and 200 MB of operating system.
+
+### Stopping and starting
+
+This is the point of the topology. The address, the disk and the data all survive.
+
+```bash
+instance="$(aws cloudformation describe-stacks --stack-name digital-health-box \
+  --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)"
+
+aws ec2 stop-instances  --instance-ids "$instance"
+aws ec2 start-instances --instance-ids "$instance"
+```
+
+A merge that lands while the box is stopped is not a failed deploy. CI records the image tag in
+Parameter Store and `deploy.sh` picks it up on next boot.
+
+### Operating it
+
+There is no SSH. Shell access is Session Manager, which needs no inbound port:
+
+```bash
+aws ssm start-session --target "$instance"
+sudo docker compose -f /opt/box/docker-compose.yml logs -f app
+sudo /opt/box/restore.sh --latest      # restore the most recent nightly dump
+```
+
+Boot problems land in `/var/log/box-bootstrap.log`.
+
+### Things worth knowing before relying on it
+
+- **The database is a container on one disk.** No failover, no read replica, no point-in-time
+  recovery. [box/backup.sh](box/backup.sh) dumps to S3 nightly and keeps fourteen days, so the
+  recovery point is up to twenty-four hours old. Replacing the instance loses everything since the
+  last dump.
+- **Postgres is `pgvector/pgvector:pg17`, not the stock image.** `V8__assistant.sql` opens with
+  `CREATE EXTENSION vector` and the assistant stores 1024-dimension embeddings behind an HNSW
+  index. RDS supplies that extension; plain `postgres:17` does not, and Flyway fails on the first
+  migration with the application restart-looping behind it.
+- **Certificates come from Let's Encrypt**, which rate-limits five failures per hostname per hour.
+  The Caddy data volume holds the certificate, so losing that volume during a crash loop can lock
+  the domain out for an hour.
+- **Both topologies cannot be live together.** They would fight over the API's DNS record.
+  `bootstrap-box.sh` refuses to run while the app stack still owns it.
+- **The configuration bucket is created by the script, not the stack.** The instance reads its
+  compose file from it at first boot, so a bucket created in the same deploy would still be empty
+  when the instance needed it. It also means a stack delete cannot orphan it, which is exactly the
+  trap the retained buckets below fall into.
 
 ## Taking it down
 
