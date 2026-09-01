@@ -20,7 +20,14 @@ Parameters:
     Default: ''
     Description: >
       ARN of a verified SES identity used to send Cognito emails. Leave empty to use Cognito's
-      built-in sender, which is capped at 50 messages a day and is only suitable for early testing.
+      built-in sender, which is capped at 50 messages a day and lands in spam folders.
+
+  SesFromAddress:
+    Type: String
+    Default: ''
+    Description: >
+      From address for verification and password-reset mail when SesSourceArn is set. Must be on
+      the verified domain, for example no-reply@example.org.
 
 Conditions:
   UseSes: !Not [!Equals [!Ref SesSourceArn, '']]
@@ -63,7 +70,12 @@ Resources:
         - UseSes
         - EmailSendingAccount: DEVELOPER
           SourceArn: !Ref SesSourceArn
+          From: !Ref SesFromAddress
+          ReplyToEmailAddress: !Ref SesFromAddress
         - EmailSendingAccount: COGNITO_DEFAULT
+      VerificationMessageTemplate:
+        EmailSubject: Verify your Simplicity account
+        EmailMessage: 'Your verification code is {####}. It expires in 24 hours.'
       Schema:
         - Name: email
           AttributeDataType: String

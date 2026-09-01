@@ -143,7 +143,17 @@ elif ! aws cloudformation describe-stacks --stack-name "${DATA_STACK}" >/dev/nul
   die "Set DB_MASTER_PASSWORD before the first data-stack deploy."
 fi
 deployStack "${DATA_STACK}" data.yaml "${dataParams[@]}"
-deployStack "${AUTH_STACK}" auth.yaml "WebBaseUrl=https://${WEB_HOST}"
+
+# Cognito verification mail must go through the verified domain, not Cognito's shared sender.
+if ! aws sesv2 get-email-identity --email-identity "${DOMAIN}" >/dev/null 2>&1; then
+  aws sesv2 create-email-identity --email-identity "${DOMAIN}" >/dev/null
+  info "created the SES identity for ${DOMAIN}"
+fi
+sesSourceArn="arn:aws:ses:${REGION}:${account}:identity/${DOMAIN}"
+deployStack "${AUTH_STACK}" auth.yaml \
+  "WebBaseUrl=https://${WEB_HOST}" \
+  "SesSourceArn=${sesSourceArn}" \
+  "SesFromAddress=${MAIL_FROM}"
 
 # web before app: app needs the web origin for CORS and for the links in invitation emails.
 deployStack "${WEB_STACK}" web.yaml \
@@ -253,6 +263,21 @@ EOF
   )" >/dev/null
 done
 info "DKIM records written"
+
+# SPF and DMARC align the From domain with SES for Cognito verification mail as well as invitations.
+aws route53 change-resource-record-sets --hosted-zone-id "${zoneId}" --change-batch "$(
+  cat <<EOF
+{"Changes":[
+  {"Action":"UPSERT","ResourceRecordSet":{
+    "Name":"${DOMAIN}","Type":"TXT","TTL":300,
+    "ResourceRecords":[{"Value":"\"v=spf1 include:amazonses.com ~all\""}]}},
+  {"Action":"UPSERT","ResourceRecordSet":{
+    "Name":"_dmarc.${DOMAIN}","Type":"TXT","TTL":300,
+    "ResourceRecords":[{"Value":"\"v=DMARC1; p=none; rua=mailto:${MAIL_FROM}\""}]}}
+]}
+EOF
+)" >/dev/null
+info "SPF and DMARC records written"
 
 production="$(aws sesv2 get-account --query ProductionAccessEnabled --output text)"
 if [[ "${production}" != "True" ]]; then
