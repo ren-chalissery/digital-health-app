@@ -3,7 +3,7 @@
 # Brings the containers up on the requested image tag.
 #
 # The single entry point for deployment on this topology. The instance calls it at first boot,
-# bootstrap-box.sh calls it over Session Manager once the first image exists, and the pipeline
+# box/bootstrap.sh calls it over Session Manager once the first image exists, and the pipeline
 # calls it the same way on every merge:
 #
 #   aws ssm send-command --document-name AWS-RunShellScript \

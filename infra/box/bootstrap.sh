@@ -8,9 +8,9 @@
 #
 # ## What it expects to already exist
 #
-# The network, auth and (for video) media stacks, all of which are free or near-free at idle and
-# are shared with the expensive topology. Run bootstrap.sh first if this is a brand new account,
-# then teardown.sh --pause to remove the parts this replaces.
+# The network, auth and mail stacks, all of which are free or near-free at idle and are shared
+# with the expensive topology. Run bootstrap.sh first if this is a brand new account, then
+# teardown.sh --pause to remove the parts this replaces.
 #
 # ## What it is not
 #
@@ -29,6 +29,7 @@ readonly DOMAIN="${DOMAIN:-simplicityhelp.com}"
 readonly WEB_HOST="${WEB_HOST:-app.${DOMAIN}}"
 readonly API_HOST="${API_HOST:-api.${DOMAIN}}"
 readonly MAIL_FROM="${MAIL_FROM:-no-reply@${DOMAIN}}"
+readonly MAIL_STACK=digital-health-mail
 
 readonly NETWORK_STACK=digital-health-network
 readonly AUTH_STACK=digital-health-auth
@@ -37,8 +38,17 @@ readonly APP_STACK=digital-health-app
 readonly BOX_STACK=digital-health-box
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "${HERE}/.." && pwd)"
-readonly HERE ROOT
+INFRA="$(cd "${HERE}/.." && pwd)"
+ROOT="$(cd "${INFRA}/.." && pwd)"
+readonly HERE INFRA ROOT
+
+# Files the instance needs under s3://<config-bucket>/box/. The template and scripts in this
+# directory stay local.
+readonly RUNTIME_SYNC_EXCLUDES=(
+  --exclude 'box.yaml'
+  --exclude 'bootstrap.sh'
+  --exclude 'teardown.sh'
+)
 
 export AWS_REGION="${REGION}"
 export AWS_DEFAULT_REGION="${REGION}"
@@ -69,6 +79,7 @@ docker info >/dev/null 2>&1 || die "The Docker daemon is not running."
 
 stackExists "${NETWORK_STACK}" || die "${NETWORK_STACK} is missing. Run bootstrap.sh first."
 stackExists "${AUTH_STACK}" || die "${AUTH_STACK} is missing. Run bootstrap.sh first."
+stackExists "${MAIL_STACK}" || die "${MAIL_STACK} is missing. Run bootstrap.sh first."
 
 mediaStack=''
 if stackExists "${MEDIA_STACK}"; then
@@ -78,14 +89,9 @@ else
   warn "No media stack. Video will be unavailable; everything else works."
 fi
 
-# The configuration set lives in the mail stack so it survives switching topologies.
-if ! stackExists "digital-health-mail"; then
-  info "mail stack missing, deploying it"
-  "${HERE}/bootstrap-mail.sh"
-fi
-mailConfigurationSet="$(output "digital-health-mail" MailConfigurationSetName)"
+mailConfigurationSet="$(output "${MAIL_STACK}" MailConfigurationSetName)"
 [[ "${mailConfigurationSet}" == "None" || -z "${mailConfigurationSet}" ]] \
-  && die "digital-health-mail is missing MailConfigurationSetName. Run ./infra/bootstrap-mail.sh."
+  && die "${MAIL_STACK} is missing MailConfigurationSetName. Run ./infra/bootstrap.sh."
 
 zoneId="$(aws route53 list-hosted-zones-by-name --dns-name "${DOMAIN}." \
   --query "HostedZones[?Name=='${DOMAIN}.'].Id | [0]" --output text | sed 's|/hostedzone/||')"
@@ -127,7 +133,8 @@ else
 fi
 
 info "uploading the compose file and helper scripts"
-aws s3 sync "${HERE}/box/" "s3://${CONFIG_BUCKET}/box/" --delete --only-show-errors
+aws s3 sync "${HERE}/" "s3://${CONFIG_BUCKET}/box/" --delete --only-show-errors \
+  "${RUNTIME_SYNC_EXCLUDES[@]}"
 
 # ---------------------------------------------------------------------------------------------
 step "Box stack"
@@ -188,7 +195,7 @@ for _ in $(seq 1 90); do
   probeId="$(aws ssm send-command \
     --instance-ids "${instanceId}" \
     --document-name AWS-RunShellScript \
-    --comment "bootstrap-box probe" \
+    --comment "box bootstrap probe" \
     --parameters 'commands=["if test -f /opt/box/.bootstrap-complete; then echo ready; elif test -x /opt/box/deploy.sh && test -f /opt/box/.env; then echo ready; else echo waiting; fi"]' \
     --timeout-seconds 30 \
     --query 'Command.CommandId' --output text)"
@@ -213,7 +220,7 @@ info "running deploy.sh on the instance"
 commandId="$(aws ssm send-command \
   --instance-ids "${instanceId}" \
   --document-name AWS-RunShellScript \
-  --comment "bootstrap-box ${sha}" \
+  --comment "box bootstrap ${sha}" \
   --parameters "commands=[\"/opt/box/deploy.sh ${sha}\"]" \
   --timeout-seconds 600 \
   --query 'Command.CommandId' --output text)"

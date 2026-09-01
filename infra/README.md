@@ -13,7 +13,7 @@ Lambda functions to package.
 | `digital-health-app` | [app.yaml](app.yaml) | ECR, ECS Fargate service, ALB, ACM certificate, logs |
 | `digital-health-web` | [web.yaml](web.yaml) | S3 bucket, CloudFront distribution |
 | `digital-health-deploy-role` | [deploy-role.yaml](deploy-role.yaml) | The role GitHub Actions assumes |
-| `digital-health-box` | [box.yaml](box.yaml) | Optional. One EC2 instance replacing `app` and `data` |
+| `digital-health-box` | [box/box.yaml](box/box.yaml) | Optional. One EC2 instance replacing `app` and `data` |
 
 ## Two topologies
 
@@ -22,7 +22,7 @@ same DNS record.
 
 | | Managed | Single box |
 | --- | --- | --- |
-| Stands up with | [bootstrap.sh](bootstrap.sh) | [bootstrap-box.sh](bootstrap-box.sh) |
+| Stands up with | [bootstrap.sh](bootstrap.sh) | [box/bootstrap.sh](box/bootstrap.sh) |
 | Runs the API on | Fargate behind an ALB | Containers on one `t4g.small` |
 | Database | RDS, automated backups | Postgres container, nightly dump to S3 |
 | Cache | ElastiCache Valkey | Valkey container |
@@ -36,7 +36,7 @@ demonstration environment does not cost eighty dollars a month, and it is explai
 
 Both share `network`, `auth`, `media`, `web` and `mail`, which are free or near-free at idle.
 Switching from managed to box is `./infra/teardown.sh --pause` followed by
-`./infra/bootstrap-box.sh`. The mail stack is not deleted on pause, so bounce monitoring and SNS
+`./infra/box/bootstrap.sh`. The mail stack is not deleted on pause, so bounce monitoring and SNS
 subscriptions survive the switch in both directions.
 
 ## Order
@@ -259,8 +259,8 @@ Sending outside a configuration set still delivers, so `MAIL_CONFIGURATION_SET` 
 empty locally. But then nothing reports a bounce, and the topic and both alarms stay silent no
 matter how much mail fails.
 
-Deploy the mail stack once with [bootstrap-mail.sh](bootstrap-mail.sh), or let [bootstrap.sh](bootstrap.sh)
-or the pipeline do it. It is never deleted by [teardown.sh](teardown.sh) `--pause`.
+Deploy the mail stack with [bootstrap.sh](bootstrap.sh), or let the pipeline do it on the next
+merge. It is never deleted by [teardown.sh](teardown.sh) `--pause`.
 
 **The account is still in the SES sandbox.** Until production access is granted, invitations only
 reach addresses verified by hand, and never a real clinician — which surfaces as a failed invitation
@@ -275,7 +275,7 @@ aws sesv2 get-account --query ProductionAccessEnabled
 
 ```bash
 ./infra/teardown.sh --pause    # remove the load balancer, Fargate, RDS and ElastiCache
-./infra/bootstrap-box.sh       # stand up the instance that replaces them
+./infra/box/bootstrap.sh       # stand up the instance that replaces them
 ```
 
 One `t4g.small` in the existing public subnet running four containers — the API, Postgres, Valkey
@@ -314,6 +314,15 @@ them, more than the instance that replaces the lot.
 
 `t4g.micro` is half the price and will not work. The budget is about 675 MB of heap, 400 MB of
 Postgres, 80 MB of Valkey, 30 MB of Caddy and 200 MB of operating system.
+
+### Removing it completely
+
+```bash
+./infra/box/teardown.sh
+```
+
+Deletes the CloudFormation stack, the configuration bucket and the deploy tag. Shared stacks —
+network, auth, web, media and mail — are untouched.
 
 ### Stopping and starting
 
@@ -356,7 +365,7 @@ Boot problems land in `/var/log/box-bootstrap.log`.
   The Caddy data volume holds the certificate, so losing that volume during a crash loop can lock
   the domain out for an hour.
 - **Both topologies cannot be live together.** They would fight over the API's DNS record.
-  `bootstrap-box.sh` refuses to run while the app stack still owns it.
+  `box/bootstrap.sh` refuses to run while the app stack still owns it.
 - **The configuration bucket is created by the script, not the stack.** The instance reads its
   compose file from it at first boot, so a bucket created in the same deploy would still be empty
   when the instance needed it. It also means a stack delete cannot orphan it, which is exactly the

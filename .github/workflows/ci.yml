@@ -49,7 +49,7 @@ jobs:
             if echo "$files" | grep -qE '^web/'; then web=true; fi
             if echo "$files" | grep -qE '^(android/|api-contract/)'; then android=true; fi
             if echo "$files" | grep -qE '^(ios/|api-contract/)'; then ios=true; fi
-            if echo "$files" | grep -qE '^(backend/|web/|infra/app\.yaml|infra/web\.yaml|infra/box\.yaml|infra/box/|\.github/workflows/ci\.yml)'; then
+            if echo "$files" | grep -qE '^(backend/|web/|infra/app\.yaml|infra/web\.yaml|infra/box/|\.github/workflows/ci\.yml)'; then
               deploy=true
             fi
           fi
@@ -452,16 +452,16 @@ jobs:
 
       # The equivalent for the single instance. The compose file and helper scripts are synced
       # first, so a change to either ships with the commit that made it rather than waiting for
-      # somebody to run bootstrap-box.sh.
+      # somebody to run box/bootstrap.sh.
       #
       # The tag is written to Parameter Store whether or not the instance is running. That is the
       # whole reason a stopped box is not a failed deploy: this topology exists to be switched off
       # between demonstrations, and deploy.sh reads the pending tag on next boot.
       #
-      # Note what this deliberately does not do: deploy box.yaml. Editing that template's UserData
+      # Note what this deliberately does not do: deploy box/box.yaml. Editing that template's UserData
       # replaces the instance, and the database lives on its root volume, so an automatic stack
       # update would quietly destroy the data on an unrelated merge. Template changes go through
-      # bootstrap-box.sh, where somebody is watching.
+      # box/bootstrap.sh, where somebody is watching.
       - name: Deploy to the box
         id: box
         if: steps.topology.outputs.name == 'box'
@@ -471,7 +471,8 @@ jobs:
           bucket="$(aws cloudformation describe-stacks --stack-name "$BOX_STACK" \
             --query "Stacks[0].Parameters[?ParameterKey=='ConfigBucket'].ParameterValue" --output text)"
 
-          aws s3 sync infra/box/ "s3://$bucket/box/" --delete --only-show-errors
+          aws s3 sync infra/box/ "s3://$bucket/box/" --delete --only-show-errors \
+            --exclude 'box.yaml' --exclude 'bootstrap.sh' --exclude 'teardown.sh'
           aws ssm put-parameter --name "/digital-health/prod/box/image-tag" \
             --value "${{ github.sha }}" --type String --overwrite >/dev/null
 
