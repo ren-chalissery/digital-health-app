@@ -33,6 +33,11 @@ class AmplifyAuthService : AuthService {
     }
 
     override suspend fun signIn(email: String, password: String): Boolean {
+        // Amplify refuses a second signIn while a session remains locally — common after an infra
+        // pause when Cognito survived but the app signed the user out of our API only.
+        if (isSignedIn()) {
+            signOut()
+        }
         val result = Amplify.Auth.signIn(email, password)
         // DONE means a session exists. Anything else — an unconfirmed address, a challenge — is a
         // routing decision for the caller, not a failure.
