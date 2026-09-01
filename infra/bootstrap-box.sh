@@ -78,10 +78,12 @@ else
   warn "No media stack. Video will be unavailable; everything else works."
 fi
 
-# The configuration set belongs to the app stack. Running box-only is fine, it just means bounces
-# and complaints are not tracked.
+# The configuration set lives in the mail stack so it survives app-stack pause.
 mailConfigurationSet=''
-if stackExists "${APP_STACK}"; then
+if stackExists "digital-health-mail"; then
+  mailConfigurationSet="$(output "digital-health-mail" MailConfigurationSetName)"
+  [[ "${mailConfigurationSet}" == "None" ]] && mailConfigurationSet=''
+elif stackExists "${APP_STACK}"; then
   mailConfigurationSet="$(output "${APP_STACK}" MailConfigurationSetName)"
   [[ "${mailConfigurationSet}" == "None" ]] && mailConfigurationSet=''
 fi

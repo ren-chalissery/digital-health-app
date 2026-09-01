@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  SES configuration set, mail-event notifications and reputation alarms for the Digital Health App.
+  Standalone so bounce monitoring survives when the managed app stack is paused and the box topology
+  is running instead.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+  AlarmEmail:
+    Type: String
+    Default: ''
+    Description: >
+      Where mail events and reputation alarms are sent. AWS emails a confirmation link and delivers
+      nothing until it is clicked.
+
+Conditions:
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, '']]
+
+Resources:
+  MailEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'digital-health-${EnvironmentName}-mail-events'
+      DisplayName: !Sub 'Digital Health ${EnvironmentName} mail events'
+
+  MailEventsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref MailEventsTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ses.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref MailEventsTopic
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Ref AWS::AccountId
+
+  MailEventsSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref MailEventsTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'digital-health-${EnvironmentName}-alarms'
+      DisplayName: !Sub 'Digital Health ${EnvironmentName} alarms'
+
+  AlarmSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  MailConfigurationSet:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}'
+      ReputationOptions:
+        ReputationMetricsEnabled: true
+
+  MailEventDestination:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    Properties:
+      ConfigurationSetName: !Ref MailConfigurationSet
+      EventDestination:
+        Name: bounces-and-complaints
+        Enabled: true
+        MatchingEventTypes:
+          - bounce
+          - complaint
+          - reject
+          - renderingFailure
+        SnsDestination:
+          TopicARN: !Ref MailEventsTopic
+
+  MailBounceRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-mail-bounce-rate'
+      AlarmDescription: >
+        Too much mail is bouncing. AWS reviews a sender above 5 per cent and suspends one above 10.
+      Namespace: AWS/SES
+      MetricName: Reputation.BounceRate
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+  MailComplaintRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'digital-health-${EnvironmentName}-mail-complaint-rate'
+      AlarmDescription: >
+        Recipients are marking mail as spam. AWS reviews above 0.1 per cent.
+      Namespace: AWS/SES
+      MetricName: Reputation.ComplaintRate
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 0.001
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
+
+Outputs:
+  MailConfigurationSetName:
+    Value: !Ref MailConfigurationSet
+    Export:
+      Name: !Sub '${AWS::StackName}-MailConfigurationSetName'
+
+  MailEventsTopicArn:
+    Description: Where SES reports bounces and complaints.
+    Value: !Ref MailEventsTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-MailEventsTopicArn'
+
+  AlarmTopicArn:
+    Value: !Ref AlarmTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-AlarmTopicArn'
