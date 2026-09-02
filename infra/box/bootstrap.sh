@@ -18,6 +18,12 @@
 # recovery, and a recovery point of however long ago the nightly dump last ran. Read the risk
 # section of infra/README.md before pointing anything real at this.
 #
+# ## Where the data comes from
+#
+# A new box starts with an empty database unless teardown.sh archived one, in which case the newest
+# archived dump is restored before the health check. That is what makes teardown.sh a way to stop
+# paying rather than a way to lose everything.
+#
 # Safe to run repeatedly. Every step reuses what already exists.
 
 set -euo pipefail
@@ -64,6 +70,69 @@ output() {
 }
 
 stackExists() { aws cloudformation describe-stacks --stack-name "$1" >/dev/null 2>&1; }
+
+deployBoxStack() {
+  aws cloudformation deploy \
+    --stack-name "${BOX_STACK}" \
+    --template-file "${HERE}/box.yaml" \
+    --capabilities CAPABILITY_IAM \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides "$@" >/dev/null
+}
+
+# `aws cloudformation deploy` refuses to start while another operation is running on the stack, and
+# an interrupted earlier run leaves exactly that behind. Waiting is always the right answer, so wait
+# rather than making the operator work out which half-finished state they are in.
+#
+# REVIEW_IN_PROGRESS is not an operation in flight: it is a stack that only ever had a change set
+# created against it, and it is settled as far as deploying is concerned.
+waitForStack() {
+  local stack="$1" status=''
+  for _ in $(seq 1 90); do
+    status="$(aws cloudformation describe-stacks --stack-name "${stack}" \
+      --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo ABSENT)"
+    case "${status}" in
+      ABSENT|REVIEW_IN_PROGRESS|*_COMPLETE|*_FAILED) return 0 ;;
+    esac
+    info "${stack} is ${status}; waiting for it to finish"
+    sleep 10
+  done
+  die "${stack} is still ${status} after fifteen minutes."
+}
+
+# Runs one command on the instance and writes what it printed to stdout. Polls rather than
+# `ssm wait command-executed`, which reports Failed as an error without ever showing the output that
+# says why.
+runOnInstance() {
+  local instance="$1" comment="$2" command="$3"
+  local commandId status=Pending
+
+  commandId="$(aws ssm send-command \
+    --instance-ids "${instance}" \
+    --document-name AWS-RunShellScript \
+    --comment "${comment}" \
+    --parameters "commands=[\"${command}\"]" \
+    --timeout-seconds 600 \
+    --query 'Command.CommandId' --output text)"
+
+  for _ in $(seq 1 90); do
+    status="$(aws ssm get-command-invocation --command-id "${commandId}" \
+      --instance-id "${instance}" --query Status --output text 2>/dev/null || echo Pending)"
+    case "${status}" in
+      Success) break ;;
+      Failed|Cancelled|TimedOut)
+        aws ssm get-command-invocation --command-id "${commandId}" --instance-id "${instance}" \
+          --query StandardErrorContent --output text >&2
+        die "${command} failed on the instance."
+        ;;
+    esac
+    sleep 10
+  done
+  [[ "${status}" == "Success" ]] || die "${command} did not finish in time."
+
+  aws ssm get-command-invocation --command-id "${commandId}" --instance-id "${instance}" \
+    --query StandardOutputContent --output text
+}
 
 # ---------------------------------------------------------------------------------------------
 step "Preflight"
@@ -114,6 +183,10 @@ step "Configuration bucket"
 # it, which is the trap the retained buckets in web.yaml and media.yaml fall into.
 readonly CONFIG_BUCKET="digital-health-box-${ENVIRONMENT}-${account}"
 
+# Written by teardown.sh, read here. Outside CloudFormation and outside the configuration bucket,
+# because the whole point is that it outlives both.
+readonly ARCHIVE_BUCKET="digital-health-box-backups-${ENVIRONMENT}-${account}"
+
 if aws s3api head-bucket --bucket "${CONFIG_BUCKET}" >/dev/null 2>&1; then
   info "reusing ${CONFIG_BUCKET}"
 else
@@ -153,12 +226,15 @@ boxParams=(
 )
 
 info "deploying ${BOX_STACK}"
-aws cloudformation deploy \
-  --stack-name "${BOX_STACK}" \
-  --template-file "${HERE}/box.yaml" \
-  --capabilities CAPABILITY_IAM \
-  --no-fail-on-empty-changeset \
-  --parameter-overrides "${boxParams[@]}" >/dev/null
+waitForStack "${BOX_STACK}"
+if ! deployBoxStack "${boxParams[@]}"; then
+  # Seen once against an empty account: `deploy` aborted with the stack already CREATE_IN_PROGRESS,
+  # eleven seconds after the create it had itself just started. Whatever the cause, the stack was
+  # building correctly and the only thing wrong was that the script had stopped watching it.
+  info "the deploy did not go through; waiting for the stack to settle and trying once more"
+  waitForStack "${BOX_STACK}"
+  deployBoxStack "${boxParams[@]}" || die "Could not deploy ${BOX_STACK}."
+fi
 
 instanceId="$(output "${BOX_STACK}" InstanceId)"
 repository="$(output "${BOX_STACK}" RepositoryUri)"
@@ -192,11 +268,19 @@ for _ in $(seq 1 90); do
     --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null || true)"
   [[ "${ping}" == "Online" ]] || { sleep 10; continue; }
 
+  # Only .bootstrap-complete will do. It is touched at the very end of the instance's user data,
+  # after its own call to deploy.sh has returned, and this used to also accept the mere existence of
+  # deploy.sh and .env — which are in place minutes earlier, while that first deploy is still
+  # bringing containers up. Sending a second deploy into that window fails on the container names
+  # the first one is in the middle of creating. The comment in box.yaml expects first-boot deploy to
+  # be a no-op because the registry is empty, and that is true only on the very first deploy into a
+  # new account; on any later rebuild the image is already there and the first-boot deploy runs for
+  # real.
   probeId="$(aws ssm send-command \
     --instance-ids "${instanceId}" \
     --document-name AWS-RunShellScript \
     --comment "box bootstrap probe" \
-    --parameters 'commands=["if test -f /opt/box/.bootstrap-complete; then echo ready; elif test -x /opt/box/deploy.sh && test -f /opt/box/.env; then echo ready; else echo waiting; fi"]' \
+    --parameters 'commands=["if test -f /opt/box/.bootstrap-complete; then echo ready; else echo waiting; fi"]' \
     --timeout-seconds 30 \
     --query 'Command.CommandId' --output text)"
   for _ in $(seq 1 12); do
@@ -217,33 +301,42 @@ done
   || die "First-boot setup did not finish. Check /var/log/box-bootstrap.log via Session Manager."
 
 info "running deploy.sh on the instance"
-commandId="$(aws ssm send-command \
-  --instance-ids "${instanceId}" \
-  --document-name AWS-RunShellScript \
-  --comment "box bootstrap ${sha}" \
-  --parameters "commands=[\"/opt/box/deploy.sh ${sha}\"]" \
-  --timeout-seconds 600 \
-  --query 'Command.CommandId' --output text)"
+runOnInstance "${instanceId}" "box bootstrap ${sha}" "/opt/box/deploy.sh ${sha}" \
+  | tail -3 | sed 's/^/    /'
 
-# Polls rather than `ssm wait command-executed`, which reports Failed as an error without ever
-# showing the output that says why.
-for _ in $(seq 1 90); do
-  status="$(aws ssm get-command-invocation --command-id "${commandId}" \
-    --instance-id "${instanceId}" --query Status --output text 2>/dev/null || echo Pending)"
-  case "${status}" in
-    Success) break ;;
-    Failed|Cancelled|TimedOut)
-      aws ssm get-command-invocation --command-id "${commandId}" --instance-id "${instanceId}" \
-        --query StandardErrorContent --output text >&2
-      die "deploy.sh failed on the instance."
-      ;;
-  esac
-  sleep 10
-done
-[[ "${status}" == "Success" ]] || die "deploy.sh did not finish in time."
+# ---------------------------------------------------------------------------------------------
+step "Database"
 
-aws ssm get-command-invocation --command-id "${commandId}" --instance-id "${instanceId}" \
-  --query StandardOutputContent --output text | tail -3 | sed 's/^/    /'
+# teardown.sh dumps the database here before it deletes anything, so a box that was torn down and
+# stood back up comes back with its data. The marker records which dump this box was restored from:
+# without it a second run of this script — which is meant to be harmless — would replay the same
+# dump over everything the box had done since the first one.
+if aws s3api head-object --bucket "${CONFIG_BUCKET}" --key restored-from >/dev/null 2>&1; then
+  info "already restored from $(aws s3 cp "s3://${CONFIG_BUCKET}/restored-from" - 2>/dev/null)"
+else
+  archived=''
+  if aws s3api head-bucket --bucket "${ARCHIVE_BUCKET}" >/dev/null 2>&1; then
+    # A bucket with no backups/ prefix yet is not an error, but `aws s3 ls` has historically exited
+    # non-zero for it, and pipefail would turn that into a failed bootstrap.
+    archived="$(aws s3 ls "s3://${ARCHIVE_BUCKET}/backups/" | sort | tail -1 | awk '{print $4}')" \
+      || archived=''
+  fi
+
+  if [[ -z "${archived}" ]]; then
+    info "nothing archived in ${ARCHIVE_BUCKET}, so this box starts empty"
+  else
+    info "restoring ${archived}"
+    # Into the configuration bucket rather than straight onto the instance: restore.sh reads from
+    # the bucket named by BACKUP_BUCKET in its environment, and the instance role deliberately has
+    # no reach outside its own two buckets.
+    aws s3 cp "s3://${ARCHIVE_BUCKET}/backups/${archived}" \
+      "s3://${CONFIG_BUCKET}/backups/${archived}" --only-show-errors
+    runOnInstance "${instanceId}" "box restore ${archived}" "/opt/box/restore.sh ${archived}" \
+      | tail -2 | sed 's/^/    /'
+    printf '%s\n' "${archived}" \
+      | aws s3 cp - "s3://${CONFIG_BUCKET}/restored-from" --only-show-errors
+  fi
+fi
 
 # ---------------------------------------------------------------------------------------------
 step "Checking it answers"
@@ -274,6 +367,10 @@ info "API        https://${API_HOST}"
 info "Instance   ${instanceId} (${publicIp})"
 info "Shell      aws ssm start-session --target ${instanceId}"
 info ""
-info "Stop paying between demonstrations, keeping the address, the disk and the data:"
+info "Stop paying between demonstrations, keeping the address, the disk and the data (~\$8/month):"
 info "  aws ec2 stop-instances --instance-ids ${instanceId}"
 info "  aws ec2 start-instances --instance-ids ${instanceId}"
+info ""
+info "Or stop paying almost entirely (~\$1/month). The database is dumped and restored on the way"
+info "back, so this costs the writes since the dump rather than everything:"
+info "  ./infra/box/teardown.sh"

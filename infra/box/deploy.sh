@@ -11,6 +11,20 @@
 
 set -euo pipefail
 
+# Three callers, and nothing else stopping two of them overlapping: the instance runs this from its
+# user data at first boot, box/bootstrap.sh sends it over Run Command as soon as that boot finishes,
+# and the pipeline sends it on every merge. Two at once collide on the container names the first is
+# in the middle of creating, and the second one fails — which is a poor failure for a script that is
+# otherwise safe to repeat. So the second caller waits for the first instead of racing it.
+#
+# flock comes from util-linux-core, which grub2-common and systemd both require, so it is on the
+# instance by construction. The lock lives beside the compose file rather than under /var/lock,
+# which is a systemd-managed symlink into /run and not something to depend on existing. The wait is
+# under the ten-minute Run Command timeout, so a genuinely stuck deploy is reported as a stuck
+# deploy rather than as a timeout with no explanation.
+exec 9>/opt/box/.deploy.lock
+flock --timeout 540 9 || { echo "Another deploy is still running." >&2; exit 1; }
+
 cd /opt/box
 
 # shellcheck disable=SC1091  # Written by the instance at first boot, not present in the repository.

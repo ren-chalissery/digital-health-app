@@ -186,6 +186,27 @@ Resources:
                   StringLike:
                     's3:prefix': 'box/*'
 
+        # A separate prefix from the configuration above, and a separate statement, because this one
+        # writes: box/backup.sh uploads the nightly dump here and prunes what has aged out, and
+        # box/restore.sh reads it back. Without it the timer fails on every run and the instance is
+        # not disposable at all.
+        - PolicyName: database-backups
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub 'arn:aws:s3:::${ConfigBucket}/backups/*'
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub 'arn:aws:s3:::${ConfigBucket}'
+                Condition:
+                  StringLike:
+                    's3:prefix': 'backups/*'
+
         # The database password is generated on the instance and kept here, so that replacing the
         # instance against an existing volume finds the same password rather than locking itself
         # out of its own database. Standard parameters are free, which is the whole reason this is
@@ -386,13 +407,15 @@ Resources:
             systemctl daemon-reload
             systemctl enable --now box-backup.timer
 
-            # Tolerated, because on the very first deploy this stack has just created the registry
-            # and there is nothing in it yet. box/bootstrap.sh pushes an image and runs this again
-            # over Run Command, which is the same path the pipeline uses for every later deploy.
+            # Tolerated, because on the very first deploy into a new account this stack has just
+            # created the registry and there is nothing in it yet. On a rebuild the registry is
+            # already populated and this deploys for real, taking a couple of minutes, which is why
+            # box/bootstrap.sh must not start its own deploy until the marker below appears.
             /opt/box/deploy.sh || echo "No image to run yet. Waiting for a deploy."
 
-            # box/bootstrap.sh waits on this before calling deploy.sh. SSM comes online while Docker
-            # is still installing, so PingStatus alone is not enough.
+            # box/bootstrap.sh waits on this before calling deploy.sh, and it is deliberately the
+            # last thing written: SSM comes online while Docker is still installing, so PingStatus
+            # alone is not enough, and the files above exist well before the deploy has finished.
             touch /opt/box/.bootstrap-complete
           - RegistryUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}'
             # Separate from RegistryUri because the shell expansion that would strip the path,

@@ -35,9 +35,14 @@ trap cleanup EXIT
 echo "Restoring ${name}"
 aws s3 cp "s3://${BACKUP_BUCKET}/backups/${name}" "$local_file" --only-show-errors
 
-printf 'This overwrites the current database. Type the dump name to continue: '
-read -r confirm
-[ "$confirm" = "$name" ] || { echo "Aborted." >&2; exit 1; }
+# box/bootstrap.sh calls this over Run Command, where there is no terminal to answer a prompt and a
+# read would block until the command timed out. Confirming is for the hand-run case, which is the
+# only one where there is data worth losing: bootstrap restores onto a database it has just created.
+if [ -t 0 ]; then
+  printf 'This overwrites the current database. Type the dump name to continue: '
+  read -r confirm
+  [ "$confirm" = "$name" ] || { echo "Aborted." >&2; exit 1; }
+fi
 
 docker compose stop app
 # The dump carries --clean --if-exists, so it drops what it is about to recreate and a restore over
