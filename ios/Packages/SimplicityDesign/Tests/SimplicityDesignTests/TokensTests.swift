@@ -9,7 +9,7 @@ struct TokensTests {
     @Test("the scale is the one the web uses, in order")
     func scaleIsOrdered() {
         let scale = [
-            Spacing.x1, Spacing.x2, Spacing.x3, Spacing.x4, Spacing.x5, Spacing.x6, Spacing.x7,
+            Spacing.x1, Spacing.x2, Spacing.x3, Spacing.x4, Spacing.x5, Spacing.x6, Spacing.x7
         ]
         // Matches --space-1 to --space-7 in web/src/styles.scss and Spacing in the Android
         // design module. A step added here has to be added in both of those too.
