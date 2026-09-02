@@ -383,13 +383,22 @@ jobs:
           echo "Deploying the $name topology to $api"
 
       # Only the commit sha is tagged. The repository is immutable, so a 'latest' tag could be
-      # written exactly once and would fail every deploy after it.
+      # written exactly once and would fail every deploy after it. box/bootstrap.sh may have
+      # pushed the same sha already, which is normal when somebody applies a stack change by hand
+      # before the merge commit's pipeline runs.
       - name: Build and push the image
         working-directory: backend
         run: |
           repository="${{ steps.topology.outputs.repository }}"
-          docker build --platform linux/arm64 -t "$repository:${{ github.sha }}" .
-          docker push "$repository:${{ github.sha }}"
+          tag="${{ github.sha }}"
+          repo_name="${repository##*/}"
+          if aws ecr describe-images --repository-name "$repo_name" \
+              --image-ids "imageTag=$tag" >/dev/null 2>&1; then
+            echo "Image ${tag} is already in ${repo_name}. Skipping build and push."
+          else
+            docker build --platform linux/arm64 -t "$repository:$tag" .
+            docker push "$repository:$tag"
+          fi
 
       # Tagging the task definition with the commit rather than 'latest' is what makes a deploy
       # reproducible and a rollback a matter of redeploying an older sha.
