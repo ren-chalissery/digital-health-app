@@ -304,10 +304,15 @@ flowchart LR
 | --- | --- |
 | `t4g.small` | $15.48 |
 | One public IPv4 address | $3.65 |
-| 30 GB gp3 | $2.88 |
+| 20 GB gp3 | $1.92 |
 | Route 53, ECR, S3, CloudFront, Cognito, SES | ~$1.00 |
-| **Running continuously** | **~$23** |
+| **Running continuously** | **~$22** |
+| **Stopped overnight** (22:00–08:00 Sydney, default) | **~$13** (no compute, EIP + disk still bill) |
 | **Torn down** (`teardown.sh`) | **~$1–2** (shared stacks only) |
+
+The box stack includes an EventBridge schedule that stops the instance at 22:00 and starts it at
+08:00 in `Australia/Sydney` by default. Pass `NightPauseEnabled=false` to the box stack to run
+twenty-four hours a day. While stopped, the API is down but the database on disk is untouched.
 
 Against ~$82 for the managed topology. The largest single saving is not the compute: it is the four
 public IPv4 addresses the load balancer and Fargate tasks hold, which cost $14.60 a month between
