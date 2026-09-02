@@ -1,7 +1,9 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: linear-gradient(160deg, #eef3f6 0%, #f6f7f9 60%);
+  /* The icon's own top-to-bottom wash. Both stops are theme tokens, so this follows dark mode
+     instead of pinning two light-only literals. */
+  background: linear-gradient(160deg, var(--colour-wash) 0%, var(--colour-bg) 60%);
 }
 
 .auth {

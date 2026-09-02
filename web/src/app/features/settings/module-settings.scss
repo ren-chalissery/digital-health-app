@@ -1,8 +1,8 @@
 .section-editor {
-  border: 1px solid var(--border, #e2e6eb);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 textarea {

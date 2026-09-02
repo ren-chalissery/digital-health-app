@@ -10,19 +10,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.simplicity.training.design.ErrorBanner
 import io.simplicity.training.design.FormField
 import io.simplicity.training.design.PrimaryButton
+import io.simplicity.training.design.Spacing
 
 @Composable
 fun SignInScreen(model: SignInViewModel, modifier: Modifier = Modifier) {
     val state by model.state.collectAsStateWithLifecycle()
 
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.fillMaxSize().padding(Spacing.x5),
+        verticalArrangement = Arrangement.spacedBy(Spacing.x4),
     ) {
         Text(text = "Sign in", style = MaterialTheme.typography.headlineMedium)
 

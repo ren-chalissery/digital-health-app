@@ -23,8 +23,10 @@ public struct ErrorBanner: View {
                 .foregroundStyle(Color.brandDanger)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Spacing.x3)
-                .background(Color.brandDanger.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: Spacing.x2))
+                // A solid token rather than the foreground at 10 per cent, which produced a
+                // different tint on every background it was placed over.
+                .background(Color.brandDangerSoft)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.small))
                 // Announced when it appears, rather than only found by someone exploring the
                 // screen after a failure they did not know had happened.
                 .accessibilityAddTraits(.isStaticText)

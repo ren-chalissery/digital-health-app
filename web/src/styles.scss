@@ -2,29 +2,63 @@
    is genuinely their own, which keeps the four tabs looking like one application. */
 
 :root {
-  --colour-bg: #f6f7f9;
-  --colour-surface: #ffffff;
-  --colour-surface-sunken: #f0f2f5;
-  --colour-border: #dfe3e8;
-  --colour-border-strong: #c3cad3;
+  /* The brand ramp is the app icon's own green — hue 151 at 50% saturation — walked across
+     lightness. brand-700 is the icon's colour lifted out of near-black so it can carry a white
+     label at 7.2:1. Every other step is the same hue, so tints and shades of the primary never
+     drift into a different green. Shared verbatim with iOS (Tokens.swift) and Android (Theme.kt);
+     changing a value here means changing it in all three. */
+  --brand-50: #f0faf5;
+  --brand-100: #ddf4e8;
+  --brand-200: #bae8d2;
+  --brand-300: #8cd9b4;
+  --brand-400: #57c791;
+  --brand-500: #38a872;
+  --brand-600: #2b8258;
+  --brand-700: #216343;
+  --brand-800: #194d34;
+  --brand-900: #123624;
 
-  --colour-text: #14202e;
-  --colour-text-muted: #5c6b7f;
+  /* The two figures in the icon. Used for warm, non-interactive emphasis only: they are far too
+     low-contrast against white to carry text. */
+  --brand-cream: #f4ece1;
+  --brand-sand: #e6d6bd;
+
+  /* Neutrals carry a trace of the brand hue rather than the blue they used to, so a grey card
+     beside a green button does not read as two different palettes. */
+  --colour-bg: #f6f8f6;
+  --colour-surface: #ffffff;
+  --colour-surface-sunken: #eff3f0;
+  --colour-border: #dce4de;
+  /* Meets the 3:1 that WCAG 1.4.11 asks of a control's visible boundary. The old #c3cad3 was
+     1.6:1, so every input outline was decorative rather than perceivable. */
+  --colour-border-strong: #7c988a;
+
+  --colour-text: #16211b;
+  --colour-text-muted: #5a6b61;
   --colour-text-inverse: #ffffff;
 
-  --colour-accent: #1d6f8b;
-  --colour-accent-hover: #175a71;
-  --colour-accent-soft: #e6f1f5;
+  --colour-accent: var(--brand-700);
+  --colour-accent-hover: var(--brand-800);
+  --colour-accent-soft: var(--brand-100);
 
   --colour-danger: #a9261f;
   --colour-danger-soft: #fbeceb;
-  --colour-success: #1c6b45;
-  --colour-success-soft: #e7f3ec;
+  --colour-success: var(--brand-700);
+  --colour-success-soft: var(--brand-100);
+  --colour-warning: #8a5a12;
+  --colour-warning-soft: #fdf3e2;
+
+  /* Top of the signed-out background wash, echoing the icon's gradient. Semantic rather than a
+     ramp step directly, because the dark theme needs to go down from the page colour, not up. */
+  --colour-wash: var(--brand-50);
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-pill: 999px;
 
+  /* Seven steps, identical to Spacing on iOS and Android. A screen needing a value that is not
+     on the scale should move the scale rather than reach for a literal. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -33,10 +67,51 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --shadow-sm: 0 1px 2px rgba(20, 32, 46, 0.06);
-  --shadow-md: 0 4px 16px rgba(20, 32, 46, 0.08);
+  --shadow-sm: 0 1px 2px rgba(18, 54, 36, 0.06);
+  --shadow-md: 0 4px 16px rgba(18, 54, 36, 0.1);
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  /* Tells the browser to render scrollbars and native form controls to match. */
+  color-scheme: light;
+}
+
+/* Dark is a re-point of the same semantic names, so no component below this block knows which
+   theme it is in. The accent lightens to brand-400: brand-700 on a dark surface is 1.6:1 and
+   effectively invisible. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --colour-bg: #0f1613;
+    --colour-surface: #16211b;
+    --colour-surface-sunken: #1d2a23;
+    --colour-border: #2a3b32;
+    --colour-border-strong: #586f64;
+
+    --colour-text: #e8efea;
+    --colour-text-muted: #9cb0a4;
+    /* Inverse means "against the accent", and on dark the accent is light. */
+    --colour-text-inverse: #0f1613;
+
+    --colour-accent: var(--brand-400);
+    --colour-accent-hover: var(--brand-300);
+    --colour-accent-soft: #17301f;
+
+    --colour-danger: #f2857e;
+    --colour-danger-soft: #2e1614;
+    --colour-success: var(--brand-400);
+    --colour-success-soft: #17301f;
+    --colour-warning: #e0b063;
+    --colour-warning-soft: #2c2113;
+
+    --colour-wash: #132019;
+
+    /* A shadow tuned for a white page disappears on a dark one; depth comes from the border
+       instead, so these only have to avoid adding a grey halo. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+    color-scheme: dark;
+  }
 }
 
 * {
@@ -181,7 +256,7 @@ select,
 textarea {
   font: inherit;
   color: inherit;
-  padding: 10px 12px;
+  padding: var(--space-3);
   border: 1px solid var(--colour-border-strong);
   border-radius: var(--radius-sm);
   background: var(--colour-surface);
@@ -208,7 +283,9 @@ input[aria-invalid='true'] {
   gap: var(--space-2);
   font: inherit;
   font-weight: 600;
-  padding: 10px 18px;
+  /* 12px against a 16px label puts the control at 48px, above the 44px touch minimum and the
+     same height as an input, so a button beside a field lines up. */
+  padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: var(--colour-accent);
@@ -279,6 +356,11 @@ input[aria-invalid='true'] {
   color: var(--colour-accent-hover);
 }
 
+.notice--warning {
+  background: var(--colour-warning-soft);
+  color: var(--colour-warning);
+}
+
 .empty {
   padding: var(--space-6) var(--space-4);
   text-align: center;
@@ -289,8 +371,8 @@ input[aria-invalid='true'] {
 
 .badge {
   display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;

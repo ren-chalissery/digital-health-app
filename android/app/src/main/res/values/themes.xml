@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Simplicity" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Only the window behind Compose. Everything drawn above it comes from SimplicityTheme in
+         the design module. The dark counterpart is in values-night, and the background colour is
+         itself a day/night resource, so the frame shown before the first composition is already
+         the right colour rather than a white flash. -->
+    <style name="Theme.Simplicity" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>

@@ -43,8 +43,15 @@ public struct FormField: View {
                 .textFieldStyle(.plain)
                 .fieldKind(kind)
                 .padding(Spacing.x3)
+                .frame(minHeight: Layout.minimumTapTarget)
                 .background(Color.brandSurface)
-                .clipShape(RoundedRectangle(cornerRadius: Spacing.x2))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.small))
+                // Without a boundary the field is only findable by its placeholder, which
+                // disappears the moment anything is typed.
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.small)
+                        .stroke(Color.brandBorderStrong, lineWidth: 1)
+                )
         }
     }
 

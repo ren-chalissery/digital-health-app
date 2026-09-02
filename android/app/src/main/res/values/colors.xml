@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches `background` in the light scheme of SimplicityTheme, so the launch window and the
+         first composed frame are the same colour. -->
+    <color name="window_background">#F6F8F6</color>
+</resources>
