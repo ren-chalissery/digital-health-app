@@ -6,8 +6,12 @@
 # configuration bucket bootstrap.sh creates outside it, and the deploy tag in Parameter Store.
 # Shared stacks — network, auth, web, media and mail — are untouched.
 #
-# The database on the instance root volume is destroyed with the stack. Nightly dumps in the
-# configuration bucket are deleted when that bucket goes.
+# The database on the instance root volume is destroyed with the stack, and the nightly dumps go
+# with the configuration bucket, so this takes one final dump and copies every dump it can find to
+# an archive bucket that nothing here deletes. bootstrap.sh restores the newest of them onto the
+# next box, which makes teardown the cheap way to idle rather than a way to lose the data.
+#
+# If the dump cannot be taken, nothing is deleted.
 
 set -euo pipefail
 
@@ -93,6 +97,86 @@ for key in ("Versions", "DeleteMarkers"):
 PY
 }
 
+# Deliberately without a lifecycle rule, unlike the backups/ prefix of the configuration bucket.
+# That one expires because it holds nightly dumps of a box that is still running; this holds the
+# only surviving copy of a box that no longer exists, and there is no length of idle after which
+# throwing it away is the right answer. A gzipped dump is measured in megabytes.
+ensureArchiveBucket() {
+  local bucket="$1"
+  aws s3api head-bucket --bucket "$bucket" >/dev/null 2>&1 && return 0
+  info "Creating ${bucket}"
+  run aws s3api create-bucket --bucket "$bucket" \
+    --create-bucket-configuration "LocationConstraint=${REGION}" >/dev/null
+  run aws s3api put-public-access-block --bucket "$bucket" \
+    --public-access-block-configuration \
+    'BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true'
+  run aws s3api put-bucket-encryption --bucket "$bucket" \
+    --server-side-encryption-configuration \
+    '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+}
+
+# The instance is often stopped between demonstrations, and a stopped instance cannot be asked for a
+# dump. Starting it costs a few minutes and an hour of instance time, against losing the database.
+wakeInstance() {
+  local instance="$1" state
+  state="$(aws ec2 describe-instances --instance-ids "$instance" \
+    --query 'Reservations[0].Instances[0].State.Name' --output text 2>/dev/null || echo unknown)"
+  [ "$state" = "running" ] && return 0
+
+  if [ "$state" = "stopping" ]; then
+    info "Instance is stopping; waiting for it to settle before starting it again"
+    aws ec2 wait instance-stopped --instance-ids "$instance"
+    state=stopped
+  fi
+  [ "$state" = "stopped" ] \
+    || die "Instance ${instance} is ${state}, so its database cannot be dumped."
+
+  info "Starting ${instance} to take the final dump"
+  aws ec2 start-instances --instance-ids "$instance" >/dev/null
+  aws ec2 wait instance-running --instance-ids "$instance"
+}
+
+waitForAgent() {
+  local instance="$1" ping
+  for _ in $(seq 1 60); do
+    ping="$(aws ssm describe-instance-information \
+      --filters "Key=InstanceIds,Values=${instance}" \
+      --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null || true)"
+    [ "$ping" = "Online" ] && return 0
+    sleep 10
+  done
+  die "Session Manager never came online for ${instance}, so the database cannot be dumped."
+}
+
+dumpDatabase() {
+  local instance="$1" commandId status=Pending
+  commandId="$(aws ssm send-command \
+    --instance-ids "$instance" \
+    --document-name AWS-RunShellScript \
+    --comment "box teardown dump" \
+    --parameters 'commands=["/opt/box/backup.sh"]' \
+    --timeout-seconds 600 \
+    --query 'Command.CommandId' --output text)"
+
+  for _ in $(seq 1 60); do
+    status="$(aws ssm get-command-invocation --command-id "$commandId" \
+      --instance-id "$instance" --query Status --output text 2>/dev/null || echo Pending)"
+    case "$status" in
+      Success) break ;;
+      Failed|Cancelled|TimedOut)
+        aws ssm get-command-invocation --command-id "$commandId" --instance-id "$instance" \
+          --query StandardErrorContent --output text >&2
+        die "backup.sh failed on the instance. Nothing has been deleted."
+        ;;
+    esac
+    sleep 10
+  done
+  [ "$status" = "Success" ] || die "backup.sh did not finish in time. Nothing has been deleted."
+
+  aws ssm get-command-invocation --command-id "$commandId" --instance-id "$instance" \
+    --query StandardOutputContent --output text | sed 's/^/    /'
+}
+
 emptyRepository() {
   local repo="$1"
   aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1 || return 0
@@ -115,6 +199,7 @@ account="$(aws sts get-caller-identity --query Account --output text)" \
 info "Account ${account}, region ${REGION}, environment ${ENVIRONMENT}"
 
 readonly CONFIG_BUCKET="digital-health-box-${ENVIRONMENT}-${account}"
+readonly ARCHIVE_BUCKET="digital-health-box-backups-${ENVIRONMENT}-${account}"
 
 if ! stackExists "${BOX_STACK}" \
   && ! aws s3api head-bucket --bucket "${CONFIG_BUCKET}" >/dev/null 2>&1 \
@@ -133,13 +218,64 @@ info "- Parameter Store ${IMAGE_TAG_PARAMETER} and ${DB_PASSWORD_PARAMETER}"
 step "What survives"
 info "- network, auth, web, media and mail stacks"
 info "- Cognito pool, web bundle and uploaded media"
-warn "The Postgres database on the instance disk is destroyed with the stack."
-warn "Backups in ${CONFIG_BUCKET} are deleted when the bucket goes."
+info "- Every database dump, copied to ${ARCHIVE_BUCKET} before anything is deleted"
+info "  box/bootstrap.sh restores the newest one onto the next box."
+warn "The Postgres database on the instance disk is destroyed with the stack, so what comes back"
+warn "is the dump taken below, not the moment you ran this."
 
 if [ "$ASSUME_YES" = false ] && [ "$DRY_RUN" = false ]; then
   printf '\nType the environment name (%s) to continue: ' "$ENVIRONMENT"
   read -r typed
   [ "$typed" = "$ENVIRONMENT" ] || die "Got '${typed}'. Nothing deleted."
+fi
+
+step "Archiving the database"
+
+instanceId=""
+if stackExists "${BOX_STACK}"; then
+  instanceId="$(output "${BOX_STACK}" InstanceId)"
+  [ "$instanceId" = "None" ] && instanceId=""
+fi
+
+configBucketExists=false
+if aws s3api head-bucket --bucket "${CONFIG_BUCKET}" >/dev/null 2>&1; then
+  configBucketExists=true
+fi
+
+if [ -z "$instanceId" ] && [ "$configBucketExists" = false ]; then
+  info "No instance and no configuration bucket, so there is nothing to archive."
+else
+  ensureArchiveBucket "${ARCHIVE_BUCKET}"
+
+  if [ -z "$instanceId" ]; then
+    # A stack that never reached an instance, or a bucket left behind by an interrupted run. There
+    # is no database to dump, but dumps already in the bucket are still worth carrying out.
+    info "No instance to dump; archiving the dumps already in ${CONFIG_BUCKET}."
+  elif [ "$DRY_RUN" = true ]; then
+    info "would run /opt/box/backup.sh on ${instanceId}"
+  else
+    wakeInstance "$instanceId"
+    waitForAgent "$instanceId"
+    dumpDatabase "$instanceId"
+  fi
+
+  if [ "$configBucketExists" = true ]; then
+    info "Copying dumps to ${ARCHIVE_BUCKET}"
+    # Every dump rather than only the newest, because they are small and the newest is the one most
+    # likely to be a dump of something that has just gone wrong.
+    run aws s3 sync "s3://${CONFIG_BUCKET}/backups/" "s3://${ARCHIVE_BUCKET}/backups/" \
+      --only-show-errors
+  fi
+
+  # An empty archive after dumping a live instance means the dump did not arrive, whatever the exit
+  # codes said. Deleting the stack now would be deleting the only copy.
+  if [ "$DRY_RUN" = false ] && [ -n "$instanceId" ]; then
+    archived="$(aws s3 ls "s3://${ARCHIVE_BUCKET}/backups/" 2>/dev/null | wc -l | tr -d ' ')" \
+      || archived=0
+    [ "$archived" -gt 0 ] \
+      || die "No dump reached ${ARCHIVE_BUCKET}. Refusing to delete a box whose data is not saved."
+    info "${archived} dump(s) in ${ARCHIVE_BUCKET}"
+  fi
 fi
 
 repo=""
@@ -189,5 +325,6 @@ fi
 
 step "Done"
 info "The box topology is gone. api.${DOMAIN} no longer points anywhere."
+info "The database is in s3://${ARCHIVE_BUCKET}/backups/."
 info "To stand up managed compute again:  ./infra/bootstrap.sh"
-info "To stand up the box again:           ./infra/box/bootstrap.sh"
+info "To stand up the box again:           ./infra/box/bootstrap.sh  (restores the newest dump)"

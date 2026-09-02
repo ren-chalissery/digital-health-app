@@ -29,6 +29,7 @@ same DNS record.
 | TLS | ACM on the load balancer | Caddy, via Let's Encrypt |
 | Cost | ~$82/month | ~$23/month running; ~$1–2 when torn down |
 | Survives an instance failure | Yes | No |
+| Survives its own teardown | Snapshot, restored by hand | Yes, dumped and restored automatically |
 
 The managed topology is the default and the one to use for anything real. The box exists so a
 demonstration environment does not cost eighty dollars a month, and it is explained in full under
@@ -321,13 +322,29 @@ Postgres, 80 MB of Valkey, 30 MB of Caddy and 200 MB of operating system.
 ./infra/box/teardown.sh
 ```
 
-Deletes the CloudFormation stack, the configuration bucket, database backups, and Parameter Store
-entries. Shared stacks — network, auth, web, media and mail — are untouched. Bring it back with
-`./infra/box/bootstrap.sh`, which creates a fresh Elastic IP, gp3 volume, instance, and empty
-database.
+Deletes the CloudFormation stack, the configuration bucket, and Parameter Store entries. Shared
+stacks — network, auth, web, media and mail — are untouched.
+
+**The database survives.** Before it deletes anything, `teardown.sh` starts the instance if it is
+stopped, runs `backup.sh` for a dump current as of the teardown rather than last night, and copies
+every dump in the configuration bucket to `digital-health-box-backups-<env>-<account>`. Nothing in
+either script deletes that bucket, and unlike the `backups/` prefix of the configuration bucket it
+carries no lifecycle rule: it holds the only surviving copy of a box that no longer exists, and
+there is no length of idle after which discarding it is right. If the dump cannot be taken —
+Session Manager unreachable, `backup.sh` failing — teardown stops and deletes nothing.
+
+`bootstrap.sh` then restores the newest dump it finds there onto the new box, before the health
+check. So the round trip costs whatever was written between the dump and the teardown, not
+everything. A brand new account has nothing archived and starts empty, which is the same thing said
+two ways.
+
+Restoring is guarded by a `restored-from` marker in the configuration bucket, so running
+`bootstrap.sh` twice against a live box does not replay the dump over what the box has done since.
+The marker dies with the configuration bucket, which is to say with the box.
 
 To stop paying without deleting, `ec2 stop-instances` still bills for the Elastic IP and gp3 root
-volume (~$8/month). Teardown is the intended way to idle the box cheaply.
+volume (~$8/month) but keeps the live database on disk, so nothing is dumped or replayed. Teardown
+is the cheaper idle (~$1–2/month) and now the safe one.
 
 ### Operating it
 
@@ -345,8 +362,8 @@ Boot problems land in `/var/log/box-bootstrap.log`.
 
 - **The database is a container on one disk.** No failover, no read replica, no point-in-time
   recovery. [box/backup.sh](box/backup.sh) dumps to S3 nightly and keeps fourteen days, so the
-  recovery point is up to twenty-four hours old. Replacing the instance loses everything since the
-  last dump.
+  recovery point is up to twenty-four hours old. An instance lost to a crash rather than to
+  `teardown.sh` loses everything since the last nightly dump; teardown itself takes a fresh one.
 - **Postgres is `pgvector/pgvector:pg17`, not the stock image.** `V8__assistant.sql` opens with
   `CREATE EXTENSION vector` and the assistant stores 1024-dimension embeddings behind an HNSW
   index. RDS supplies that extension; plain `postgres:17` does not, and Flyway fails on the first
