@@ -9,7 +9,8 @@ Description: >
 # The full topology is about $82 a month, and four fifths of that is availability nobody is using:
 # a load balancer in two zones, a managed database, a managed cache and a Fargate task, all sized
 # for a product that currently has a handful of testers. This runs the same image against the same
-# Cognito pool and the same S3 buckets for about $23, or about $8 if the instance is stopped
+# Cognito pool and the same S3 buckets for about $22 running continuously, about $13 with the
+# default night pause (22:00–08:00 Sydney), or about $6 if the instance is stopped manually
 # between demonstrations.
 #
 # The trade is real and worth stating plainly: one instance, one local database, no failover and no
@@ -78,9 +79,23 @@ Parameters:
 
   VolumeSize:
     Type: Number
-    Default: 30
+    Default: 20
     MinValue: 20
     Description: Root volume in GB, holding the images, the database and the transcode scratch space.
+
+  NightPauseEnabled:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >
+      Stop the instance at 22:00 and start it at 08:00 in ScheduleTimezone each day. Saves roughly
+      half the compute while the API is down overnight. The Elastic IP and disk still bill while
+      stopped (~$6/month). Set false for a box that must answer twenty-four hours a day.
+
+  ScheduleTimezone:
+    Type: String
+    Default: Australia/Sydney
+    Description: IANA timezone for the night-pause schedule.
 
   ConfigBucket:
     Type: String
@@ -90,6 +105,7 @@ Parameters:
 
 Conditions:
   HasMedia: !Not [!Equals [!Ref MediaStackName, '']]
+  NightPauseEnabled: !Equals [!Ref NightPauseEnabled, 'true']
 
 Resources:
   # Only 80 and 443. There is deliberately no SSH rule: shell access is via Session Manager, which
@@ -451,6 +467,122 @@ Resources:
               - !ImportValue
                 Fn::Sub: '${MediaStackName}-TranscodeRoleArn'
               - ''
+
+  # Stops the instance overnight and starts it again in the morning. Compute is the largest line on
+  # the box bill, and nothing in this product needs to answer at three in the morning on a
+  # demonstration environment. The Elastic IP and gp3 volume still bill while stopped, which is why
+  # teardown remains the way to idle almost entirely.
+  PowerLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: NightPauseEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: power-instance
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:StopInstances
+                  - ec2:StartInstances
+                  - ec2:DescribeInstances
+                Resource: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${Instance}'
+
+  PowerLambda:
+    Type: AWS::Lambda::Function
+    Condition: NightPauseEnabled
+    Properties:
+      FunctionName: !Sub 'digital-health-${EnvironmentName}-box-power'
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt PowerLambdaRole.Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          INSTANCE_ID: !Ref Instance
+      Code:
+        ZipFile: |
+          import json
+          import os
+
+          import boto3
+
+          ec2 = boto3.client("ec2")
+
+
+          def handler(event, context):
+              action = event.get("action")
+              if action not in ("stop", "start"):
+                  raise ValueError(f"expected action stop or start, got {action!r}")
+
+              instance_id = os.environ["INSTANCE_ID"]
+              if action == "stop":
+                  ec2.stop_instances(InstanceIds=[instance_id])
+              else:
+                  ec2.start_instances(InstanceIds=[instance_id])
+
+              return {"action": action, "instanceId": instance_id}
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Condition: NightPauseEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-power-lambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt PowerLambda.Arn
+
+  StopSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: NightPauseEnabled
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}-box-stop'
+      Description: Stop the box overnight to save compute
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      ScheduleExpression: cron(0 22 * * ? *)
+      ScheduleExpressionTimezone: !Ref ScheduleTimezone
+      State: ENABLED
+      Target:
+        Arn: !GetAtt PowerLambda.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        Input: '{"action":"stop"}'
+
+  StartSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: NightPauseEnabled
+    Properties:
+      Name: !Sub 'digital-health-${EnvironmentName}-box-start'
+      Description: Start the box in the morning
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      ScheduleExpression: cron(0 8 * * ? *)
+      ScheduleExpressionTimezone: !Ref ScheduleTimezone
+      State: ENABLED
+      Target:
+        Arn: !GetAtt PowerLambda.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        Input: '{"action":"start"}'
 
 Outputs:
   InstanceId:
