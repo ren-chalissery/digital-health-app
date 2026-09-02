@@ -25,14 +25,14 @@ public struct PrimaryButton: View {
                 // which would shift everything below it.
                 Text(title).opacity(isLoading ? 0 : 1)
                 if isLoading {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(Color.brandTextInverse)
                 }
             }
             .font(.brandBody.weight(.semibold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, minHeight: 50)
+            .foregroundStyle(Color.brandTextInverse)
+            .frame(maxWidth: .infinity, minHeight: Layout.minimumTapTarget)
             .background(Color.brandPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: Spacing.x3))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.medium))
         }
         .disabled(isLoading)
         .accessibilityLabel(title)

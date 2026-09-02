@@ -1,7 +1,7 @@
 .entry {
-  border-top: 1px solid var(--border, #e2e6eb);
-  padding-top: 1rem;
-  margin-top: 1rem;
+  border-top: 1px solid var(--colour-border);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
 
   &:first-of-type {
     border-top: 0;
@@ -13,12 +13,7 @@
 // Reflections are plain text, so newlines the author typed are the only structure there is.
 .entry__body {
   white-space: pre-wrap;
-  margin: 0 0 0.75rem;
-}
-
-.notice--warning {
-  border-color: var(--warning, #b7791f);
-  background: var(--warning-surface, #fffaf0);
+  margin: 0 0 var(--space-3);
 }
 
 textarea {

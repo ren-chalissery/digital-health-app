@@ -6,28 +6,28 @@
 
   &:hover,
   &:focus-visible {
-    border-color: var(--accent);
+    border-color: var(--colour-accent);
     transform: translateY(-1px);
   }
 }
 
 .progress {
   height: 6px;
-  border-radius: 3px;
-  background: var(--surface-sunken, #e9edf2);
+  border-radius: var(--radius-pill);
+  background: var(--colour-surface-sunken);
   overflow: hidden;
 }
 
 .progress__bar {
   height: 100%;
-  background: var(--accent);
+  background: var(--colour-accent);
   transition: width 0.2s ease;
 }
 
 .section {
-  border-top: 1px solid var(--border, #e2e6eb);
-  padding-top: 1.25rem;
-  margin-top: 1.25rem;
+  border-top: 1px solid var(--colour-border);
+  padding-top: var(--space-5);
+  margin-top: var(--space-5);
 
   &:first-of-type {
     border-top: 0;
@@ -43,26 +43,26 @@
   h2,
   h3,
   h4 {
-    margin: 1.25rem 0 0.5rem;
+    margin: var(--space-5) 0 var(--space-2);
   }
 
   p,
   ul,
   ol {
-    margin: 0 0 0.75rem;
+    margin: 0 0 var(--space-3);
   }
 
   code {
     padding: 0.1em 0.35em;
-    border-radius: 3px;
-    background: var(--surface-sunken, #e9edf2);
+    border-radius: var(--radius-sm);
+    background: var(--colour-surface-sunken);
     font-size: 0.9em;
   }
 
   pre {
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    background: var(--surface-sunken, #e9edf2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    background: var(--colour-surface-sunken);
     overflow-x: auto;
 
     code {
@@ -73,21 +73,22 @@
 }
 
 .question {
-  border: 1px solid var(--border, #e2e6eb);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  margin: 0 0 1rem;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  margin: 0 0 var(--space-4);
 
   legend {
     font-weight: 600;
-    padding: 0 0.4rem;
+    padding: 0 var(--space-1);
   }
 }
 
 .video {
   width: 100%;
   max-height: 30rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
+  // Letterboxing stays black in both themes; it is the absence of picture, not a surface.
   background: #000;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
