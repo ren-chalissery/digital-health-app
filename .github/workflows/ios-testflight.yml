@@ -1,0 +1,66 @@
+name: Release iOS to TestFlight
+
+# Deliberately separate from ci.yml. TestFlight is a distribution act, not a deploy step, and it
+# needs App Store Connect credentials the main pipeline should not hold for every merge.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: Skip package tests and lint before archiving
+        type: boolean
+        default: false
+
+jobs:
+  testflight:
+    name: Upload to TestFlight
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+
+      - name: Install SwiftLint
+        run: |
+          version=$(cat ios/.swiftlint-version)
+          curl -sSL -o /tmp/swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${version}/portable_swiftlint.zip"
+          unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+          sudo install /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          swiftlint version
+
+      - name: Package tests and lint
+        if: inputs.skip_tests != true
+        working-directory: ios
+        run: ./test-all.sh
+
+      - name: Install fastlane
+        run: brew install fastlane
+
+      - name: Install App Store Connect API key
+        env:
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_KEY_CONTENT: ${{ secrets.APPLE_KEY_CONTENT }}
+        run: |
+          if [ -z "$APPLE_KEY_ID" ] || [ -z "$APPLE_KEY_CONTENT" ]; then
+            echo "::error::Repository secrets APPLE_KEY_ID and APPLE_KEY_CONTENT must be set. See ios/fastlane/RELEASING.md."
+            exit 1
+          fi
+          mkdir -p ~/.private_keys
+          printf '%s' "$APPLE_KEY_CONTENT" > ~/.private_keys/AuthKey_${APPLE_KEY_ID}.p8
+          chmod 600 ~/.private_keys/AuthKey_${APPLE_KEY_ID}.p8
+
+      - name: Archive and upload
+        working-directory: ios
+        env:
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+        run: fastlane ios beta
+
+      - name: Report TestFlight state
+        if: success()
+        working-directory: ios
+        env:
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+        run: fastlane ios builds
