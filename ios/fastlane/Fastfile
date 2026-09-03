@@ -4,8 +4,9 @@
 # arrangement serves six targets across two platforms and four configurations; this app has one of
 # each, and manual signing would be ceremony with a credential-rotation chore attached.
 #
-# Nothing here runs in CI. A build reaching TestFlight should be a deliberate act, and the runner
-# would need signing credentials it has no reason to hold.
+# CI does not upload on every merge. A build reaching TestFlight is triggered manually through
+# `.github/workflows/ios-testflight.yml`, which runs the `beta` lane with App Store Connect API
+# credentials from repository secrets.
 
 default_platform(:ios)
 
@@ -33,7 +34,7 @@ platform :ios do
 
   desc "Archive a signed build without uploading it"
   lane :build do
-    build_app(
+    opts = {
       workspace: WORKSPACE,
       scheme: SCHEME,
       export_method: "app-store",
@@ -47,7 +48,12 @@ platform :ios do
         teamID: TEAM_ID,
         signingStyle: "automatic"
       }
-    )
+    }
+    # On a Mac with Xcode signed in, automatic signing works without an API key. On GitHub Actions
+    # there is no interactive account, so the key must authenticate archive and export as well as
+    # upload.
+    opts[:api_key] = api_key if ENV["APPLE_KEY_ID"]
+    build_app(**opts)
   end
 
   desc "Archive and upload to TestFlight"
@@ -141,11 +147,17 @@ platform :ios do
   # An App Store Connect API key rather than an Apple ID and password: it survives 2FA, it is
   # scoped, and it can be revoked without touching the account.
   def api_key
-    app_store_connect_api_key(
+    params = {
       key_id: ENV.fetch("APPLE_KEY_ID"),
-      issuer_id: ENV.fetch("APPLE_ISSUER_ID"),
-      key_filepath: File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
-    )
+      issuer_id: ENV.fetch("APPLE_ISSUER_ID")
+    }
+    if ENV["APPLE_KEY_CONTENT"]
+      params[:key_content] = ENV["APPLE_KEY_CONTENT"]
+      params[:is_key_content_base64] = ENV.fetch("APPLE_KEY_CONTENT_BASE64", "false") == "true"
+    else
+      params[:key_filepath] = File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
+    end
+    app_store_connect_api_key(**params)
   end
 
   # Fails before a ten-minute archive rather than after it.
@@ -158,9 +170,11 @@ platform :ios do
       )
     end
 
-    key_path = File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
-    unless File.exist?(key_path)
-      UI.user_error!("No key at #{key_path}. See ios/fastlane/RELEASING.md.")
+    has_key = ENV["APPLE_KEY_CONTENT"] || File.exist?(
+      File.expand_path("~/.private_keys/AuthKey_#{ENV.fetch('APPLE_KEY_ID')}.p8")
+    )
+    unless has_key
+      UI.user_error!("No API key. Set APPLE_KEY_CONTENT or place AuthKey_*.p8 in ~/.private_keys/.")
     end
   end
 end

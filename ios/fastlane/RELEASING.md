@@ -134,8 +134,22 @@ it has seen before and discovering that after a ten-minute archive is a poor way
 ## What CI does and does not do
 
 The `ios` job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) builds and tests on
-every push that touches `ios/` or `api-contract/`. It does **not** upload: a build reaching
-TestFlight should be a deliberate act, and a runner has no reason to hold signing credentials.
+every push that touches `ios/` or `api-contract/`. It does **not** upload.
+
+To release from GitHub instead of your Mac: Actions → **Release iOS to TestFlight** → Run workflow.
+Pick the branch (usually `main`) and click Run. The workflow runs package tests and lint, then
+`fastlane ios beta`, then prints what TestFlight is holding.
+
+Add these **repository secrets** first (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+| --- | --- |
+| `APPLE_KEY_ID` | Key id, e.g. `8W7SD24C5Z` |
+| `APPLE_ISSUER_ID` | Issuer id from App Store Connect → Integrations |
+| `APPLE_KEY_CONTENT` | Full contents of `AuthKey_<id>.p8` |
+
+The workflow writes the key to `~/.private_keys/` on the runner and deletes it when the job ends.
+Local `fastlane beta` is unchanged — it still reads the file from your home directory.
 
 It pins Xcode explicitly rather than taking the image default, which moves — it went from 26.5 to
 26.6 in July — and a runner image update should not silently change the compiler.
