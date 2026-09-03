@@ -67,11 +67,11 @@ mkdir -p ~/.private_keys
 mv ~/Downloads/AuthKey_XXXXXXXXXX.p8 ~/.private_keys/
 ```
 
-Then, in your shell profile:
+Then, in your shell profile — or `source ios/fastlane/apple-connect.env`, which holds the same
+public identifiers committed in the repo:
 
 ```bash
-export APPLE_KEY_ID=XXXXXXXXXX       # the key id, also in the filename
-export APPLE_ISSUER_ID=...           # shown once at the top of the Integrations page
+source ios/fastlane/apple-connect.env
 ```
 
 A key rather than an Apple ID and password: it survives two-factor authentication, it is scoped to
@@ -140,16 +140,16 @@ To release from GitHub instead of your Mac: Actions → **Release iOS to TestFli
 Pick the branch (usually `main`) and click Run. The workflow runs package tests and lint, then
 `fastlane ios beta`, then prints what TestFlight is holding.
 
-Add these **repository secrets** first (Settings → Secrets and variables → Actions):
+Add one **repository secret** (Settings → Secrets and variables → Actions):
 
 | Secret | Value |
 | --- | --- |
-| `APPLE_KEY_ID` | Key id, e.g. `8W7SD24C5Z` |
-| `APPLE_ISSUER_ID` | Issuer id from App Store Connect → Integrations |
 | `APPLE_KEY_CONTENT` | Full contents of `AuthKey_<id>.p8` |
 
-The workflow writes the key to `~/.private_keys/` on the runner and deletes it when the job ends.
-Local `fastlane beta` is unchanged — it still reads the file from your home directory.
+The key id and issuer id live in [`apple-connect.env`](apple-connect.env) in the repo — they are
+identifiers, not credentials. Locally, `source ios/fastlane/apple-connect.env` before `fastlane beta`.
+
+The workflow writes the `.p8` to `~/.private_keys/` on the runner and deletes it when the job ends.
 
 It pins Xcode explicitly rather than taking the image default, which moves — it went from 26.5 to
 26.6 in July — and a runner image update should not silently change the compiler.
