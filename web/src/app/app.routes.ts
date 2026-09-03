@@ -20,6 +20,10 @@ export const routes: Routes = [
     path: 'forgot-password',
     loadComponent: () => import('./features/auth/forgot-password').then((m) => m.ForgotPassword),
   },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./features/legal/privacy').then((m) => m.Privacy),
+  },
 
   // Reachable signed out: the recipient usually has no account yet.
   {

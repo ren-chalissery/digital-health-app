@@ -51,6 +51,10 @@ import { SessionService } from '../../core/session.service';
       <p class="auth__footer">
         No account yet? <a routerLink="/sign-up">Create one</a>
       </p>
+
+      <p class="auth__footer">
+        <a routerLink="/privacy">Privacy policy</a>
+      </p>
     </div>
   `,
 })
