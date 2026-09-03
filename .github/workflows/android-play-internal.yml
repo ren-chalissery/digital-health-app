@@ -1,0 +1,85 @@
+name: Release Android to Play internal testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: Skip unit tests before building the bundle
+        type: boolean
+        default: false
+
+jobs:
+  play-internal:
+    name: Upload to Play internal testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Load Play Store identifiers
+        run: |
+          set -a
+          # shellcheck disable=SC1091
+          source android/play-store.env
+          set +a
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> "$GITHUB_ENV"
+          echo "PLAY_TRACK=$PLAY_TRACK" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Test
+        if: inputs.skip_tests != true
+        working-directory: android
+        run: ./gradlew test
+
+      - name: Install fastlane
+        run: sudo gem install fastlane -NV --no-document
+
+      - name: Install signing and Play credentials
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        working-directory: android
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing — see android/RELEASING.md"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > keystore.properties
+          mkdir -p "$HOME/.config/simplicity"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$HOME/.config/simplicity/play-service-account.json"
+          chmod 600 "$HOME/.config/simplicity/play-service-account.json"
+
+      - name: Build and upload
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          GOOGLE_PLAY_JSON_KEY_PATH: ${{ runner.temp }}/play-service-account.json
+        run: |
+          cp "$HOME/.config/simplicity/play-service-account.json" "$GOOGLE_PLAY_JSON_KEY_PATH"
+          fastlane android internal
+
+      - name: Report Play track state
+        if: success()
+        working-directory: android
+        env:
+          GOOGLE_PLAY_JSON_KEY_PATH: ${{ runner.temp }}/play-service-account.json
+        run: fastlane android releases
