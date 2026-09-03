@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Feature graphic</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1024px;
+        height: 500px;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      .banner {
+        width: 1024px;
+        height: 500px;
+        display: flex;
+        align-items: center;
+        gap: 48px;
+        padding: 56px 72px;
+        background: linear-gradient(135deg, #f0faf5 0%, #ddf4e8 45%, #216343 100%);
+        color: #16211b;
+      }
+      .icon {
+        width: 180px;
+        height: 180px;
+        border-radius: 36px;
+        box-shadow: 0 12px 40px rgba(18, 54, 36, 0.18);
+        flex-shrink: 0;
+      }
+      .copy {
+        max-width: 620px;
+      }
+      .eyebrow {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #216343;
+        margin-bottom: 12px;
+      }
+      h1 {
+        margin: 0 0 16px;
+        font-size: 52px;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        color: #123624;
+      }
+      p {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.45;
+        color: #2a3b32;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .chip {
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #216343;
+        font-size: 18px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <img class="icon" src="../../play-store-icon-512.png" alt="" />
+      <div class="copy">
+        <div class="eyebrow">For clinicians</div>
+        <h1>Simplicity training</h1>
+        <p>
+          Learn to deliver Simplicity safely, track your progress, and keep private practice
+          reflections.
+        </p>
+        <div class="chips">
+          <span class="chip">Training modules</span>
+          <span class="chip">Private journal</span>
+          <span class="chip">Ask the assistant</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

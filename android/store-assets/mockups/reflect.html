@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reflect</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="masthead__inner">
+        <span class="masthead__brand">Simplicity training</span>
+        <span class="masthead__org">Metro Community Mental Health</span>
+      </div>
+      <nav class="tabs" aria-label="Main">
+        <span class="tabs__tab">Dashboard</span>
+        <span class="tabs__tab">Learn</span>
+        <span class="tabs__tab tabs__tab--active">Reflect</span>
+        <span class="tabs__tab">Settings</span>
+      </nav>
+    </header>
+    <main class="page">
+      <header class="page__header">
+        <h1>Reflect</h1>
+        <p class="page__lede">
+          Your own notes on your practice. Nobody else can read these — not your colleagues, not an
+          administrator.
+        </p>
+      </header>
+      <article class="card">
+        <div class="card__title"><h2>New reflection</h2></div>
+        <div class="field">
+          <label for="title">Title <span class="field__hint">(optional)</span></label>
+          <input id="title" value="First conversation about the app" readonly />
+        </div>
+        <div class="field">
+          <label for="body">What happened, and what you noticed</label>
+          <textarea id="body" readonly>
+I spent more time on consent than I expected. The training reminder to ask what they want me to see in the app helped — we agreed I would only review progress together in sessions.</textarea
+          >
+        </div>
+        <button class="button" type="button" style="margin-top: var(--space-4)">Save reflection</button>
+      </article>
+      <article class="card">
+        <div class="card__title"><h2>Your reflections</h2></div>
+        <div class="reflection">
+          <strong>Supervision prep</strong>
+          <p class="field__hint">
+            Noticed I was rushing the safety-planning module. Need to revisit section 2 before
+            Thursday's case discussion.
+          </p>
+          <p class="reflection__meta">28 August 2026</p>
+        </div>
+        <div class="reflection">
+          <strong>Team huddle</strong>
+          <p class="field__hint">
+            Colleagues asked how reflections differ from case notes — good prompt to share the
+            training summary.
+          </p>
+          <p class="reflection__meta">21 August 2026</p>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

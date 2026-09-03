@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(160deg, var(--colour-wash) 0%, var(--colour-bg) 60%);
+}
+
+.legal {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-7);
+}
+
+.legal__brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--colour-accent);
+  margin-bottom: var(--space-5);
+}
+
+.legal__card {
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+}
+
+.legal__meta {
+  color: var(--colour-text-muted);
+  font-size: 0.9375rem;
+  margin-bottom: var(--space-5);
+}
+
+.legal__card h1 {
+  margin-bottom: var(--space-4);
+}
+
+.legal__card h2 {
+  font-size: 1.125rem;
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+.legal__card p,
+.legal__card li {
+  color: var(--colour-text);
+  line-height: 1.6;
+}
+
+.legal__card p {
+  margin: 0 0 var(--space-3);
+}
+
+.legal__card ul {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.25rem;
+}
+
+.legal__card li + li {
+  margin-top: var(--space-1);
+}
+
+.legal__footer {
+  margin-top: var(--space-5);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--colour-text-muted);
+}

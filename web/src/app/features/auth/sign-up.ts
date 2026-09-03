@@ -65,6 +65,10 @@ function strongPassword(control: AbstractControl) {
       <p class="auth__footer">
         Already have an account? <a routerLink="/sign-in">Sign in</a>
       </p>
+
+      <p class="auth__footer">
+        <a routerLink="/privacy">Privacy policy</a>
+      </p>
     </div>
   `,
 })

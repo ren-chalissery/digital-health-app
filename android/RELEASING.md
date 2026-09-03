@@ -58,6 +58,11 @@ safety** usually block publishing until submitted.
 Under **Store presence → Main store listing**, upload [`play-store-icon-512.png`](play-store-icon-512.png)
 as the app icon if the console asks before the first upload.
 
+Phone screenshots and the feature graphic live in
+[`store-assets/screenshots/`](store-assets/screenshots/) (1080×1920 PNGs plus a 1024×500 banner).
+Regenerate from the HTML mockups with `android/store-assets/generate-screenshots.mjs` if the UI
+changes.
+
 ---
 
 ## 3. Upload keystore — **once**
@@ -78,20 +83,22 @@ This creates `upload-keystore.jks` and `keystore.properties` (both gitignored). 
 
 ## 4. Play Developer API service account — **you**
 
-The GitHub Action uploads through the API; that needs a service account linked to Play Console.
+Google removed **Setup → API access**. Access is granted by inviting a Google Cloud
+service account as a user.
 
-1. Play Console → **Setup → API access** → link or create a Google Cloud project.
-2. Google Cloud Console → **IAM & Admin → Service accounts** → create a service account
-   (e.g. `play-upload@…`).
-3. Create a **JSON key** and download it once.
-4. Back in Play Console → **API access** → grant that service account access to the app with
-   **Release to production, exclude devices, and use Play App Signing** (or Admin for simplicity
-   on a solo project).
+1. [Google Cloud Console](https://console.cloud.google.com/) → create or pick a project.
+2. Enable [Google Play Android Developer API](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com).
+3. **IAM & Admin → Service accounts → Create service account** (no GCP roles required).
+4. **Keys → Add key → JSON** → download once. Note the service account email
+   (`…@….iam.gserviceaccount.com`).
+5. [Play Console](https://play.google.com/console) → **Users and permissions** → **Invite new
+   users** → paste that email.
+6. **App permissions** → add **Simplicity Training** (`io.simplicity.training`) → enable at least
+   **View app information** and **Manage testing tracks and releases** (Admin is fine on a solo
+   account).
 
 Store the JSON locally at `~/.config/simplicity/play-service-account.json` for `fastlane`, or only
-in GitHub Actions secrets (below).
-
-Enable **Google Play Android Developer API** in the linked Cloud project if it is not already on.
+in GitHub Actions secrets (below). Permissions can take a few minutes to propagate.
 
 ---
 
