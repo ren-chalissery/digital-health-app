@@ -1,0 +1,57 @@
+# Build and upload to Google Play internal testing.
+#
+# Nothing here runs on every merge. Release through `.github/workflows/android-play-internal.yml`
+# or `fastlane android internal` when you deliberately want a new build on testers' phones.
+
+default_platform(:android)
+
+platform :android do
+  desc "Build a signed release App Bundle"
+  lane :build do
+    ensure_play_credentials
+
+    gradle(
+      project_dir: ".",
+      task: "app:bundleRelease"
+    )
+  end
+
+  desc "Upload to the internal testing track"
+  lane :internal do
+    ensure_play_credentials
+    build
+
+    upload_to_play_store(
+      track: ENV.fetch("PLAY_TRACK", "internal"),
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: play_json_key_path,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+  end
+
+  desc "List recent releases on the configured track"
+  lane :releases do
+    ensure_play_credentials
+
+    version_codes = google_play_track_version_codes(
+      track: ENV.fetch("PLAY_TRACK", "internal"),
+      json_key: play_json_key_path
+    )
+    UI.message("version codes on #{ENV.fetch('PLAY_TRACK', 'internal')}: #{version_codes.inspect}")
+  end
+
+  def play_json_key_path
+    path = ENV.fetch("GOOGLE_PLAY_JSON_KEY_PATH", File.expand_path("~/.config/simplicity/play-service-account.json"))
+    UI.user_error!("No Play service account key at #{path}") unless File.exist?(path)
+    path
+  end
+
+  def ensure_play_credentials
+    props = File.expand_path("../keystore.properties", __dir__)
+    UI.user_error!("Missing #{props}. Run scripts/create-upload-keystore.sh first.") unless File.exist?(props)
+    play_json_key_path
+  end
+end

@@ -50,3 +50,6 @@ ios/fastlane/report.xml
 android/**/build/
 android/.gradle/
 android/local.properties
+android/upload-keystore.jks
+android/keystore.properties
+android/fastlane/report.xml

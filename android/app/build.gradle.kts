@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+import java.util.Properties
+
 android {
     namespace = "io.simplicity.training"
     compileSdk = 37
@@ -15,8 +17,31 @@ android {
         // and nothing here needs a newer API.
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            val propsFile = rootProject.file("keystore.properties")
+            if (propsFile.exists()) {
+                val props = Properties().apply { propsFile.inputStream().use { load(it) } }
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            val propsFile = rootProject.file("keystore.properties")
+            if (propsFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     buildFeatures { compose = true }
