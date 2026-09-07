@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-	awsSdkVersion = '2.54.7'
+	awsSdkVersion = '2.54.12'
 	springdocVersion = '3.1.0'
 }
 
